@@ -1,0 +1,105 @@
+#!/usr/bin/env bash
+# sbox-launch — open the s&box editor on a specific project, bypassing the
+# project picker. Uses protontricks-launch + the editor's -project arg.
+#
+# Usage:
+#   sbox-launch <project-dir>                 launch (kills any running editor first)
+#   sbox-launch <project-dir> --no-kill       don't kill an existing editor
+#   sbox-launch <project-dir> --tail-log      stream classified log entries
+#   sbox-launch --kill                        just kill any running editor
+#
+# Why this exists:
+#   - The Steam URI `steam://rungameid/2129370` opens the launcher; user then
+#     has to click the project. Slow and not automatable.
+#   - Wine's file watcher misses edits made from outside the editor, so when
+#     you change project code/scenes from a script you need a fresh editor
+#     to pick them up. Kill+relaunch is the reliable way.
+set -e
+
+EDITOR_APPID=2129370
+EDITOR_EXE="$HOME/.steam/root/steamapps/common/sbox/sbox-dev.exe"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+KILL_FIRST=1
+TAIL=0
+PROJECT=""
+KILL_ONLY=0
+
+for a in "$@"; do
+  case "$a" in
+    --no-kill)    KILL_FIRST=0 ;;
+    --tail-log|-t) TAIL=1 ;;
+    --kill)       KILL_ONLY=1 ;;
+    -h|--help)    sed -n '2,15p' "$0"; exit 0 ;;
+    *)            PROJECT="$a" ;;
+  esac
+done
+
+kill_editor() {
+  pkill -9 -f 'sbox-dev\.exe'    2>/dev/null || true
+  pkill -9 -f 'sbox-editor\.exe' 2>/dev/null || true
+  sleep 1
+  pkill -9 -f 'wineserver'       2>/dev/null || true
+  pkill -9 -f 'pv-adverb.*sbox'  2>/dev/null || true
+  sleep 2
+}
+
+if [[ $KILL_ONLY == 1 ]]; then
+  echo "killing editor processes..."
+  kill_editor
+  echo "done"
+  exit 0
+fi
+
+if [[ -z "$PROJECT" ]]; then
+  echo "error: project-dir required (or pass --kill)" >&2
+  exit 1
+fi
+
+PROJECT="$(realpath "$PROJECT")"
+if [[ ! -d "$PROJECT" ]]; then
+  echo "error: $PROJECT is not a directory" >&2
+  exit 1
+fi
+
+# Find the .sbproj
+SBPROJ=""
+for f in "$PROJECT"/*.sbproj "$PROJECT"/.sbproj; do
+  [[ -f "$f" ]] && { SBPROJ="$f"; break; }
+done
+if [[ -z "$SBPROJ" ]]; then
+  echo "error: no .sbproj found in $PROJECT" >&2
+  exit 1
+fi
+echo "project: $SBPROJ"
+
+if [[ ! -x "$EDITOR_EXE" && ! -f "$EDITOR_EXE" ]]; then
+  echo "error: editor binary missing at $EDITOR_EXE" >&2
+  echo "       run sbox-doctor to verify the install" >&2
+  exit 1
+fi
+
+if [[ $KILL_FIRST == 1 ]]; then
+  echo "killing any running editor processes..."
+  kill_editor
+fi
+
+# Translate Linux path → Wine Z: path
+WINE_SBPROJ='Z:'"${SBPROJ//\//\\}"
+echo "wine path: $WINE_SBPROJ"
+
+LAUNCH_LOG="/tmp/sbox-launch-$$.log"
+nohup protontricks-launch --appid "$EDITOR_APPID" "$EDITOR_EXE" -project "$WINE_SBPROJ" \
+  </dev/null >"$LAUNCH_LOG" 2>&1 &
+disown
+echo "launched at $(date '+%H:%M:%S') (log: $LAUNCH_LOG)"
+
+if [[ $TAIL == 1 ]]; then
+  # wait for editor to touch its log
+  LOG="$HOME/.steam/root/steamapps/common/sbox/logs/sbox-dev.log"
+  for _ in $(seq 1 60); do
+    [[ -f "$LOG" ]] && break
+    sleep 1
+  done
+  exec "$SCRIPT_DIR/sbox-logs" --follow --errors
+fi

@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "Editor": {
+      "commandName": "Executable",
+      "executablePath": "S:/common/sbox/sbox-dev.exe",
+      "commandLineArgs": "-project \u0022Z:\\home\\paul\\projects\\sbox-public\\bullet-hell\\bullet-hell.sbproj\u0022"
+    }
+  }
+}

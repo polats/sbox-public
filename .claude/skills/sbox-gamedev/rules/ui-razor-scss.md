@@ -4,6 +4,25 @@ In-game UI in s&box is **Blazor-style Razor** rendered by **SkiaSharp**. Each
 panel is a `.razor` file with matching `.razor.scss` (Source 2-flavored SCSS,
 not standard CSS — different layout model and a different shorthand set).
 
+## Required `@using` directives
+
+Razor-generated C# does **not** auto-import `System` or `System.Linq`. If your
+`@code` block uses `HashCode`, `FirstOrDefault`, `Where`, etc., you need:
+
+```razor
+@namespace YourGame
+@using System;
+@using System.Linq;
+@using Sandbox;
+@using Sandbox.UI;
+@inherits Panel
+```
+
+Without these you get compile errors like `The name 'HashCode' does not exist`
+or `'IEnumerable<T>' does not contain a definition for 'FirstOrDefault'` in
+the generated `_gen_<file>.razor_*.cs`. Semicolons at line-end are tolerated
+either way.
+
 To scaffold a panel, drop `.razor` + matching `.razor.scss` files into the
 project's `Code/UI/` (or a subdir) — see the templates further down.
 

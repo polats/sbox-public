@@ -3,6 +3,44 @@
 s&box is a component-based engine: a `Scene` contains `GameObject`s, each with
 zero or more `Component`s attached. Code-side behavior lives in Components.
 
+## Required imports
+
+s&box's C# does **not** auto-import `System`. If you use `MathF`, `HashCode`,
+`TimeSpan`, etc., you need `using System;` at the top of your `.cs` file —
+otherwise you get `The name 'MathF' does not exist in the current context`.
+Other commonly-needed imports:
+
+```csharp
+using Sandbox;
+using System;              // MathF, HashCode, Math, TimeSpan, etc.
+using System.Linq;         // FirstOrDefault, Where, Select, etc.
+using System.Collections.Generic;  // List<T>, Dictionary<K,V>
+```
+
+## Coordinate system & axis convention
+
+- `+X` = forward (default character facing)
+- `+Y` = left/right (horizontal)
+- `+Z` = up
+- 1 unit ≈ 1 inch
+
+Helpers: `Vector3.Forward` is `+X`, `Vector3.Up` is `+Z`, `Vector3.Left` is `+Y`.
+
+## Common Input action names
+
+The default action map used in stock projects:
+`Forward`, `Backward`, `Left`, `Right`, `Jump`, `Duck`, `Walk`, `Run`,
+`Attack1`, `Attack2`, `Reload`, `Use`, `Score`, `Slot1`–`Slot9`,
+`SlotNext`, `SlotPrev`, `View`, `Voice`, `Chat`, `Menu`.
+
+```csharp
+if ( Input.Down( "Forward" ) )   // held
+if ( Input.Pressed( "Attack1" ) ) // edge: just pressed this frame
+if ( Input.Released( "Use" ) )    // edge: just released this frame
+```
+
+You can also bind custom action names in `ProjectSettings/InputSettings`.
+
 ## The Component skeleton
 
 ```csharp

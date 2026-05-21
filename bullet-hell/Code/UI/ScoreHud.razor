@@ -1,0 +1,28 @@
+@namespace Local.BulletHell
+@using System;
+@using System.Linq;
+@using Sandbox;
+@using Sandbox.UI;
+@inherits Panel
+
+<root>
+	<div class="card">
+		<div class="icon">scoreboard</div>
+		<div class="text">
+			<div class="label">SCORE</div>
+			<div class="value">@(Player?.Score ?? 0)</div>
+		</div>
+		<div class="health">
+			<div class="icon">favorite</div>
+			<div class="value">@(Player?.Health ?? 0)</div>
+		</div>
+	</div>
+</root>
+
+@code
+{
+	public Player Player => Game.ActiveScene?.GetAllComponents<Player>().FirstOrDefault();
+
+	protected override int BuildHash() => HashCode.Combine( Player?.Score, Player?.Health );
+}
+

@@ -28,21 +28,30 @@ the current project). Report green/red briefly, then ask what to do.
 
 ### Lookup index
 - [rules/linux-setup.md](rules/linux-setup.md) — Proton prefix, .NET install, font registry, common gotchas. Reference when env-related errors appear.
-- [rules/component-lifecycle.md](rules/component-lifecycle.md) — Component skeleton, OnStart/OnUpdate, Components.Get, prefabs, network sync basics.
-- [rules/ui-razor-scss.md](rules/ui-razor-scss.md) — Razor file structure, BuildHash, common patterns from `sandbox/Code/UI/`.
+- [rules/component-lifecycle.md](rules/component-lifecycle.md) — Component skeleton, required `using`s, axis convention, input actions, Components.Get, prefabs, network sync basics.
+- [rules/ui-razor-scss.md](rules/ui-razor-scss.md) — Razor file structure (with `@using` requirements), BuildHash, common patterns from `sandbox/Code/UI/`.
 - [rules/ui-icons-linux.md](rules/ui-icons-linux.md) — Why emoji `[Icon("📦")]` don't render under Wine; use Material Icons names. Includes a lookup table.
+- [rules/scenes.md](rules/scenes.md) — `.scene` JSON format, quaternion rotation cheatsheet, component field shapes (Camera/ModelRenderer/ScreenPanel/BoxCollider/DirectionalLight), scene-load gotchas. **Read this when authoring or modifying scenes from a script.**
 - [rules/debugging.md](rules/debugging.md) — Log location, error patterns we've seen, when to suspect Linux-specific vs real bug.
 
 ### Tools
-Two helpers under `tools/` — invoke via Bash. Pre-authorized by `allowed-tools`.
+All under `tools/` — invoke via Bash. Pre-authorized by `allowed-tools`.
 
-- `sbox-doctor [project-path]` — verify the Linux setup (Proton prefix, .NET 10, font registration, Proton Experimental forced); optionally scan a project for case-conflict dirs. Run this first when invoked.
-- `sbox-logs [--summary|--errors|--follow|--category <name>] [--tail N]` — tail and classify the editor log at `~/.steam/root/steamapps/common/sbox/logs/sbox-dev.log`. Categories: `compile`, `asset`, `shader`, `null`, `missing`, `directwrite`, `reflection`, `other`.
+- `sbox-doctor [project-path]` — verify the Linux setup (Proton prefix, .NET 10, font registration, Proton Experimental forced); optionally scan a project for case-conflict dirs. **Run this first when invoked.**
+- `sbox-logs [--summary|--errors|--follow|--category <name>] [--tail N]` — tail and classify the editor log. Categories: `compile`, `asset`, `shader`, `null`, `missing`, `directwrite`, `reflection`, `other`.
+- `sbox-launch <project-dir>` — kill any running editor and relaunch directly on the given project (bypasses Steam project picker). Required for autonomous workflows because Wine's file watcher misses edits made from outside the editor — kill+relaunch is the reliable way to pick up changes. Use `--tail-log` to stream classified errors after launch, or `--kill` alone to just kill running editors.
+- `sbox-set-startup-scene <project-dir> <scene-path>` — prime `<project>/.sbox/project.json` so the editor auto-opens a specific scene on next launch. Editor must be closed. Use right after generating a scene file so the next `sbox-launch` opens directly into it.
 
-For everything else, prefer reading the relevant rule file and acting from there:
-- **Picking an icon**: see the lookup table in `rules/ui-icons-linux.md`, or browse <https://fonts.google.com/icons>. Pass any name verbatim into `[Icon("…")]`.
-- **Launching the editor**: `steam steam://rungameid/2129370` (the editor app id) — or hit Play in the Steam UI.
-- **Scaffolding a Component / Razor panel**: copy the templates from `rules/component-lifecycle.md` / `rules/ui-razor-scss.md` and adjust namespace to match the project's `.sbproj`.
+### End-to-end "create a game from scratch" workflow
+
+1. **Verify env**: `sbox-doctor`.
+2. **Create project tree** by hand: `<project>/<name>.sbproj` + `<project>/Code/*.cs` + optional `<project>/Code/UI/*.razor*` — follow templates in `rules/component-lifecycle.md` and `rules/ui-razor-scss.md`. Don't forget `using System;` / `@using System.Linq;`.
+3. **Write the scene** in `<project>/Assets/scenes/<name>.scene` — see `rules/scenes.md` for the JSON format and a Python generator pattern.
+4. **Prime startup scene**: `sbox-launch --kill && sbox-set-startup-scene <project> scenes/<name>.scene`.
+5. **Launch & verify**: `sbox-launch <project>`, then `sbox-logs --errors --tail 20` to spot compile or scene-load problems.
+6. **Iterate on code/scene**: edit files, then `sbox-launch <project>` again (it kills + relaunches so Wine picks up the changes).
+
+For an end-to-end worked example see `/home/paul/projects/sbox-public/bullet-hell/` — a top-down bullet-hell prototype with Player/Enemy/Bullet/HUD, scene generated from `Assets/scenes/main.scene.gen.py`.
 
 ## Source patches in this repo
 

@@ -1,0 +1,160 @@
+#!/usr/bin/env python3
+"""
+sbox-set-startup-scene — prime <project>/.sbox/project.json so the editor
+auto-opens a specific scene on next launch.
+
+The editor persists its open scene tabs in `.sbox/project.json` under
+`Window.SboxSceneEditor.Dock`. For a freshly-created project this entry
+either doesn't exist or contains no `SceneDock:scenes/foo.scene` entries,
+so the editor opens to a blank/Untitled scene.
+
+This tool writes that entry with a `SceneDock` pointing at the given scene,
+so on next `sbox-launch <project>` the editor restores that scene tab.
+
+Usage:
+  sbox-set-startup-scene <project-dir> <scene-relative-path>
+
+Example:
+  sbox-set-startup-scene bullet-hell scenes/main.scene
+
+The editor MUST be closed before running this — the editor rewrites
+project.json on graceful shutdown and will clobber our edit.
+"""
+from __future__ import annotations
+import argparse, json, os, sys, time, subprocess
+from pathlib import Path
+
+
+def is_editor_running() -> bool:
+    try:
+        r = subprocess.run(["pgrep", "-f", "sbox-dev\\.exe|sbox-editor\\.exe"],
+                           capture_output=True, text=True)
+        # filter out our own shell line
+        return any("sbox-dev.exe" in ln or "sbox-editor.exe" in ln
+                   for ln in r.stdout.splitlines()
+                   if "bash -c" not in ln and "pgrep" not in ln)
+    except FileNotFoundError:
+        return False
+
+
+def build_dock_state(scene_path: str) -> str:
+    """Return the inner dock-state JSON string (will be re-escaped into Value)."""
+    dock = {
+        "floatingWindows": [],
+        "mainWrapper": {
+            "geometry": "AdnQywADAAAAAAAAAAAAAAAABnMAAAM4AAAAAAAAAAAAAAZzAAADOAAAAAAAAAAAB4AAAAAAAAAAAAAABnMAAAM4",
+            "splitter": {
+                "items": [
+                    {
+                        "currentIndex": 0,
+                        "objects": [
+                            {"data": None, "managedType": "SceneTreeWidget", "name": "Hierarchy"},
+                            {"data": None, "managedType": "PanelInspectorWidget", "name": "UI Panels"},
+                        ],
+                        "type": "area",
+                    },
+                    {
+                        "items": [
+                            {
+                                "items": [
+                                    {
+                                        "currentIndex": 0,
+                                        "objects": [
+                                            {"data": None, "managedType": "SceneDock", "name": f"SceneDock:{scene_path}"},
+                                        ],
+                                        "type": "area",
+                                    },
+                                    {
+                                        "currentIndex": 0,
+                                        "objects": [
+                                            {"data": None, "managedType": "MainAssetBrowser", "name": "Asset Browser"},
+                                            {"data": None, "managedType": "ConsoleWidget", "name": "Console"},
+                                        ],
+                                        "type": "area",
+                                    },
+                                ],
+                                "state": "AAAA/wAAAAEAAAACAAADpQAAAh0A/////wEAAAACAA==",
+                                "type": "splitter",
+                            },
+                            {
+                                "items": [
+                                    {
+                                        "currentIndex": 0,
+                                        "objects": [
+                                            {"data": None, "managedType": "Inspector", "name": "Inspector"},
+                                        ],
+                                        "type": "area",
+                                    },
+                                ],
+                                "state": "AAAA/wAAAAEAAAABAAAEuQAAAVEA/////wEAAAABAA==",
+                                "type": "splitter",
+                            },
+                        ],
+                        "state": "AAAA/wAAAAEAAAACAAAGuwAAAdsA/////wEAAAABAA==",
+                        "type": "splitter",
+                    },
+                ],
+                "state": "AAAA/wAAAAEAAAACAAABmwAACjQA/////wEAAAABAA==",
+                "type": "splitter",
+            },
+        },
+        "toolWindowManagerStateFormat": 1,
+    }
+    return json.dumps(dock, separators=(",", ":"))
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("project_dir")
+    ap.add_argument("scene_path", help="scene path relative to project root, e.g. scenes/main.scene")
+    ap.add_argument("--force", action="store_true", help="overwrite even if editor appears to be running")
+    args = ap.parse_args()
+
+    proj = Path(args.project_dir).resolve()
+    if not proj.is_dir():
+        print(f"error: {proj} is not a directory", file=sys.stderr); sys.exit(1)
+
+    sbox_dir = proj / ".sbox"
+    sbox_dir.mkdir(exist_ok=True)
+    pjson = sbox_dir / "project.json"
+
+    if is_editor_running() and not args.force:
+        print("error: editor is running — close it first (or pass --force)", file=sys.stderr)
+        sys.exit(2)
+
+    # Verify scene file exists
+    scene_full = proj / "Assets" / args.scene_path
+    if not scene_full.exists():
+        # also accept paths without Assets/ prefix
+        alt = proj / args.scene_path
+        if alt.exists():
+            scene_full = alt
+        else:
+            print(f"warning: scene {scene_full} not found (continuing anyway)", file=sys.stderr)
+
+    # Preserve unrelated entries if a project.json already exists
+    existing = {}
+    if pjson.exists():
+        try:
+            existing = json.loads(pjson.read_text(encoding="utf-8"))
+        except Exception as e:
+            print(f"warning: couldn't parse existing {pjson} ({e}); overwriting", file=sys.stderr)
+            existing = {}
+
+    now_ms = int(time.time() * 1000)
+    expiry = now_ms + 7 * 24 * 60 * 60 * 1000  # +1 week
+
+    existing["Window.SboxSceneEditor.Dock"] = {
+        "Value": build_dock_state(args.scene_path),
+        "Timeout": expiry,
+        "DeleteAt": 0,
+    }
+
+    pjson.write_text(json.dumps(existing, indent=2), encoding="utf-8")
+    print(f"wrote {pjson}")
+    print(f"primed SceneDock → {args.scene_path}")
+    print("next editor launch (sbox-launch ...) should auto-open this scene.")
+
+
+if __name__ == "__main__":
+    main()
