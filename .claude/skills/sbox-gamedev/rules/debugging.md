@@ -82,8 +82,8 @@ missing asset, or triggered a different class of failure.
 ## What's not in the log
 
 - **GPU / Vulkan crashes** — those land in stderr of the editor process,
-  which Steam swallows. Launch via `tools/sbox-launch <project> --tail-log`
-  for the next-best thing.
+  which Steam swallows. The dev log is the next-best signal — run
+  `tools/sbox-logs --follow` in another terminal while reproducing.
 - **Wine font fixmes** — visible if you launch the binary directly through
   protontricks. Usually noise; only relevant when investigating font issues.
 - **DotNet runtime fatal errors** — if the editor doesn't start at all, check

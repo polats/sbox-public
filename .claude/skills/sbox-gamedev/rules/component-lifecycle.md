@@ -24,8 +24,10 @@ public sealed class HealthBar : Component
 }
 ```
 
-Scaffold with `tools/sbox-new-component <Name> <project-dir>` (adds the namespace
-from `.sbproj`, optional `--networked`, `--triggers`, `--update`).
+To scaffold: copy the template above into `<project-dir>/Code/<Name>.cs`,
+set the namespace to match the project (`Org.Ident` from `.sbproj`, or just
+`Sandbox` for the stock sandbox project), and adjust the inherited interfaces
+and overrides you actually need.
 
 ## Reading the Component graph
 
@@ -94,7 +96,6 @@ public sealed class Pickup : Component, Component.ITriggerListener
 }
 ```
 
-Use `--triggers` on `sbox-new-component` to get this scaffolded.
 
 ## Common pitfalls
 

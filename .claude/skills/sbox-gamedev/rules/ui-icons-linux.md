@@ -26,15 +26,16 @@ icon attributes on Linux.
 
 ## Looking up names
 
-Use the tool:
-```
-tools/sbox-icon wrench       → handyman / construction / build
-tools/sbox-icon save          → save / save_alt / save_as
-tools/sbox-icon spawn         → (via alias) inventory_2 / add_box
-```
+Browse the full icon set at <https://fonts.google.com/icons> and pass the
+exact name to `[Icon("…")]`. The lookup table further down covers the
+common UI concepts that came up while patching `sandbox/`.
 
-The icons gallery is at <https://fonts.google.com/icons> — useful when the
-fuzzy matcher comes up empty. Pass any name you find verbatim to `[Icon(…)]`.
+Quick `grep` against your locally-cached Material Icons codepoints (if you've
+ever run any tool that fetched it):
+```bash
+grep -i wrench ~/.cache/sbox-gamedev/material-icons.codepoints 2>/dev/null
+# (the canonical names for "wrench"-y icons are: build, handyman, construction)
+```
 
 ## SCSS requirement
 
@@ -50,7 +51,6 @@ that `.icon` sets the font-family:
 }
 ```
 
-`tools/sbox-new-ui --with-icon <name>` includes this stanza automatically.
 The shipped sandbox project has it in:
 - `Code/UI/Components/MenuPanel.razor.scss`
 - `Code/UI/Pressable/PressableTooltip.razor.scss`

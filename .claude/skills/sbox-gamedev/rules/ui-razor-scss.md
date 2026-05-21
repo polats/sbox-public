@@ -4,7 +4,8 @@ In-game UI in s&box is **Blazor-style Razor** rendered by **SkiaSharp**. Each
 panel is a `.razor` file with matching `.razor.scss` (Source 2-flavored SCSS,
 not standard CSS — different layout model and a different shorthand set).
 
-Scaffold a panel with `tools/sbox-new-ui <Name> <project-dir> [--with-icon name]`.
+To scaffold a panel, drop `.razor` + matching `.razor.scss` files into the
+project's `Code/UI/` (or a subdir) — see the templates further down.
 
 ## File layout
 
@@ -130,7 +131,7 @@ HealthBar
 ```razor
 <Button Text="Save" Icon="save" class="menu-action primary" @onclick=@OnSaveClick />
 ```
-The `Icon="save"` value is a Material Icons name (use `tools/sbox-icon` to find one).
+The `Icon="save"` value is a Material Icons name — see `rules/ui-icons-linux.md` for the lookup table or browse <https://fonts.google.com/icons>.
 
 ## Razor in this repo
 

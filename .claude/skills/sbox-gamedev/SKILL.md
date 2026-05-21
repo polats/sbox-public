@@ -34,14 +34,15 @@ the current project). Report green/red briefly, then ask what to do.
 - [rules/debugging.md](rules/debugging.md) — Log location, error patterns we've seen, when to suspect Linux-specific vs real bug.
 
 ### Tools
-All under `tools/` — invoke via Bash. Pre-authorized by `allowed-tools`.
+Two helpers under `tools/` — invoke via Bash. Pre-authorized by `allowed-tools`.
 
-- `sbox-doctor [project-path]` — verify the Linux setup; optionally scan a project for case-conflict dirs.
-- `sbox-logs [--errors] [--follow] [--category compile|font|asset|null]` — tail and classify the editor log.
-- `sbox-launch <project-path>` — open the editor on a specific project.
-- `sbox-icon <description>` — fuzzy-search Material Icons names. Use when picking an `[Icon("…")]` value or `<i class="material-icons">` glyph.
-- `sbox-new-component <Name> <project-dir>` — scaffold a Component `.cs` file with namespace + lifecycle stubs.
-- `sbox-new-ui <Name> <project-dir>` — scaffold matching `.razor` + `.razor.scss`.
+- `sbox-doctor [project-path]` — verify the Linux setup (Proton prefix, .NET 10, font registration, Proton Experimental forced); optionally scan a project for case-conflict dirs. Run this first when invoked.
+- `sbox-logs [--summary|--errors|--follow|--category <name>] [--tail N]` — tail and classify the editor log at `~/.steam/root/steamapps/common/sbox/logs/sbox-dev.log`. Categories: `compile`, `asset`, `shader`, `null`, `missing`, `directwrite`, `reflection`, `other`.
+
+For everything else, prefer reading the relevant rule file and acting from there:
+- **Picking an icon**: see the lookup table in `rules/ui-icons-linux.md`, or browse <https://fonts.google.com/icons>. Pass any name verbatim into `[Icon("…")]`.
+- **Launching the editor**: `steam steam://rungameid/2129370` (the editor app id) — or hit Play in the Steam UI.
+- **Scaffolding a Component / Razor panel**: copy the templates from `rules/component-lifecycle.md` / `rules/ui-razor-scss.md` and adjust namespace to match the project's `.sbproj`.
 
 ## Source patches in this repo
 
@@ -49,4 +50,4 @@ If you're working in this repo's submodules, two upstream issues are already pat
 - `sandbox/`: emoji `[Icon( "📦" )]` attributes rewritten to Material Icons names so they render under Wine. See [EMOJI_ICONS_ISSUE.md](../../../EMOJI_ICONS_ISSUE.md).
 - `sbox-bombroyale/`: case-conflicting `Code/` and `code/` directories merged. See the submodule's `linux-case-fix` branch.
 
-Don't reintroduce emoji `[Icon(…)]` attributes when writing new code on Linux — use Material Icons names (`sbox-icon` looks them up).
+Don't reintroduce emoji `[Icon(…)]` attributes when writing new code on Linux — use Material Icons names from the table in `rules/ui-icons-linux.md`.
