@@ -41,6 +41,7 @@ All under `tools/` — invoke via Bash. Pre-authorized by `allowed-tools`.
 - `sbox-logs [--summary|--errors|--follow|--category <name>] [--tail N]` — tail and classify the editor log. Categories: `compile`, `asset`, `shader`, `null`, `missing`, `directwrite`, `reflection`, `other`.
 - `sbox-launch <project-dir>` — kill any running editor and relaunch directly on the given project (bypasses Steam project picker). Required for autonomous workflows because Wine's file watcher misses edits made from outside the editor — kill+relaunch is the reliable way to pick up changes. Use `--tail-log` to stream classified errors after launch, or `--kill` alone to just kill running editors.
 - `sbox-set-startup-scene <project-dir> <scene-path>` — prime `<project>/.sbox/project.json` so the editor auto-opens a specific scene on next launch. Editor must be closed. Use right after generating a scene file so the next `sbox-launch` opens directly into it.
+- `sbox-models [query] [--category NAME] [--update]` — search the engine's installed model library (2800+ paths across core, addons, and cloud download cache) and return canonical reference strings ready to paste into a scene's `"Model": "models/..."` field. Use this instead of defaulting to `models/dev/box.vmdl` / `models/dev/sphere.vmdl` when you want real-looking props, characters, weapons, vehicles, etc.
 
 ### End-to-end "create a game from scratch" workflow
 

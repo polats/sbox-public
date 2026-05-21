@@ -121,7 +121,7 @@ sun = go(
 player = go(
     G["player"], "Player", pos="0,0,16", scale="0.5,0.5,0.5",
     components=[
-        model_renderer(G["player_model"], "models/dev/box.vmdl", "0.2,0.5,1.0,1"),
+        model_renderer(G["player_model"], "models/citizen_human/citizen_human_male.vmdl", "1,1,1,1"),
         cmp("Local.CoinRush.Player", G["player_cmp"], **LIFECYCLE_NULLS,
             MoveSpeed=350.0,
             ),
@@ -133,7 +133,7 @@ def coin(go_guid, model_guid, cmp_guid, pos):
     return go(
         go_guid, "Coin", pos=pos, scale="0.3,0.3,0.3",
         components=[
-            model_renderer(model_guid, "models/dev/sphere.vmdl", "1,0.8,0.2,1"),
+            model_renderer(model_guid, "models/treasure_chest.vmdl", "1,1,1,1"),
             cmp("Local.CoinRush.Coin", cmp_guid, **LIFECYCLE_NULLS, Value=10),
         ],
     )

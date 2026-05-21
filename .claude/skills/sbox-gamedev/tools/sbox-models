@@ -1,0 +1,154 @@
+#!/usr/bin/env python3
+"""
+sbox-models — search the s&box install for usable model paths.
+
+Indexes .vmdl_c files in three locations:
+  - core/                 engine primitives (box, sphere, plane, error)
+  - addons/               bundled addons (citizen characters, menu props)
+  - download/assets/      cloud-pulled assets (sandbox props, weapons, etc.)
+
+Returns canonical reference paths (no hash suffix, no _c) suitable for the
+`Model` field of `Sandbox.ModelRenderer` in a .scene file.
+
+Usage:
+  sbox-models              list categories and counts
+  sbox-models chest        models matching "chest"
+  sbox-models tree -n 20   top 20 matches for "tree"
+  sbox-models --category citizen_human
+  sbox-models --update     rebuild the on-disk index cache
+
+Cache:
+  ~/.cache/sbox-gamedev/models.index  (one path per line)
+"""
+from __future__ import annotations
+import argparse, os, re, sys
+from pathlib import Path
+
+SBOX = Path.home() / ".steam/root/steamapps/common/sbox"
+CACHE = Path.home() / ".cache/sbox-gamedev/models.index"
+
+# Hash suffix in cloud assets, e.g. "treasure_chest.16bee453964fafed.vmdl_c"
+# Length varies (typically 13–17 hex chars).
+HASH_RE = re.compile(r"\.[0-9a-f]{13,17}\.vmdl_c$", re.IGNORECASE)
+
+
+def to_canonical(full: Path) -> str | None:
+    """Convert an on-disk .vmdl_c to its canonical engine reference path."""
+    rel = str(full.relative_to(SBOX))
+
+    if rel.startswith("download/assets/"):
+        rel = rel[len("download/assets/"):]
+        # strip the .<16hex>.vmdl_c hash suffix
+        m = HASH_RE.search(rel)
+        if m:
+            rel = rel[: m.start()]
+        else:
+            rel = rel[: -len(".vmdl_c")]
+        rel += ".vmdl"
+    elif rel.startswith("core/"):
+        rel = rel[len("core/"):]
+        rel = rel[: -len(".vmdl_c")] + ".vmdl"
+    elif rel.startswith("addons/"):
+        # addons/<name>/Assets/models/...  →  models/...
+        parts = rel.split("/")
+        try:
+            assets_idx = parts.index("Assets")
+            rel = "/".join(parts[assets_idx + 1:])
+            rel = rel[: -len(".vmdl_c")] + ".vmdl"
+        except ValueError:
+            # addons/<name>/Transients/models/...  →  models/...
+            try:
+                t_idx = parts.index("Transients")
+                rel = "/".join(parts[t_idx + 1:])
+                rel = rel[: -len(".vmdl_c")] + ".vmdl"
+            except ValueError:
+                return None
+    else:
+        return None
+
+    # Only keep paths that start with "models/"
+    if not rel.startswith("models/"):
+        return None
+    return rel
+
+
+def build_index() -> list[str]:
+    print(f"indexing models under {SBOX} (this takes a few seconds)...", file=sys.stderr)
+    paths = set()
+    for root in [SBOX / "core", SBOX / "addons", SBOX / "download"]:
+        if not root.exists():
+            continue
+        for p in root.rglob("*.vmdl_c"):
+            c = to_canonical(p)
+            if c:
+                paths.add(c)
+    sorted_paths = sorted(paths)
+    CACHE.parent.mkdir(parents=True, exist_ok=True)
+    CACHE.write_text("\n".join(sorted_paths), encoding="utf-8")
+    print(f"cached {len(sorted_paths)} model paths → {CACHE}", file=sys.stderr)
+    return sorted_paths
+
+
+def load_index() -> list[str]:
+    if not CACHE.exists():
+        return build_index()
+    return [ln.strip() for ln in CACHE.read_text(encoding="utf-8").splitlines() if ln.strip()]
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("query", nargs="*", help="search words (all must appear in path)")
+    ap.add_argument("-n", "--limit", type=int, default=20)
+    ap.add_argument("--category", help="filter to a specific subdir (e.g. citizen_human, props)")
+    ap.add_argument("--update", action="store_true", help="rebuild the index cache")
+    args = ap.parse_args()
+
+    if args.update:
+        build_index()
+        if not args.query and not args.category:
+            sys.exit(0)
+
+    paths = load_index()
+
+    if not args.query and not args.category:
+        # Show categories overview
+        cats: dict[str, int] = {}
+        for p in paths:
+            parts = p.split("/")
+            if len(parts) >= 2:
+                cats[parts[1]] = cats.get(parts[1], 0) + 1
+        print(f"{len(paths)} models total. categories under models/:")
+        for cat, n in sorted(cats.items(), key=lambda x: -x[1])[:30]:
+            print(f"  {cat:30s} {n:5d}")
+        print()
+        print("query examples:")
+        print("  sbox-models chest       — find chests")
+        print("  sbox-models citizen_human  — find character models")
+        print("  sbox-models --category props -n 30  — list 30 props")
+        sys.exit(0)
+
+    # Filter
+    candidates = paths
+    if args.category:
+        cat = args.category
+        candidates = [p for p in candidates if f"/{cat}/" in p or p.startswith(f"models/{cat}/")]
+
+    if args.query:
+        qwords = [w.lower() for w in args.query]
+        candidates = [p for p in candidates if all(w in p.lower() for w in qwords)]
+
+    if not candidates:
+        print(f"no matches", file=sys.stderr)
+        sys.exit(1)
+
+    # Sort: prefer shorter paths (canonical models), then alphabetical
+    candidates.sort(key=lambda p: (len(p), p))
+    shown = candidates[: args.limit]
+    for p in shown:
+        print(p)
+    if len(candidates) > args.limit:
+        print(f"… +{len(candidates) - args.limit} more (raise --limit)", file=sys.stderr)
+
+
+if __name__ == "__main__":
+    main()

@@ -123,7 +123,7 @@
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
-          "Model": "models/dev/box.vmdl",
+          "Model": "models/citizen_human/citizen_human_male.vmdl",
           "RenderOptions": {
             "GameLayer": true,
             "OverlayLayer": false,
@@ -131,7 +131,7 @@
             "AfterUILayer": false
           },
           "RenderType": "On",
-          "Tint": "0.2,0.5,1.0,1"
+          "Tint": "1,1,1,1"
         },
         {
           "__type": "Local.CoinRush.Player",
@@ -182,7 +182,7 @@
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
-          "Model": "models/dev/sphere.vmdl",
+          "Model": "models/treasure_chest.vmdl",
           "RenderOptions": {
             "GameLayer": true,
             "OverlayLayer": false,
@@ -190,7 +190,7 @@
             "AfterUILayer": false
           },
           "RenderType": "On",
-          "Tint": "1,0.8,0.2,1"
+          "Tint": "1,1,1,1"
         },
         {
           "__type": "Local.CoinRush.Coin",
@@ -241,7 +241,7 @@
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
-          "Model": "models/dev/sphere.vmdl",
+          "Model": "models/treasure_chest.vmdl",
           "RenderOptions": {
             "GameLayer": true,
             "OverlayLayer": false,
@@ -249,7 +249,7 @@
             "AfterUILayer": false
           },
           "RenderType": "On",
-          "Tint": "1,0.8,0.2,1"
+          "Tint": "1,1,1,1"
         },
         {
           "__type": "Local.CoinRush.Coin",
@@ -300,7 +300,7 @@
           "MaterialGroup": null,
           "MaterialOverride": null,
           "Materials": null,
-          "Model": "models/dev/sphere.vmdl",
+          "Model": "models/treasure_chest.vmdl",
           "RenderOptions": {
             "GameLayer": true,
             "OverlayLayer": false,
@@ -308,7 +308,7 @@
             "AfterUILayer": false
           },
           "RenderType": "On",
-          "Tint": "1,0.8,0.2,1"
+          "Tint": "1,1,1,1"
         },
         {
           "__type": "Local.CoinRush.Coin",

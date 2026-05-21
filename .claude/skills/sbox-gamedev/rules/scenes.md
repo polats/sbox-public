@@ -113,13 +113,54 @@ ZNear, ZFar
 }
 ```
 
-Built-in primitive models you can rely on:
+Built-in primitive models always available:
 - `models/dev/box.vmdl`
 - `models/dev/sphere.vmdl`
 - `models/dev/plane.vmdl`
 - `models/dev/plane_large.vmdl`
 
 Reference the **source path** (`.vmdl`), not the compiled `.vmdl_c`.
+
+### Real models (props, characters, weapons, vehicles, …)
+
+The s&box install ships with ~2800 real models across:
+- `addons/citizen/` — character models (`citizen_human_male`, heads, hair)
+- `addons/menu/` — the sandbox menu scene props
+- `download/assets/` — cloud-pulled assets (most of the visual variety lives here)
+
+To find a model by name or category, use `tools/sbox-models`:
+
+```
+sbox-models                              list categories + counts
+sbox-models chest                        models matching "chest"
+sbox-models --category citizen_human     list character models
+sbox-models tree -n 20                   top 20 trees
+sbox-models --update                     rebuild cache (after fresh install)
+```
+
+Output is the canonical reference path you paste into a scene's
+`"Model": "models/..."` field — hashes are stripped, `.vmdl_c` becomes `.vmdl`,
+and the path resolves at runtime via the engine's search path (core +
+addons + download cache).
+
+Examples that look nicer than dev primitives:
+- `models/citizen_human/citizen_human_male.vmdl` — animated character
+- `models/treasure_chest.vmdl` — pickup-shaped chest
+- `models/football/football.vmdl`, `models/bowlingball/bowling_ball.vmdl`
+- `models/trees/tree_a.vmdl`, `models/deadtree.vmdl`
+- `models/weapons/sbox_pistol_usp/w_usp.vmdl` — world-model weapons
+
+### Caveat for standalone Steam export
+
+The exporter (`engine/Sandbox.Tools/Utility/Standalone/StandaloneExporter.cs`)
+bundles a fixed whitelist of core assets plus your project's local assets
+and the `base` addon — **not** the citizen addon, the menu addon, or any
+cloud-downloaded models. If you reference `models/sbox_props/...` in a scene
+and try to ship a standalone build, those assets won't be in the package.
+For editor playthrough they work fine.
+
+If you need a model in the standalone build, copy/reauthor it under your
+project's `Assets/models/` so it's part of `CopyProjectAssets`.
 
 ### `Sandbox.BoxCollider`
 
