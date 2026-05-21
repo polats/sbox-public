@@ -4,6 +4,22 @@ In-game UI in s&box is **Blazor-style Razor** rendered by **SkiaSharp**. Each
 panel is a `.razor` file with matching `.razor.scss` (Source 2-flavored SCSS,
 not standard CSS — different layout model and a different shorthand set).
 
+## `@inherits` — Panel vs PanelComponent
+
+There are **two** different base classes for Razor panels, and picking the
+wrong one is silent in the compiler but breaks the scene loader:
+
+- **`@inherits Panel`** — for panels nested *inside* another panel (children
+  of a `ScreenPanel` rendered through Blazor composition, or sub-panels of a
+  parent `PanelComponent`). These render only when their parent renders them.
+- **`@inherits PanelComponent`** — for panels you attach to a GameObject as
+  a Component in `.scene` JSON. This is the only form the scene loader can
+  resolve via `__type`.
+
+If you see `Missing Component: couldn't find Component type X.Y.MyPanel` in
+the editor log when loading a scene, the Razor class is inheriting from
+`Panel` and needs to inherit from `PanelComponent` instead.
+
 ## Required `@using` directives
 
 Razor-generated C# does **not** auto-import `System` or `System.Linq`. If your
@@ -15,7 +31,7 @@ Razor-generated C# does **not** auto-import `System` or `System.Linq`. If your
 @using System.Linq;
 @using Sandbox;
 @using Sandbox.UI;
-@inherits Panel
+@inherits PanelComponent
 ```
 
 Without these you get compile errors like `The name 'HashCode' does not exist`
@@ -46,8 +62,11 @@ within ~1s; if it doesn't, the editor's console reports the compile error.
 
 ```razor
 @namespace MyGame
+@using System
+@using System.Linq
+@using Sandbox
 @using Sandbox.UI
-@inherits Panel
+@inherits PanelComponent
 
 <root>
     <div class="header">

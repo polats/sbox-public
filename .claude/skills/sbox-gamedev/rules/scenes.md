@@ -148,6 +148,13 @@ Razor panels attach as Components on **children** of the `ScreenPanel` GameObjec
 The `__type` is `<Namespace>.<RazorClassName>`, e.g. `Local.BulletHell.ScoreHud`
 for `Code/UI/ScoreHud.razor` with `@namespace Local.BulletHell`.
 
+**Important**: the Razor file must use `@inherits PanelComponent`, NOT
+`@inherits Panel`. The `Panel` base class is a UI element, not a Component;
+the scene loader can only attach `PanelComponent` subclasses. If the editor
+log says `Missing Component: couldn't find Component type ...ScoreHud` and
+the class clearly exists in your project, this is almost certainly the cause.
+See [ui-razor-scss.md](ui-razor-scss.md#inherits--panel-vs-panelcomponent).
+
 ### `Sandbox.DirectionalLight`
 
 ```json
