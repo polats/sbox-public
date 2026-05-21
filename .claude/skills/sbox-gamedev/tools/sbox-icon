@@ -1,0 +1,156 @@
+#!/usr/bin/env python3
+"""
+sbox-icon — fuzzy-search Material Icons names.
+
+Use when picking an [Icon("…")] value or a class name for <i class="material-icons">.
+On first run, fetches the Material Icons codepoints index and caches it at
+~/.cache/sbox-gamedev/material-icons.codepoints.
+
+Usage:
+  sbox-icon wrench        top 10 matches for "wrench"
+  sbox-icon "box folder"  multi-word: matches names containing all words
+  sbox-icon --raw delete  print raw lines (name + hex codepoint)
+  sbox-icon --update      force refresh of the cached codepoints
+
+Examples we used in this project:
+  📦 → inventory_2     🔧 → build         🌍 → language
+  💾 → save            🧹 → cleaning_services   🎨 → palette
+  👥 → group           🤖 → smart_toy     🔍 → search
+"""
+from __future__ import annotations
+import argparse, sys, os, urllib.request
+from pathlib import Path
+from difflib import SequenceMatcher
+
+CACHE_DIR = Path.home() / ".cache/sbox-gamedev"
+CACHE_FILE = CACHE_DIR / "material-icons.codepoints"
+SRC_URL = "https://raw.githubusercontent.com/google/material-design-icons/master/font/MaterialIcons-Regular.codepoints"
+
+# Semantic aliases: common concepts that don't appear in Material Icons names
+# but have a recognised Material Icons name. Used when the user's word isn't
+# in the index at all. Right-hand side is searched as substring instead.
+ALIASES = {
+    "wrench":    ["build", "handyman", "construction", "home_repair_service"],
+    "hammer":    ["handyman", "construction", "gavel"],
+    "tool":      ["build", "handyman"],
+    "trash":     ["delete"],
+    "bin":       ["delete"],
+    "gear":      ["settings"],
+    "cog":       ["settings"],
+    "spawn":     ["inventory_2", "add_box"],
+    "box":       ["inventory_2", "all_inbox"],
+    "user":      ["person", "account_circle"],
+    "users":     ["group", "people"],
+    "ai":        ["smart_toy", "psychology", "auto_awesome"],
+    "globe":     ["language", "public"],
+    "explosion": ["whatshot", "local_fire_department"],
+    "rope":      ["more_horiz"],
+    "wheel":     ["circle", "trip_origin"],
+    "thruster":  ["rocket_launch", "rocket"],
+    "weld":      ["link"],
+    "decal":     ["brush"],
+    "flame":     ["whatshot", "local_fire_department"],
+    "bomb":      ["dangerous"],
+}
+
+
+def fetch():
+    CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    print(f"fetching {SRC_URL} …", file=sys.stderr)
+    with urllib.request.urlopen(SRC_URL, timeout=30) as r:
+        data = r.read().decode("utf-8")
+    CACHE_FILE.write_text(data, encoding="utf-8")
+    print(f"cached: {CACHE_FILE} ({len(data.splitlines())} icons)", file=sys.stderr)
+
+
+def load() -> list[tuple[str, str]]:
+    if not CACHE_FILE.exists():
+        fetch()
+    entries: list[tuple[str, str]] = []
+    for line in CACHE_FILE.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line: continue
+        parts = line.split()
+        if len(parts) == 2:
+            entries.append((parts[0], parts[1]))
+    return entries
+
+
+def score(name: str, query_words: list[str]) -> float:
+    """Higher = better match."""
+    n = name.lower()
+    # All words must be present (substring match)
+    if not all(w in n for w in query_words):
+        return 0.0
+    # Boost for exact, prefix, and word-boundary matches
+    s = 0.0
+    if n == " ".join(query_words):
+        s += 100
+    for w in query_words:
+        if n == w: s += 80
+        if n.startswith(w + "_") or n.startswith(w): s += 30
+        if "_" + w in n or n.endswith("_" + w): s += 15
+        # Penalize length so shorter, tighter names win on equal substring score
+    s += SequenceMatcher(None, n, " ".join(query_words)).ratio() * 20
+    s -= len(name) * 0.1
+    return s
+
+
+def main():
+    p = argparse.ArgumentParser()
+    p.add_argument("query", nargs="*", help="search words (all must appear in name)")
+    p.add_argument("-n", "--limit", type=int, default=10)
+    p.add_argument("--raw", action="store_true", help="output name<TAB>codepoint")
+    p.add_argument("--update", action="store_true", help="refresh cached codepoints")
+    args = p.parse_args()
+
+    if args.update:
+        fetch()
+        if not args.query:
+            sys.exit(0)
+
+    if not args.query:
+        p.print_help()
+        sys.exit(0)
+
+    entries = load()
+    qwords = [w.lower() for w in args.query]
+    scored = [(score(name, qwords), name, cp) for name, cp in entries]
+    matches = sorted([s for s in scored if s[0] > 0], key=lambda x: -x[0])[: args.limit]
+
+    # Alias fallback: if user asked something like "wrench" with no direct match,
+    # expand to known Material Icons names via the ALIASES table and re-score.
+    used_aliases: list[str] = []
+    if not matches:
+        expanded = []
+        for w in qwords:
+            if w in ALIASES:
+                expanded.extend(ALIASES[w])
+                used_aliases.extend(ALIASES[w])
+        if expanded:
+            seen = set()
+            for alias in expanded:
+                for name, cp in entries:
+                    if alias in name.lower() and name not in seen:
+                        seen.add(name)
+                        matches.append((1.0, name, cp))
+            matches = matches[: args.limit]
+
+    if not matches:
+        print(f"no matches for: {' '.join(qwords)}", file=sys.stderr)
+        print(f"hint: browse https://fonts.google.com/icons and pass the exact name", file=sys.stderr)
+        sys.exit(1)
+
+    if args.raw:
+        for _, name, cp in matches:
+            print(f"{name}\t{cp}")
+    else:
+        BOLD = "\033[1m"; DIM = "\033[2m"; YEL = "\033[33m"; END = "\033[0m"
+        if used_aliases:
+            print(f"{YEL}no direct match — using aliases ({', '.join(sorted(set(used_aliases)))}):{END}", file=sys.stderr)
+        for _, name, cp in matches:
+            print(f"  {BOLD}{name:30s}{END}  {DIM}U+{cp.upper():>5}{END}")
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+# sbox-launch — open the s&box editor on a specific project via Steam+Proton.
+#
+# Usage:
+#   sbox-launch                                 launch editor with last project
+#   sbox-launch <project-dir>                   launch with this project
+#   sbox-launch <project-dir> --tail-log        launch and tail the dev log
+#
+# Validates the project has a .sbproj at the root before launching.
+set -e
+
+EDITOR_APPID=2129370
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+TAIL=0
+PROJECT=""
+for a in "$@"; do
+  case "$a" in
+    --tail-log|-t) TAIL=1 ;;
+    -h|--help)
+      sed -n '2,12p' "$0"
+      exit 0 ;;
+    *) PROJECT="$a" ;;
+  esac
+done
+
+if [[ -n "$PROJECT" ]]; then
+  PROJECT="$(realpath "$PROJECT")"
+  if [[ ! -d "$PROJECT" ]]; then
+    echo "error: $PROJECT is not a directory" >&2
+    exit 1
+  fi
+  # find a .sbproj at root or in immediate children
+  SBPROJ=""
+  for f in "$PROJECT"/*.sbproj "$PROJECT"/.sbproj; do
+    [[ -f "$f" ]] && { SBPROJ="$f"; break; }
+  done
+  if [[ -z "$SBPROJ" ]]; then
+    echo "error: no .sbproj found in $PROJECT" >&2
+    exit 1
+  fi
+  echo "project: $SBPROJ"
+
+  # case-conflict pre-flight
+  conflict=$(find "$PROJECT" -maxdepth 4 -type d 2>/dev/null \
+    | awk -F/ '{print tolower($NF), $0}' \
+    | sort | awk '{if ($1==prev && $2!=p) print "CASE CONFLICT:", p, "<->", $2; prev=$1; p=$2}' | head -3)
+  if [[ -n "$conflict" ]]; then
+    echo ""
+    echo "warning: case-conflicting dirs (will break on Linux):"
+    echo "$conflict"
+    echo "(see rules/linux-setup.md)"
+    echo ""
+  fi
+fi
+
+echo "launching s&box editor via Steam (appid $EDITOR_APPID)…"
+# steam://launch/<appid>/dialog opens with launch options. /editor opens directly.
+xdg-open "steam://rungameid/$EDITOR_APPID" >/dev/null 2>&1 || \
+  steam steam://rungameid/$EDITOR_APPID >/dev/null 2>&1 &
+
+if [[ $TAIL == 1 ]]; then
+  LOG=~/.steam/root/steamapps/common/sbox/logs/sbox-dev.log
+  echo "tailing $LOG (Ctrl-C to stop tail; editor keeps running)…"
+  # wait for editor to touch the log
+  for _ in $(seq 1 30); do
+    [[ -f "$LOG" ]] && break
+    sleep 1
+  done
+  exec "$SCRIPT_DIR/sbox-logs" --follow
+fi

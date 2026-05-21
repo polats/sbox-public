@@ -46,6 +46,9 @@
 !*.sh
 !*.py
 
+# Claude Code skill bundle (skills bundle executable scripts with no extension)
+!.claude/skills/**
+
 #
 # Some junk
 #

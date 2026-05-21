@@ -1,0 +1,170 @@
+#!/usr/bin/env python3
+"""
+sbox-doctor — verify the local s&box Linux/Proton setup.
+
+Checks:
+  1. Steam editor app 2129370 installed
+  2. Editor's Proton prefix exists
+  3. .NET 10 desktop runtime inside the prefix
+  4. Material Icons font installed + registered in prefix's system.reg
+  5. Real Microsoft seguiemj.ttf installed (warns if Noto Emoji is used)
+  6. (Optional) Scans a project dir for case-conflict directories
+
+Usage:
+  sbox-doctor                 — environment-only checks
+  sbox-doctor <project-path>  — also scan project for case-conflict dirs
+"""
+from __future__ import annotations
+import os, sys, re, subprocess, hashlib
+from pathlib import Path
+
+HOME = Path.home()
+EDITOR_APPID = "2129370"
+GAME_APPID = "590830"
+PFX = HOME / ".local/share/Steam/steamapps/compatdata" / EDITOR_APPID / "pfx"
+SBOX_INSTALL = HOME / ".steam/root/steamapps/common/sbox-editor"
+SYSTEM_REG = PFX / "system.reg"
+FONTS_DIR = PFX / "drive_c/windows/Fonts"
+
+GREEN = "\033[32m"; RED = "\033[31m"; YELLOW = "\033[33m"; BOLD = "\033[1m"; END = "\033[0m"
+def ok(msg):   print(f"  {GREEN}✓{END} {msg}")
+def bad(msg):  print(f"  {RED}✗{END} {msg}")
+def warn(msg): print(f"  {YELLOW}⚠{END} {msg}")
+def heading(msg): print(f"\n{BOLD}{msg}{END}")
+
+failures: list[str] = []
+
+def check(label: str, condition: bool, fail_msg: str, hint: str = ""):
+    if condition:
+        ok(label)
+    else:
+        bad(f"{label} — {fail_msg}")
+        if hint: print(f"     hint: {hint}")
+        failures.append(label)
+
+
+heading("Steam editor install")
+check("s&box editor installed",
+      SBOX_INSTALL.exists(),
+      f"{SBOX_INSTALL} missing",
+      "install s&box editor from Steam (app id 2129370)")
+
+heading("Proton prefix")
+check("editor compatdata exists",
+      PFX.exists(),
+      f"{PFX} missing",
+      "launch the editor from Steam once so Proton creates the prefix")
+check("system.reg present",
+      SYSTEM_REG.exists(),
+      "no Wine registry yet",
+      "launch the editor once")
+
+heading(".NET 10 runtime in prefix")
+dotnet_exe = PFX / "drive_c/Program Files/dotnet/dotnet.exe"
+check(".NET host present",
+      dotnet_exe.exists(),
+      "dotnet.exe missing",
+      "see rules/linux-setup.md → 'When .NET is missing'")
+netcore_dir = PFX / "drive_c/Program Files/dotnet/shared/Microsoft.NETCore.App"
+if netcore_dir.exists():
+    versions = sorted(p.name for p in netcore_dir.iterdir() if p.is_dir())
+    if any(v.startswith("10.") for v in versions):
+        ok(f"NETCore.App 10.x present ({', '.join(versions)})")
+    else:
+        bad(f"NETCore.App not 10.x — found {versions}")
+        failures.append("netcore version")
+else:
+    bad("NETCore.App folder missing")
+    failures.append("netcore folder")
+
+desktop_dir = PFX / "drive_c/Program Files/dotnet/shared/Microsoft.WindowsDesktop.App"
+if desktop_dir.exists():
+    versions = sorted(p.name for p in desktop_dir.iterdir() if p.is_dir())
+    if any(v.startswith("10.") for v in versions):
+        ok(f"WindowsDesktop.App 10.x present ({', '.join(versions)})")
+    else:
+        bad(f"WindowsDesktop.App not 10.x — found {versions}")
+        failures.append("desktop runtime version")
+else:
+    bad("WindowsDesktop.App folder missing — emoji-free runs may still work")
+
+heading("Fonts in prefix")
+mat_ttf = FONTS_DIR / "MaterialIcons-Regular.ttf"
+check("Material Icons font file installed",
+      mat_ttf.exists(),
+      f"{mat_ttf.name} missing",
+      "see rules/linux-setup.md → 'When Material Icons is missing'")
+
+if SYSTEM_REG.exists():
+    reg_text = SYSTEM_REG.read_text(encoding="utf-8", errors="replace")
+    check("Material Icons registered in Wine font list",
+          "Material Icons (TrueType)" in reg_text,
+          "registry entry missing",
+          "see rules/linux-setup.md")
+    if "seguiemj.ttf" in reg_text.lower() or "Segoe UI Emoji" in reg_text:
+        seg = FONTS_DIR / "seguiemj.ttf"
+        if seg.exists():
+            sz_mb = seg.stat().st_size / 1024 / 1024
+            if sz_mb > 8:
+                ok(f"Segoe UI Emoji present ({sz_mb:.1f} MB — likely real MS font)")
+            else:
+                warn(f"Segoe UI Emoji present ({sz_mb:.1f} MB — likely renamed Noto Emoji, partial coverage)")
+        else:
+            warn("Segoe UI Emoji registered but file missing")
+    else:
+        warn("Segoe UI Emoji not registered — emoji glyphs in editor UI will be tofu")
+
+heading("Compatibility tool selection")
+config_vdf = HOME / ".local/share/Steam/config/config.vdf"
+if config_vdf.exists():
+    txt = config_vdf.read_text(encoding="utf-8", errors="replace")
+    m = re.search(rf'"{EDITOR_APPID}"\s*\{{[^}}]*"name"\s*"([^"]+)"', txt)
+    if m:
+        tool = m.group(1)
+        if "experimental" in tool.lower() or "proton_experimental" in tool.lower():
+            ok(f"editor forced to {tool}")
+        else:
+            warn(f"editor forced to {tool} — Proton Experimental recommended")
+    else:
+        warn("editor has no forced compatibility tool — Steam may pick default")
+else:
+    warn("Steam config.vdf not found")
+
+# Optional project scan
+if len(sys.argv) > 1:
+    proj = Path(sys.argv[1]).resolve()
+    heading(f"Project case-conflict scan: {proj}")
+    if not proj.exists():
+        bad(f"{proj} doesn't exist")
+    else:
+        # Find dirs that differ only in case, but skip empty leftovers (no files anywhere inside)
+        def has_files(d: Path) -> bool:
+            return any(p.is_file() for p in d.rglob("*"))
+
+        seen: dict[str, list[Path]] = {}
+        for sub in proj.rglob("*"):
+            if not sub.is_dir(): continue
+            # Skip .git and similar
+            if any(part.startswith(".") for part in sub.parts[len(proj.parts):]): continue
+            rel = sub.relative_to(proj)
+            key = str(rel).lower()
+            seen.setdefault(key, []).append(rel)
+        conflicts = {
+            k: v for k, v in seen.items()
+            if len(v) > 1 and sum(1 for r in v if has_files(proj / r)) >= 2
+        }
+        if conflicts:
+            for k, paths in conflicts.items():
+                bad(f"case conflict: {' <-> '.join(str(p) for p in paths)}")
+                failures.append(f"case conflict {k}")
+            print("     hint: merge with `git mv` — see rules/linux-setup.md")
+        else:
+            ok("no case-conflict directories")
+
+print()
+if failures:
+    print(f"{BOLD}{RED}{len(failures)} issue(s) found.{END} See hints above and rules/linux-setup.md.")
+    sys.exit(1)
+else:
+    print(f"{BOLD}{GREEN}All checks passed.{END}")
+    sys.exit(0)

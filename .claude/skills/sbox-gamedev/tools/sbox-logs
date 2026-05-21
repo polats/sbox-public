@@ -1,0 +1,180 @@
+#!/usr/bin/env python3
+"""
+sbox-logs — tail and classify the s&box editor log.
+
+Reads ~/.steam/root/steamapps/common/sbox/logs/sbox-dev.log and groups recent
+entries into categories so you can see at a glance what's wrong.
+
+Usage:
+  sbox-logs                   show last 50 entries grouped by category
+  sbox-logs --tail 200        show last 200 entries
+  sbox-logs --follow          stream new entries (Ctrl-C to stop)
+  sbox-logs --errors          only show error/exception entries
+  sbox-logs --category compile|font|asset|null|missing|directwrite|other
+
+Categories:
+  compile     — Generic 'Error |' (managed C# compile errors)
+  asset      — ERROR_FILEOPEN / File not found on resources
+  shader      — MaterialSystem shader-creation failures
+  null        — RichTextKit/SkiaSharp ArgumentNullException (font fallback fail)
+  missing     — "Missing Component" warnings (scene references stale)
+  directwrite — Qt DirectWrite color-glyph warnings (Wine emoji bug)
+  reflection  — Sandbox reflection cleanup errors
+  other       — anything else
+"""
+from __future__ import annotations
+import argparse, os, re, sys, time
+from collections import defaultdict
+from pathlib import Path
+
+LOG = Path.home() / ".steam/root/steamapps/common/sbox/logs/sbox-dev.log"
+
+# (category, regex) — first match wins; order matters
+PATTERNS = [
+    ("compile",    re.compile(r"\[Generic\] Error \|")),
+    ("asset",      re.compile(r"ERROR_FILEOPEN|File not found")),
+    ("shader",     re.compile(r"Error creating shader|shader.*Error")),
+    ("null",       re.compile(r"Value cannot be null")),
+    ("missing",    re.compile(r"Missing Component")),
+    ("directwrite",re.compile(r"DirectWrite|IDWriteColorGlyphRunEnumerator")),
+    ("reflection", re.compile(r"\[Reflection\] (?:Failed|NullStaticReferences)")),
+]
+
+# ANSI colors
+COLORS = {
+    "compile":     "\033[91m",   # bright red
+    "asset":       "\033[33m",   # yellow
+    "shader":      "\033[35m",   # magenta
+    "null":        "\033[31m",   # red
+    "missing":     "\033[36m",   # cyan
+    "directwrite": "\033[90m",   # grey
+    "reflection":  "\033[34m",   # blue
+    "other":       "\033[0m",
+}
+END = "\033[0m"; BOLD = "\033[1m"
+
+ENTRY_HEADER = re.compile(r"^\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2}\.\d+\s")
+
+
+def classify(line: str) -> str:
+    for cat, pat in PATTERNS:
+        if pat.search(line):
+            return cat
+    return "other"
+
+
+def iter_entries(text: str):
+    """Yield (header_line, [continuation_lines]) — entries span multiple lines (stack traces)."""
+    cur_header = None
+    cur_body: list[str] = []
+    for ln in text.splitlines():
+        if ENTRY_HEADER.match(ln):
+            if cur_header is not None:
+                yield (cur_header, cur_body)
+            cur_header = ln
+            cur_body = []
+        else:
+            if cur_header is not None:
+                cur_body.append(ln)
+    if cur_header is not None:
+        yield (cur_header, cur_body)
+
+
+def print_entry(header: str, body: list[str], category: str, show_stack: bool):
+    color = COLORS.get(category, "")
+    tag = f"[{category}]".ljust(13)
+    # Strip the per-line timestamp prefix for compactness, keep HH:MM:SS
+    m = re.match(r"^\d{4}/\d{2}/\d{2} (\d{2}:\d{2}:\d{2})\.\d+\s+(.*)", header)
+    if m:
+        ts, msg = m.group(1), m.group(2)
+        print(f"{color}{ts} {tag}{END} {msg}")
+    else:
+        print(f"{color}{tag}{END} {header}")
+    if show_stack and body:
+        for ln in body[:6]:
+            print(f"             {ln.strip()}")
+        if len(body) > 6:
+            print(f"             … +{len(body)-6} more lines")
+
+
+def main():
+    p = argparse.ArgumentParser()
+    p.add_argument("--tail", type=int, default=50, help="how many entries to show (default 50)")
+    p.add_argument("--follow", "-f", action="store_true")
+    p.add_argument("--errors", action="store_true", help="filter to compile/asset/shader/null only")
+    p.add_argument("--category", help="show only this category")
+    p.add_argument("--stack", action="store_true", help="show stack-trace continuation lines")
+    p.add_argument("--summary", action="store_true", help="just print counts per category")
+    p.add_argument("--log", default=str(LOG), help="log path override")
+    args = p.parse_args()
+
+    log_path = Path(args.log)
+    if not log_path.exists():
+        print(f"log not found: {log_path}", file=sys.stderr)
+        sys.exit(2)
+
+    ERROR_CATS = {"compile", "asset", "shader", "null"}
+
+    def filter_cat(cat: str) -> bool:
+        if args.category and cat != args.category:
+            return False
+        if args.errors and cat not in ERROR_CATS:
+            return False
+        return True
+
+    if args.summary:
+        text = log_path.read_text(encoding="utf-8", errors="replace")
+        counts: dict[str, int] = defaultdict(int)
+        for header, _ in iter_entries(text):
+            counts[classify(header)] += 1
+        total = sum(counts.values())
+        print(f"{BOLD}log: {log_path}{END}")
+        print(f"{BOLD}{total} entries grouped:{END}")
+        for cat in [*[k for k,_ in PATTERNS], "other"]:
+            n = counts.get(cat, 0)
+            if n:
+                bar = "█" * min(60, n // max(1, total // 60))
+                print(f"  {COLORS[cat]}{cat:12s}{END} {n:5d}  {bar}")
+        sys.exit(0)
+
+    if args.follow:
+        with log_path.open("r", encoding="utf-8", errors="replace") as f:
+            f.seek(0, os.SEEK_END)
+            buffer = ""
+            try:
+                while True:
+                    chunk = f.read()
+                    if chunk:
+                        buffer += chunk
+                        # Find complete entries (newline followed by date header or EOF)
+                        # Simple: split on blank lines, process all but last fragment
+                        lines = buffer.splitlines()
+                        # process all lines (each new line is potentially an entry header)
+                        for ln in lines:
+                            if ENTRY_HEADER.match(ln):
+                                cat = classify(ln)
+                                if filter_cat(cat):
+                                    print_entry(ln, [], cat, args.stack)
+                        buffer = ""
+                    else:
+                        time.sleep(0.5)
+            except KeyboardInterrupt:
+                sys.exit(0)
+
+    # one-shot: read and show last N filtered entries
+    text = log_path.read_text(encoding="utf-8", errors="replace")
+    entries = list(iter_entries(text))
+    filtered: list[tuple[str, list[str], str]] = []
+    for header, body in entries:
+        cat = classify(header)
+        if filter_cat(cat):
+            filtered.append((header, body, cat))
+    if not filtered:
+        print(f"no matching entries (total: {len(entries)})")
+        sys.exit(0)
+    for header, body, cat in filtered[-args.tail:]:
+        print_entry(header, body, cat, args.stack)
+
+
+if __name__ == "__main__":
+    main()
