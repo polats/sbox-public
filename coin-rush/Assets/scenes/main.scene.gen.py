@@ -133,7 +133,7 @@ def coin(go_guid, model_guid, cmp_guid, pos):
     return go(
         go_guid, "Coin", pos=pos, scale="0.3,0.3,0.3",
         components=[
-            model_renderer(model_guid, "models/treasure_chest.vmdl", "1,1,1,1"),
+            model_renderer(model_guid, "models/citizen_props/coin01.vmdl", "1,1,1,1"),
             cmp("Local.CoinRush.Coin", cmp_guid, **LIFECYCLE_NULLS, Value=10),
         ],
     )

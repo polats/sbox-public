@@ -32,67 +32,89 @@ CACHE = Path.home() / ".cache/sbox-gamedev/models.index"
 HASH_RE = re.compile(r"\.[0-9a-f]{13,17}\.vmdl_c$", re.IGNORECASE)
 
 
-def to_canonical(full: Path) -> str | None:
-    """Convert an on-disk .vmdl_c to its canonical engine reference path."""
+def to_canonical(full: Path) -> tuple[str, str] | None:
+    """Convert an on-disk .vmdl_c to (canonical_path, scope).
+
+    scope:
+      "core"   — engine primitives, always available
+      "addon"  — bundled addon (citizen, menu), always available to any project
+      "cloud"  — pulled from download cache; requires project-level access
+    """
     rel = str(full.relative_to(SBOX))
+    scope = None
 
     if rel.startswith("download/assets/"):
         rel = rel[len("download/assets/"):]
-        # strip the .<16hex>.vmdl_c hash suffix
         m = HASH_RE.search(rel)
         if m:
             rel = rel[: m.start()]
         else:
             rel = rel[: -len(".vmdl_c")]
         rel += ".vmdl"
+        scope = "cloud"
     elif rel.startswith("core/"):
         rel = rel[len("core/"):]
         rel = rel[: -len(".vmdl_c")] + ".vmdl"
+        scope = "core"
     elif rel.startswith("addons/"):
-        # addons/<name>/Assets/models/...  →  models/...
         parts = rel.split("/")
         try:
             assets_idx = parts.index("Assets")
             rel = "/".join(parts[assets_idx + 1:])
             rel = rel[: -len(".vmdl_c")] + ".vmdl"
+            scope = "addon"
         except ValueError:
-            # addons/<name>/Transients/models/...  →  models/...
             try:
                 t_idx = parts.index("Transients")
                 rel = "/".join(parts[t_idx + 1:])
                 rel = rel[: -len(".vmdl_c")] + ".vmdl"
+                scope = "addon"
             except ValueError:
                 return None
     else:
         return None
 
-    # Only keep paths that start with "models/"
     if not rel.startswith("models/"):
         return None
-    return rel
+    return (rel, scope)
 
 
-def build_index() -> list[str]:
+def build_index() -> list[tuple[str, str]]:
     print(f"indexing models under {SBOX} (this takes a few seconds)...", file=sys.stderr)
-    paths = set()
+    entries: dict[str, str] = {}  # path → scope (prefer most-available scope on dup)
+    rank = {"core": 0, "addon": 1, "cloud": 2}
     for root in [SBOX / "core", SBOX / "addons", SBOX / "download"]:
         if not root.exists():
             continue
         for p in root.rglob("*.vmdl_c"):
-            c = to_canonical(p)
-            if c:
-                paths.add(c)
-    sorted_paths = sorted(paths)
+            r = to_canonical(p)
+            if r is None:
+                continue
+            path, scope = r
+            if path not in entries or rank[scope] < rank[entries[path]]:
+                entries[path] = scope
+    items = sorted(entries.items())
     CACHE.parent.mkdir(parents=True, exist_ok=True)
-    CACHE.write_text("\n".join(sorted_paths), encoding="utf-8")
-    print(f"cached {len(sorted_paths)} model paths → {CACHE}", file=sys.stderr)
-    return sorted_paths
+    CACHE.write_text("\n".join(f"{scope}\t{path}" for path, scope in items), encoding="utf-8")
+    print(f"cached {len(items)} model paths → {CACHE}", file=sys.stderr)
+    return items
 
 
-def load_index() -> list[str]:
+def load_index() -> list[tuple[str, str]]:
     if not CACHE.exists():
         return build_index()
-    return [ln.strip() for ln in CACHE.read_text(encoding="utf-8").splitlines() if ln.strip()]
+    out = []
+    for ln in CACHE.read_text(encoding="utf-8").splitlines():
+        ln = ln.strip()
+        if not ln:
+            continue
+        if "\t" in ln:
+            scope, path = ln.split("\t", 1)
+        else:
+            # legacy format (no scope), assume cloud
+            scope, path = "cloud", ln
+        out.append((path, scope))
+    return out
 
 
 def main():
@@ -100,52 +122,63 @@ def main():
     ap.add_argument("query", nargs="*", help="search words (all must appear in path)")
     ap.add_argument("-n", "--limit", type=int, default=20)
     ap.add_argument("--category", help="filter to a specific subdir (e.g. citizen_human, props)")
+    ap.add_argument("--cloud", action="store_true",
+        help="include cloud-pulled models (these need project access; see --warning below)")
+    ap.add_argument("--all-scopes", action="store_true",
+        help="alias for --cloud")
     ap.add_argument("--update", action="store_true", help="rebuild the index cache")
     args = ap.parse_args()
+    include_cloud = args.cloud or args.all_scopes
 
     if args.update:
         build_index()
         if not args.query and not args.category:
             sys.exit(0)
 
-    paths = load_index()
+    items = load_index()
+
+    if not include_cloud:
+        items = [(p, s) for p, s in items if s in ("core", "addon")]
 
     if not args.query and not args.category:
-        # Show categories overview
         cats: dict[str, int] = {}
-        for p in paths:
+        for p, _ in items:
             parts = p.split("/")
             if len(parts) >= 2:
                 cats[parts[1]] = cats.get(parts[1], 0) + 1
-        print(f"{len(paths)} models total. categories under models/:")
+        scope_note = "core + addon (always available)" if not include_cloud else "core + addon + cloud"
+        print(f"{len(items)} models in scope [{scope_note}]. categories under models/:")
         for cat, n in sorted(cats.items(), key=lambda x: -x[1])[:30]:
             print(f"  {cat:30s} {n:5d}")
         print()
-        print("query examples:")
-        print("  sbox-models chest       — find chests")
-        print("  sbox-models citizen_human  — find character models")
-        print("  sbox-models --category props -n 30  — list 30 props")
+        if not include_cloud:
+            print("re-run with --cloud to also see cloud-pulled models (~2700 extra)")
+            print("but note: cloud models need project-level cloud access to load —")
+            print("if you reference one without that, the engine renders the ERROR placeholder.")
         sys.exit(0)
 
-    # Filter
-    candidates = paths
+    candidates = items
     if args.category:
         cat = args.category
-        candidates = [p for p in candidates if f"/{cat}/" in p or p.startswith(f"models/{cat}/")]
-
+        candidates = [(p, s) for p, s in candidates if f"/{cat}/" in p or p.startswith(f"models/{cat}/")]
     if args.query:
         qwords = [w.lower() for w in args.query]
-        candidates = [p for p in candidates if all(w in p.lower() for w in qwords)]
+        candidates = [(p, s) for p, s in candidates if all(w in p.lower() for w in qwords)]
 
     if not candidates:
-        print(f"no matches", file=sys.stderr)
+        print("no matches", file=sys.stderr)
+        if not include_cloud:
+            print("  (try --cloud to include cloud-pulled models)", file=sys.stderr)
         sys.exit(1)
 
-    # Sort: prefer shorter paths (canonical models), then alphabetical
-    candidates.sort(key=lambda p: (len(p), p))
+    candidates.sort(key=lambda x: (len(x[0]), x[0]))
     shown = candidates[: args.limit]
-    for p in shown:
-        print(p)
+    label = {"core": "(core)", "addon": "(addon)", "cloud": "(cloud)"}
+    for path, scope in shown:
+        if include_cloud:
+            print(f"{label[scope]:<8} {path}")
+        else:
+            print(path)
     if len(candidates) > args.limit:
         print(f"… +{len(candidates) - args.limit} more (raise --limit)", file=sys.stderr)
 

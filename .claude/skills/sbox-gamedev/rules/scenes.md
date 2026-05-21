@@ -123,41 +123,55 @@ Reference the **source path** (`.vmdl`), not the compiled `.vmdl_c`.
 
 ### Real models (props, characters, weapons, vehicles, …)
 
-The s&box install ships with ~2800 real models across:
-- `addons/citizen/` — character models (`citizen_human_male`, heads, hair)
-- `addons/menu/` — the sandbox menu scene props
-- `download/assets/` — cloud-pulled assets (most of the visual variety lives here)
+The s&box install knows about ~2800 models, but they're not all equally
+available to every project. There are three scopes:
 
-To find a model by name or category, use `tools/sbox-models`:
+| Scope | Location on disk | Available to any project? |
+|---|---|---|
+| **core**  | `core/models/dev/...`             | Yes — engine primitives |
+| **addon** | `addons/citizen/`, `addons/menu/` | Yes — bundled with the engine |
+| **cloud** | `download/assets/models/...`      | **No** — requires the project to have downloaded that cloud package |
 
-```
-sbox-models                              list categories + counts
-sbox-models chest                        models matching "chest"
-sbox-models --category citizen_human     list character models
-sbox-models tree -n 20                   top 20 trees
+If you reference a `cloud`-scope model from a new project that hasn't
+downloaded it, the engine logs `ERROR_FILEOPEN: models/<name>.vmdl_c` and
+renders the **purple ERROR placeholder** in its place. This is the
+single most common cause of "I see an ERROR model in my scene" — fix is
+to pick a model from `core` or `addon` scope, or set up cloud access.
+
+`tools/sbox-models` defaults to `core + addon` only so you can't pick
+something you can't load. Pass `--cloud` to widen the search.
+
+```bash
+sbox-models                              list always-available categories
+sbox-models chest                        no matches (chest is cloud only)
+sbox-models chest --cloud                shows cloud chests + a (cloud) tag
+sbox-models --category citizen_human     list character models (always available)
+sbox-models coin                         models/citizen_props/coin01.vmdl  ←
+sbox-models ball                         beachball, balloons, baseball caps...
 sbox-models --update                     rebuild cache (after fresh install)
 ```
 
-Output is the canonical reference path you paste into a scene's
-`"Model": "models/..."` field — hashes are stripped, `.vmdl_c` becomes `.vmdl`,
-and the path resolves at runtime via the engine's search path (core +
-addons + download cache).
+#### Reliable picks (verified to load in any project)
 
-Examples that look nicer than dev primitives:
-- `models/citizen_human/citizen_human_male.vmdl` — animated character
-- `models/treasure_chest.vmdl` — pickup-shaped chest
-- `models/football/football.vmdl`, `models/bowlingball/bowling_ball.vmdl`
-- `models/trees/tree_a.vmdl`, `models/deadtree.vmdl`
-- `models/weapons/sbox_pistol_usp/w_usp.vmdl` — world-model weapons
+- **Characters**: `models/citizen_human/citizen_human_male.vmdl`,
+  `models/citizen_human/citizen_human_female.vmdl`
+- **Pickups / coins**: `models/citizen_props/coin01.vmdl`,
+  `models/citizen_props/sodacan01.vmdl`, `models/citizen_props/coffeemug01.vmdl`
+- **Big objects**: `models/citizen_props/crate01.vmdl`,
+  `models/citizen_props/recyclingbin01.vmdl`,
+  `models/citizen_props/balloonregular01.vmdl`
+- **Trees**: `models/sbox_props/trees/oak/tree_oak_big_a.vmdl` (from menu addon)
+- **Tools / weapons-ish**: `models/citizen_props/crowbar01.vmdl`,
+  `models/citizen_props/broom01.vmdl`
 
 ### Caveat for standalone Steam export
 
 The exporter (`engine/Sandbox.Tools/Utility/Standalone/StandaloneExporter.cs`)
 bundles a fixed whitelist of core assets plus your project's local assets
 and the `base` addon — **not** the citizen addon, the menu addon, or any
-cloud-downloaded models. If you reference `models/sbox_props/...` in a scene
-and try to ship a standalone build, those assets won't be in the package.
-For editor playthrough they work fine.
+cloud-downloaded models. If you reference `models/citizen_props/...` or
+`models/sbox_props/...` in a scene and try to ship a standalone build,
+those assets won't be in the package. For editor playthrough they work fine.
 
 If you need a model in the standalone build, copy/reauthor it under your
 project's `Assets/models/` so it's part of `CopyProjectAssets`.
