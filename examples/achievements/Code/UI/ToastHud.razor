@@ -1,0 +1,38 @@
+@namespace Local.Achievements
+@using System;
+@using System.Linq;
+@using Sandbox;
+@using Sandbox.UI;
+@inherits PanelComponent
+
+<root>
+	@if ( Mgr != null )
+	{
+		@foreach ( var t in Mgr.ActiveToasts )
+		{
+			<div class="toast">
+				<div class="trophy">emoji_events</div>
+				<div class="text">
+					<div class="label">ACHIEVEMENT UNLOCKED</div>
+					<div class="title">@t.Title</div>
+					<div class="desc">@t.Description</div>
+				</div>
+				<div class="check">check_circle</div>
+			</div>
+		}
+	}
+</root>
+
+@code
+{
+	public AchievementManager Mgr => Game.ActiveScene?.GetAllComponents<AchievementManager>().FirstOrDefault();
+
+	protected override int BuildHash()
+	{
+		int h = 0;
+		if ( Mgr?.ActiveToasts != null )
+			foreach ( var t in Mgr.ActiveToasts ) h = HashCode.Combine( h, t.Id );
+		// Also rehash on time so the entrance animation can update.
+		return HashCode.Combine( h, (int)(RealTime.Now * 4) );
+	}
+}

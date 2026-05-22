@@ -1,0 +1,40 @@
+@namespace Local.Achievements
+@using System;
+@using System.Linq;
+@using Sandbox;
+@using Sandbox.UI;
+@inherits PanelComponent
+
+<root>
+	<div class="header">
+		<div class="icon">emoji_events</div>
+		<div class="title">ACHIEVEMENTS</div>
+		<div class="count">@(Mgr?.Unlocked?.Count ?? 0) / @(AchievementCatalog.All.Count)</div>
+	</div>
+	<div class="list">
+		@foreach ( var def in AchievementCatalog.All )
+		{
+			var unlocked = Mgr?.Unlocked?.Contains( def.Id ) ?? false;
+			<div class="row @(unlocked ? "unlocked" : "locked")">
+				<div class="check">@(unlocked ? "check_circle" : "radio_button_unchecked")</div>
+				<div class="text">
+					<div class="name">@def.Title</div>
+					<div class="desc">@def.Description</div>
+				</div>
+			</div>
+		}
+	</div>
+</root>
+
+@code
+{
+	public AchievementManager Mgr => Game.ActiveScene?.GetAllComponents<AchievementManager>().FirstOrDefault();
+
+	protected override int BuildHash()
+	{
+		int h = 0;
+		if ( Mgr?.Unlocked != null )
+			foreach ( var id in Mgr.Unlocked ) h = HashCode.Combine( h, id );
+		return h;
+	}
+}
