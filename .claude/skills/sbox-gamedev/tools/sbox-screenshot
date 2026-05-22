@@ -130,10 +130,13 @@ def send_f5_to_editor() -> bool:
         return False
 
 
-# Matches both "Screenshot saved to: …" and "High-res screenshot saved to: …".
-# Captured group is the path (which may be Windows-style relative like
-# "screenshots\sbox.YYYY...png" — we resolve below).
+# Matches:
+#   "Screenshot saved to: <path>"
+#   "High-res screenshot saved to: <path>"
+#   "Video recording finished: <a href="...">...</a>"  (mp4)
 PATH_RE = re.compile(r"(?:High-res s|S)creenshot saved to:\s+(\S+)")
+VIDEO_PATH_RE = re.compile(r'Video recording finished:[^"]*"([^"]+)"')
+VIDEO_START_RE = re.compile(r'Video recording started:\s+(\S+)')
 
 
 def _resolve_screenshot_path(raw: str) -> Path:
@@ -184,8 +187,8 @@ def main():
     ap.add_argument("--width", type=int, default=1280)
     ap.add_argument("--height", type=int, default=720)
     ap.add_argument("--out", help="copy screenshot to this path when done")
-    ap.add_argument("--timeout", type=int, default=300,
-        help="seconds to wait for editor compile + F5 + capture (default: 300; first run after a code change is slow)")
+    ap.add_argument("--timeout", type=int, default=420,
+        help="seconds to wait for editor compile + F5 + capture (default: 420; first run after a code change can take 5 min)")
     ap.add_argument("--no-keep", action="store_true",
         help="delete the sidecar scene after capture (default: keep it for re-runs)")
     ap.add_argument("--mode", choices=["screenshot", "video"], default="screenshot")
@@ -213,8 +216,9 @@ def main():
     subprocess.run([str(LAUNCH), str(project)], check=False)
     print(f"editor launching at {time.strftime('%H:%M:%S')}...", file=sys.stderr)
 
-    # Wait for editor to come up, then F5 to enter play mode
     f5_sent = False
+    play_active_seen = False  # video: saw VIDEO_REQUEST_START
+    video_start_ts = None
     deadline = time.time() + args.timeout
     result: Path | None = None
     while time.time() < deadline:
@@ -223,16 +227,41 @@ def main():
             if send_f5_to_editor():
                 print(f"sent F5 at {time.strftime('%H:%M:%S')}", file=sys.stderr)
                 f5_sent = True
-                if args.mode == "video":
-                    extra = args.duration + 5
-                    print(f"waiting {extra:.0f}s for video to finish", file=sys.stderr)
-                    time.sleep(extra)
-                    break
                 continue
 
-        result = wait_for_screenshot(timeout=5, start_byte=start_byte)
-        if result and result.exists():
-            break
+        # Read the log tail to detect milestones
+        with LOG.open("r", encoding="utf-8", errors="replace") as f:
+            f.seek(start_byte)
+            tail = f.read()
+
+        if args.mode == "screenshot":
+            for ln in tail.splitlines():
+                m = PATH_RE.search(ln)
+                if m:
+                    p = _resolve_screenshot_path(m.group(1))
+                    if p.exists():
+                        result = p
+                        break
+            if result:
+                break
+            continue
+
+        # video mode
+        if not play_active_seen:
+            if "VIDEO_REQUEST_START" in tail:
+                play_active_seen = True
+                video_start_ts = time.time()
+                wait = args.duration + 6  # duration + recorder flush
+                print(f"video started, waiting {wait:.0f}s for it to finish", file=sys.stderr)
+            continue
+
+        # Capture the video path from start/finish log lines for later resolution
+        m = VIDEO_PATH_RE.search(tail) or VIDEO_START_RE.search(tail)
+        if m and "VIDEO_REQUEST_STOP" in tail:
+            time.sleep(3)  # let the encoder flush
+            result = _resolve_screenshot_path(m.group(1))
+            if result.exists():
+                break
 
     # leave play mode
     if f5_sent:
@@ -240,7 +269,12 @@ def main():
         send_f5_to_editor()
 
     if result is None or not result.exists():
-        result = find_newest_screenshot(started_at - 1)
+        # Last-ditch: pick the newest .png/.mp4 in screenshots/ since we started
+        if SCREENSHOTS_DIR.exists():
+            ext = ".mp4" if args.mode == "video" else ".png"
+            cands = [p for p in SCREENSHOTS_DIR.glob(f"*{ext}") if p.stat().st_mtime > started_at - 1]
+            if cands:
+                result = max(cands, key=lambda p: p.stat().st_mtime)
 
     if args.no_keep:
         try:
