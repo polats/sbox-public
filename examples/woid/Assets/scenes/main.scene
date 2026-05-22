@@ -1,0 +1,390 @@
+{
+  "__guid": "10000000-0000-0000-0000-000000000001",
+  "GameObjects": [
+    {
+      "__guid": "10000000-0000-0000-0000-00000000c00a",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Camera",
+      "Position": "-420,0,180",
+      "Rotation": "0,0.1736,0,0.9848",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.CameraComponent",
+          "__guid": "20000000-0000-0000-0000-00000000c00a",
+          "__enabled": true,
+          "BackgroundColor": "0.4,0.5,0.7,1",
+          "ClearFlags": "All",
+          "EnablePostProcessing": false,
+          "FieldOfView": 70,
+          "FovAxis": "Horizontal",
+          "IsMainCamera": true,
+          "Orthographic": false,
+          "OrthographicHeight": 1200,
+          "Priority": 1,
+          "RenderTags": "",
+          "TargetEye": "None",
+          "Viewport": "0,0,1,1",
+          "ZFar": 10000,
+          "ZNear": 1
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "10000000-0000-0000-0000-000000000040",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Sun",
+      "Position": "0,0,600",
+      "Rotation": "-0.3535534,0.3535534,0.1464466,0.8535534",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.DirectionalLight",
+          "__guid": "20000000-0000-0000-0000-000000000040",
+          "__enabled": true,
+          "FogMode": "Enabled",
+          "FogStrength": 1,
+          "LightColor": "1,0.95,0.85,1",
+          "ShadowBias": 0.0005,
+          "ShadowCascadeCount": 4,
+          "ShadowCascadeSplitRatio": 0.91,
+          "ShadowHardness": 0,
+          "Shadows": true,
+          "SkyColor": "0.4,0.5,0.7,1"
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "10000000-0000-0000-0000-000000000100",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Floor",
+      "Position": "0,0,-25",
+      "Rotation": "0,0,0,1",
+      "Scale": "10,10,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.ModelRenderer",
+          "__guid": "20000000-0000-0000-0000-000000000100",
+          "__enabled": true,
+          "BodyGroups": 18446744073709551615,
+          "CreateAttachments": false,
+          "Model": "models/dev/box.vmdl",
+          "RenderOptions": {
+            "GameLayer": true,
+            "OverlayLayer": false,
+            "AfterUILayer": false
+          },
+          "RenderType": "On",
+          "Tint": "0.85,0.78,0.65,1"
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "10000000-0000-0000-0000-000000000200",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "WoidRoot",
+      "Position": "0,0,0",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Woid.CharacterRegistry",
+          "__guid": "20000000-0000-0000-0000-000000000201",
+          "__enabled": true
+        },
+        {
+          "__type": "Woid.ObjectRegistry",
+          "__guid": "20000000-0000-0000-0000-000000000202",
+          "__enabled": true
+        },
+        {
+          "__type": "Woid.EffectInterpreter",
+          "__guid": "20000000-0000-0000-0000-000000000203",
+          "__enabled": true,
+          "Characters": {
+            "_type": "component",
+            "component_id": "20000000-0000-0000-0000-000000000201",
+            "go": "10000000-0000-0000-0000-000000000200",
+            "component_type": "CharacterRegistry"
+          },
+          "Objects": {
+            "_type": "component",
+            "component_id": "20000000-0000-0000-0000-000000000202",
+            "go": "10000000-0000-0000-0000-000000000200",
+            "component_type": "ObjectRegistry"
+          }
+        },
+        {
+          "__type": "Woid.WoidClient",
+          "__guid": "20000000-0000-0000-0000-000000000204",
+          "__enabled": true,
+          "BaseUrl": "http://127.0.0.1:8080",
+          "TickIntervalSec": 5,
+          "Characters": {
+            "_type": "component",
+            "component_id": "20000000-0000-0000-0000-000000000201",
+            "go": "10000000-0000-0000-0000-000000000200",
+            "component_type": "CharacterRegistry"
+          },
+          "Objects": {
+            "_type": "component",
+            "component_id": "20000000-0000-0000-0000-000000000202",
+            "go": "10000000-0000-0000-0000-000000000200",
+            "component_type": "ObjectRegistry"
+          },
+          "Interpreter": {
+            "_type": "component",
+            "component_id": "20000000-0000-0000-0000-000000000203",
+            "go": "10000000-0000-0000-0000-000000000200",
+            "component_type": "EffectInterpreter"
+          }
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "10000000-0000-0000-0000-000000000300",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Alice",
+      "Position": "100,-80,0",
+      "Rotation": "0,0,0.7071,0.7071",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.SkinnedModelRenderer",
+          "__guid": "20000000-0000-0000-0000-000000000301",
+          "__enabled": true,
+          "BodyGroups": 18446744073709551615,
+          "CreateAttachments": false,
+          "Model": "models/citizen_human/citizen_human_female.vmdl",
+          "RenderOptions": {
+            "GameLayer": true,
+            "OverlayLayer": false,
+            "AfterUILayer": false
+          },
+          "RenderType": "On",
+          "Tint": "1,1,1,1"
+        },
+        {
+          "__type": "Woid.Character",
+          "__guid": "20000000-0000-0000-0000-000000000302",
+          "__enabled": true,
+          "CharacterId": "alice",
+          "PersonaName": "Nyx",
+          "PersonaAbout": "A botanist who works night shifts; whispers to her plants. Always carries a smooth river stone.",
+          "PersonaVibe": "dreamy",
+          "BrainProvider": "llm",
+          "InitialEnergy": 65,
+          "InitialSocial": 30,
+          "InitialHunger": 80,
+          "Model": {
+            "_type": "component",
+            "component_id": "20000000-0000-0000-0000-000000000301",
+            "go": "10000000-0000-0000-0000-000000000300",
+            "component_type": "SkinnedModelRenderer"
+          }
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "10000000-0000-0000-0000-000000000600",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Bob",
+      "Position": "100,80,0",
+      "Rotation": "0,0,-0.7071,0.7071",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.SkinnedModelRenderer",
+          "__guid": "20000000-0000-0000-0000-000000000601",
+          "__enabled": true,
+          "BodyGroups": 18446744073709551615,
+          "CreateAttachments": false,
+          "Model": "models/citizen_human/citizen_human_male.vmdl",
+          "RenderOptions": {
+            "GameLayer": true,
+            "OverlayLayer": false,
+            "AfterUILayer": false
+          },
+          "RenderType": "On",
+          "Tint": "1,1,1,1"
+        },
+        {
+          "__type": "Woid.Character",
+          "__guid": "20000000-0000-0000-0000-000000000602",
+          "__enabled": true,
+          "CharacterId": "bob",
+          "PersonaName": "Barnaby",
+          "PersonaAbout": "A retired stage magician with an uncanny knack for finding lost buttons. Polishes a brass coin between sentences.",
+          "PersonaVibe": "whimsical",
+          "BrainProvider": "llm",
+          "InitialEnergy": 70,
+          "InitialSocial": 25,
+          "InitialHunger": 80,
+          "Model": {
+            "_type": "component",
+            "component_id": "20000000-0000-0000-0000-000000000601",
+            "go": "10000000-0000-0000-0000-000000000600",
+            "component_type": "SkinnedModelRenderer"
+          }
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "10000000-0000-0000-0000-000000000500",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Hud",
+      "Position": "0,0,0",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.ScreenPanel",
+          "__guid": "20000000-0000-0000-0000-000000000501",
+          "__enabled": true,
+          "AutoScreenScale": true,
+          "Opacity": 1,
+          "Scale": 1,
+          "ZIndex": 100
+        },
+        {
+          "__type": "Woid.CursorController",
+          "__guid": "20000000-0000-0000-0000-000000000504",
+          "__enabled": true
+        },
+        {
+          "__type": "Woid.BrainInspector",
+          "__guid": "20000000-0000-0000-0000-000000000502",
+          "__enabled": true,
+          "CharacterId": "alice",
+          "BaseUrl": "http://127.0.0.1:8080",
+          "PollSec": 1.5,
+          "Anchor": "left"
+        },
+        {
+          "__type": "Woid.BrainInspector",
+          "__guid": "20000000-0000-0000-0000-000000000503",
+          "__enabled": true,
+          "CharacterId": "bob",
+          "BaseUrl": "http://127.0.0.1:8080",
+          "PollSec": 1.5,
+          "Anchor": "right"
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "10000000-0000-0000-0000-000000000400",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Chair",
+      "Position": "250,0,0",
+      "Rotation": "0,0,0,1",
+      "Scale": "0.4,0.4,0.4",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.ModelRenderer",
+          "__guid": "20000000-0000-0000-0000-000000000401",
+          "__enabled": true,
+          "BodyGroups": 18446744073709551615,
+          "CreateAttachments": false,
+          "Model": "models/dev/box.vmdl",
+          "RenderOptions": {
+            "GameLayer": true,
+            "OverlayLayer": false,
+            "AfterUILayer": false
+          },
+          "RenderType": "On",
+          "Tint": "0.4,0.25,0.15,1"
+        },
+        {
+          "__type": "Woid.WoidObject",
+          "__guid": "20000000-0000-0000-0000-000000000402",
+          "__enabled": true,
+          "ObjectId": "chair_1",
+          "Type": "chair"
+        }
+      ],
+      "Children": []
+    }
+  ],
+  "SceneProperties": {
+    "NetworkInterpolation": true,
+    "TimeScale": 1,
+    "WantsSystemScene": false,
+    "Metadata": {}
+  },
+  "ResourceVersion": 3,
+  "Title": "Woid",
+  "Description": "Sims-on-sbox MVP: one NPC, one chair, brain on woid.",
+  "__references": [],
+  "__version": 3
+}

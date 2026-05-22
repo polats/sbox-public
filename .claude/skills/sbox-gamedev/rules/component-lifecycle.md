@@ -183,3 +183,4 @@ public sealed class Pickup : Component, Component.ITriggerListener
   `AfterUILayer` — `BloomLayer` was removed/never-existed. If you want a
   renderer to glow, give it a bright tint and add a global PostProcessVolume
   with bloom enabled.
+- **HTTP in game code is gated.** `System.Net.Http.HttpClient` is whitelist-blocked in `Code/*.cs`. Use `Sandbox.Http.RequestStringAsync`/`RequestAsync` instead. `Sandbox.Http` enforces a hard-coded loopback allowlist: only ports **80/443/8080/8443** for `127.0.0.1`/`localhost`. Other ports denied with `"Access to '<url>' is not allowed"`. `HttpAllowList` field in `.sbproj` Metadata is vestigial — `Sandbox.Http` doesn't read it. Bypass for dev: launch with `-allowlocalhttp` flag (editor only). Editor-side code (`Editor/*.cs`) can use `HttpClient` directly. Default local services to **port 8080** to avoid needing a launch flag.

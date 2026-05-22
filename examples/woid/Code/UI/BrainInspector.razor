@@ -1,0 +1,185 @@
+@namespace Woid
+@using System
+@using System.Linq
+@using System.Text.Json
+@using System.Threading.Tasks
+@using Sandbox
+@using Sandbox.UI
+@inherits PanelComponent
+
+<root>
+	<div class="panel @PanelClass">
+		<div class="header">
+			<div class="badge">BRAIN INSPECTOR</div>
+			<div class="meta">@Model · @Provider</div>
+		</div>
+
+		@if (string.IsNullOrEmpty(PersonaName))
+		{
+			<div class="empty">waiting for brain-server…</div>
+		}
+		else
+		{
+			<div class="persona">
+				<div class="name-row">
+					<div class="name">@PersonaName</div>
+					@if (IsThinking)
+					{
+						<div class="thinking">
+							<div class="dot" />
+							<div class="label">THINKING…</div>
+						</div>
+					}
+				</div>
+				<div class="vibe">@Vibe</div>
+			</div>
+
+			<div class="section-label">REASONING</div>
+			<div class="reasoning">@Reasoning</div>
+
+			<div class="section-label">LAST ACTION</div>
+			<div class="action">@LastAction</div>
+
+			<div class="footer">
+				<div class="stat">@LastMs ms</div>
+				<div class="stat">@InTokens in</div>
+				<div class="stat">@OutTokens out</div>
+				<div class="stat">tick @Tick</div>
+			</div>
+
+			<div class="buttons">
+				<button onclick=@OnForceTick class="btn @(IsThinking ? "disabled" : "")">Force tick</button>
+				<button onclick=@OnTickAll  class="btn-secondary @(IsThinking ? "disabled" : "")">Tick all</button>
+			</div>
+		}
+	</div>
+</root>
+
+@code
+{
+	[Property] public string CharacterId { get; set; } = "alice";
+	[Property] public string BaseUrl { get; set; } = "http://127.0.0.1:8080";
+	[Property] public float PollSec { get; set; } = 1.0f;
+	[Property] public string Anchor { get; set; } = "right";
+
+	public string PanelClass => Anchor == "left" ? "pos-left" : "pos-right";
+
+	public string PersonaName { get; private set; } = "";
+	public string Vibe { get; private set; } = "";
+	public string Reasoning { get; private set; } = "(no trace yet)";
+	public string LastAction { get; private set; } = "—";
+	public string Model { get; private set; } = "?";
+	public string Provider { get; private set; } = "?";
+	public int LastMs { get; private set; }
+	public int InTokens { get; private set; }
+	public int OutTokens { get; private set; }
+	public int Tick { get; private set; }
+
+	/// <summary>Derived from trace: started_at > 0, ended_at == 0, < 25s old.</summary>
+	public bool IsThinking { get; private set; }
+
+	const long ThinkingStaleMs = 25_000;
+
+	float _nextPoll;
+	bool _polling;
+
+	void OnForceTick()
+	{
+		var client = Scene.GetAllComponents<WoidClient>().FirstOrDefault();
+		client?.RequestTick( CharacterId );
+	}
+
+	void OnTickAll()
+	{
+		var client = Scene.GetAllComponents<WoidClient>().FirstOrDefault();
+		client?.RequestTickAll();
+	}
+
+	protected override void OnUpdate()
+	{
+		if ( Time.Now < _nextPoll || _polling ) return;
+		_nextPoll = Time.Now + PollSec;
+		_ = PollAsync();
+	}
+
+	async Task PollAsync()
+	{
+		_polling = true;
+		try
+		{
+			try
+			{
+				var s = await Http.RequestStringAsync( $"{BaseUrl}/status" );
+				using var sdoc = JsonDocument.Parse( s );
+				var d = sdoc.RootElement.GetProperty( "data" );
+				Provider = d.GetProperty( "llm" ).GetProperty( "provider" ).GetString() ?? "?";
+				Model    = d.GetProperty( "llm" ).GetProperty( "model" ).GetString() ?? "?";
+			}
+			catch { /* ignore */ }
+
+			try
+			{
+				var c = await Http.RequestStringAsync( $"{BaseUrl}/character/{CharacterId}" );
+				using var cdoc = JsonDocument.Parse( c );
+				if ( cdoc.RootElement.GetProperty( "ok" ).GetBoolean() )
+				{
+					var idn = cdoc.RootElement.GetProperty( "data" ).GetProperty( "character" ).GetProperty( "identity" );
+					PersonaName = idn.GetProperty( "name" ).GetString() ?? "";
+					Vibe = idn.TryGetProperty( "vibe", out var v ) ? (v.GetString() ?? "") : "";
+				}
+			}
+			catch { /* ignore */ }
+
+			var t = await Http.RequestStringAsync( $"{BaseUrl}/brain/trace/{CharacterId}?limit=2" );
+			using var tdoc = JsonDocument.Parse( t );
+			if ( !tdoc.RootElement.GetProperty( "ok" ).GetBoolean() ) return;
+			var entries = tdoc.RootElement.GetProperty( "data" ).GetProperty( "entries" );
+			if ( entries.GetArrayLength() == 0 ) { IsThinking = false; return; }
+
+			// Derive isThinking from latest entry (entries are newest-first).
+			var latest = entries[0];
+			var startedAt = latest.TryGetProperty( "started_at", out var sEl ) ? sEl.GetInt64() : 0L;
+			var endedAt   = latest.TryGetProperty( "ended_at",   out var eEl ) ? eEl.GetInt64() : 0L;
+			IsThinking = startedAt > 0 && endedAt == 0 && (DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - startedAt) < ThinkingStaleMs;
+
+			// Use the most recent COMPLETED entry for reasoning + action display.
+			JsonElement display = latest;
+			if ( endedAt == 0 && entries.GetArrayLength() > 1 ) display = entries[1];
+
+			Reasoning = display.TryGetProperty( "reasoning", out var r ) ? (r.GetString() ?? "") : "";
+
+			if ( display.TryGetProperty( "actions_emitted", out var acts ) && acts.GetArrayLength() > 0 )
+			{
+				var a0 = acts[0];
+				var verb = a0.GetProperty( "verb" ).GetString();
+				var args = a0.TryGetProperty( "args", out var ag ) ? ag.GetRawText() : "{}";
+				LastAction = $"{verb}({args})";
+			}
+			else { LastAction = "(idle — no action)"; }
+
+			if ( display.TryGetProperty( "turns", out var turns ) )
+			{
+				foreach ( var turn in turns.EnumerateArray() )
+				{
+					var role = turn.GetProperty( "role" ).GetString();
+					if ( role == "assistant" )
+					{
+						if ( turn.TryGetProperty( "ms", out var ms ) ) LastMs = ms.GetInt32();
+						if ( turn.TryGetProperty( "tokens", out var tk ) ) OutTokens = tk.GetInt32();
+					}
+					else if ( role == "system" && turn.TryGetProperty( "tokens", out var stk ) )
+					{
+						InTokens = stk.GetInt32();
+					}
+				}
+			}
+
+			Tick++;
+		}
+		catch { /* swallow — next tick retries */ }
+		finally { _polling = false; }
+	}
+
+	protected override int BuildHash() => HashCode.Combine(
+		PersonaName, Vibe, Reasoning, LastAction, IsThinking, LastMs, OutTokens, Tick );
+}

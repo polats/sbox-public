@@ -399,3 +399,22 @@ just Linux-side file writes from outside that get missed.
 | `Missing Component: couldn't find Component type X.Y.Z` | Project code didn't compile, OR `__type` in scene doesn't match the C# fully-qualified name |
 | `View "RenderToSwapChain" ... non-scratch render target ...` | Cascading error from a broken Camera |
 | Empty viewport in Play mode, but objects in Hierarchy | Camera rotation is wrong (see quaternion cheatsheet) |
+
+## Cross-component property references in .scene
+
+A `[Property] public Component X` field in a Component, wired in a .scene to point at another component (on the same or different GameObject), needs the **four-field reference shape**:
+
+```json
+"X": {
+  "_type": "component",
+  "component_id": "<__guid of the target component>",
+  "go": "<__guid of the GameObject hosting it>",
+  "component_type": "<class name, e.g. CharacterRegistry>"
+}
+```
+
+The shorter `{"_guid": "...", "_type": "component"}` form looks plausible (sbox uses `__guid` everywhere else) but **silently resolves to null** at runtime. No editor error. The property just reads null, OnStart sees null, and the component appears broken.
+
+For `[Property] public GameObject X` (object reference, not component), the shape is different again: `{"_type": "gameobject", "go": "<guid>"}` — single field.
+
+This is the most common reason a hand-authored scene "compiles fine, runs fine, but the property is null". Always check the reference shape first.
