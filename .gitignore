@@ -105,4 +105,8 @@ engine/TestResults/
 /game/aftermath_dumps
 /game/gamecache
 
+# Skill trigger/result files — ephemeral state, never commit
+**/.sbox/skill-triggers/
+**/.sbox/skill-results/
+
 # Python bytecode cache from skill tools
