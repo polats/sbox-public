@@ -29,8 +29,36 @@ Usage:
   sbox-screenshot <project> --no-relaunch            reuse editor that's already up
 """
 from __future__ import annotations
-import argparse, os, re, shutil, subprocess, sys, time
+import argparse, atexit, os, re, shutil, subprocess, sys, time
 from pathlib import Path
+
+
+def _revert_autoplay(scene: Path, original_text: str) -> None:
+    """atexit handler — restores the .scene file's AutoPlay state."""
+    try:
+        scene.write_text(original_text, encoding="utf-8")
+        print(f"--autoplay: reverted {scene.name} AutoPlay → false", file=sys.stderr)
+    except Exception as e:
+        print(f"--autoplay: WARNING revert failed: {e}", file=sys.stderr)
+
+
+def validate_mp4(path: Path) -> tuple[bool, str]:
+    """Run ffprobe on the produced file. Returns (ok, message)."""
+    if not shutil.which("ffprobe"):
+        return True, "ffprobe not installed; skipping validation"
+    try:
+        r = subprocess.run(
+            ["ffprobe", "-v", "error", "-show_entries", "stream=codec_type,duration",
+             "-of", "default=noprint_wrappers=1", str(path)],
+            capture_output=True, text=True, timeout=15,
+        )
+    except subprocess.TimeoutExpired:
+        return False, "ffprobe timed out"
+    if r.returncode != 0:
+        return False, f"ffprobe exited {r.returncode}: {r.stderr.strip()[:300]}"
+    if "codec_type=video" not in r.stdout:
+        return False, "no video stream in output (recorder produced corrupt mp4)"
+    return True, r.stdout.strip()
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 SKILL_ROOT = SCRIPT_DIR.parent
@@ -178,11 +206,35 @@ def main():
     ap.add_argument("--duration", type=float, default=5.0, help="video duration (sec)")
     ap.add_argument("--no-reencode", action="store_true",
         help="don't re-encode video to H.264; keep raw AV1+Opus from s&box")
+    ap.add_argument("--autoplay", metavar="SCENE",
+        help="temporarily set \"AutoPlay\": true in this scene JSON file for the duration "
+             "of the recording, then ALWAYS revert to false. Use for video runs where you "
+             "want a scripted demo. Safe across exceptions — the revert is in a finally block.")
+    ap.add_argument("--no-validate", action="store_true",
+        help="skip the ffprobe validation of the produced video. Default: run ffprobe and "
+             "treat zero-stream / corrupt outputs as a failure (a real-world bug observed "
+             "when the writer doesn't finalize the mp4).")
     args = ap.parse_args()
 
     project = Path(args.project).resolve()
     if not project.is_dir():
         raise SystemExit(f"{project} is not a directory")
+
+    # --autoplay: flip AutoPlay=true in the given scene now, ALWAYS revert via
+    # atexit (runs on any exit path including sys.exit / unhandled exceptions).
+    if args.autoplay:
+        scene = Path(args.autoplay)
+        if not scene.is_absolute():
+            scene = project / args.autoplay
+        if not scene.exists():
+            raise SystemExit(f"--autoplay scene not found: {scene}")
+        original_text = scene.read_text(encoding="utf-8")
+        scene.write_text(
+            original_text.replace('"AutoPlay": false', '"AutoPlay": true'),
+            encoding="utf-8",
+        )
+        print(f"--autoplay: flipped {scene.name} AutoPlay → true (will revert on exit)", file=sys.stderr)
+        atexit.register(_revert_autoplay, scene, original_text)
 
     # Default --out to <project>/captures/<timestamp>.<ext>
     if not args.out:
@@ -272,6 +324,20 @@ def main():
         print("no screenshot/video file found.", file=sys.stderr)
         print(f"check log: {LOG} for SCREENSHOT_REQUEST / Screenshot saved entries", file=sys.stderr)
         sys.exit(2)
+
+    # Validate the produced video. Recorder bug observed: writer sometimes
+    # doesn't finalize the mp4 — file exists, has bytes, but ffprobe reports
+    # zero valid streams. Catching this here turns a silent corruption into
+    # an explicit failure the agent can act on.
+    if args.mode == "video" and not args.no_validate:
+        ok, msg = validate_mp4(result)
+        if not ok:
+            print(f"VIDEO VALIDATION FAILED for {result.name}: {msg}", file=sys.stderr)
+            print("  The recorder didn't produce a valid mp4. Re-run the recording.", file=sys.stderr)
+            print("  Common causes: editor lost focus, SceneCamera.RecordingCamera unset,", file=sys.stderr)
+            print("  recording started before camera was rendering, encoder flush race.", file=sys.stderr)
+            print(f"  Bad file kept at: {result}", file=sys.stderr)
+            sys.exit(3)
 
     if args.out:
         out = Path(args.out).expanduser().resolve()

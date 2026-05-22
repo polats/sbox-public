@@ -104,6 +104,20 @@ if [[ ! -f "$PROJECT/Editor/SkillTrigger.cs" ]]; then
   fi
 fi
 
+# Dedupe Editor csproj: if both hyphen-named and snake_case versions exist,
+# delete the hyphen-named one (the editor auto-generates snake_case based on
+# the .sbproj Ident; the hyphen-named one will be orphaned).
+PROJECT_NAME="$(basename "$PROJECT")"
+IDENT_SNAKE="$(echo "$PROJECT_NAME" | tr '-' '_')"
+if [[ "$PROJECT_NAME" != "$IDENT_SNAKE" ]]; then
+  for variant in "$PROJECT/Editor/${PROJECT_NAME}.editor.csproj" "$PROJECT/Code/${PROJECT_NAME}.csproj"; do
+    if [[ -f "$variant" ]]; then
+      echo "removing duplicate hyphen-named csproj: $variant"
+      rm "$variant"
+    fi
+  done
+fi
+
 if [[ ! -x "$EDITOR_EXE" && ! -f "$EDITOR_EXE" ]]; then
   echo "error: editor binary missing at $EDITOR_EXE" >&2
   echo "       run sbox-doctor to verify the install" >&2
@@ -138,14 +152,31 @@ if [[ $WAIT_READY == 1 ]]; then
   DEADLINE=$(( $(date +%s) + WAIT_READY_TIMEOUT ))
   while [[ $(date +%s) -lt $DEADLINE ]]; do
     if [[ -f "$RES_DIR/$PING_ID.json" ]]; then
-      ELAPSED=$(( $(date +%s) - $(date +%s -r "$RES_DIR/$PING_ID.json") + WAIT_READY_TIMEOUT - (DEADLINE - $(date +%s)) ))
       echo "editor ready ($(($(date +%s) - DEADLINE + WAIT_READY_TIMEOUT))s)"
+      # Sanity-check the editor extension compiled clean. The ping fires
+      # only if SkillTrigger.cs *did* compile — so success implicitly means
+      # compile is OK — but if the GAME-side csproj has errors, those won't
+      # block the ping (different assembly). Surface compile failures here
+      # so they don't haunt the next tool call.
+      LOGFILE="$HOME/.steam/root/steamapps/common/sbox/logs/sbox-dev.log"
+      if [[ -f "$LOGFILE" ]]; then
+        # Look at the most recent compile-result line for this project.
+        # If it's "Failed", warn but don't exit non-zero — the editor IS
+        # running, the agent may still want to proceed (e.g. to fix code
+        # via sbox-recompile after this returns).
+        LAST_COMPILE=$(tail -c 200000 "$LOGFILE" | grep -E "Compile of 'local\\.${IDENT_SNAKE}(\\.editor)?' (OK|Failed)" | tail -1)
+        if echo "$LAST_COMPILE" | grep -q "Failed"; then
+          echo "warning: $LAST_COMPILE — code changes won't take effect until you fix the error"
+          echo "         see: tools/sbox-logs --errors --tail 10"
+        fi
+      fi
       exit 0
     fi
     sleep 2
   done
   echo "warning: editor still not ready after ${WAIT_READY_TIMEOUT}s (no SkillTrigger ping reply)"
   echo "         compile may still be in progress; the editor binary is running but the extension hasn't responded."
+  echo "         check: tools/sbox-logs --errors --tail 20"
   exit 1
 fi
 
