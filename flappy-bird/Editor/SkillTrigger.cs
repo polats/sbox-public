@@ -283,6 +283,18 @@ public static class SkillTrigger
 			case "eval":
 				EvalCSharp( file, content );
 				break;
+			case "ping":
+				// Cheap "are you alive" probe. Used by `sbox-launch --wait-ready`
+				// to confirm the editor + extension are responsive before the
+				// next tool call. Returns the editor's view of project + scene
+				// state so the caller can sanity-check it landed on the right one.
+				WriteResult( file, true, null, new
+				{
+					project = Project.Current?.Config?.Title,
+					hasActiveSession = SceneEditorSession.Active != null,
+					isPlaying = Game.IsPlaying,
+				} );
+				break;
 			default:
 				Log.Warning( $"[SkillTrigger] unknown trigger: {parts[0]}" );
 				WriteResult( file, false, $"unknown trigger: {parts[0]}", null );

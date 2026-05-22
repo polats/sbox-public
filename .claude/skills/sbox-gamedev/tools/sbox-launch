@@ -6,6 +6,8 @@
 #   sbox-launch <project-dir>                 launch (kills any running editor first)
 #   sbox-launch <project-dir> --no-kill       don't kill an existing editor
 #   sbox-launch <project-dir> --tail-log      stream classified log entries
+#   sbox-launch <project-dir> --wait-ready    block until SkillTrigger answers a ping
+#                                             (so the next tool call won't fight a still-compiling editor)
 #   sbox-launch --kill                        just kill any running editor
 #
 # Why this exists:
@@ -24,12 +26,15 @@ KILL_FIRST=1
 TAIL=0
 PROJECT=""
 KILL_ONLY=0
+WAIT_READY=0
+WAIT_READY_TIMEOUT=180
 
 for a in "$@"; do
   case "$a" in
     --no-kill)    KILL_FIRST=0 ;;
     --tail-log|-t) TAIL=1 ;;
     --kill)       KILL_ONLY=1 ;;
+    --wait-ready) WAIT_READY=1 ;;
     -h|--help)    sed -n '2,15p' "$0"; exit 0 ;;
     *)            PROJECT="$a" ;;
   esac
@@ -93,6 +98,30 @@ nohup protontricks-launch --appid "$EDITOR_APPID" "$EDITOR_EXE" -project "$WINE_
   </dev/null >"$LAUNCH_LOG" 2>&1 &
 disown
 echo "launched at $(date '+%H:%M:%S') (log: $LAUNCH_LOG)"
+
+if [[ $WAIT_READY == 1 ]]; then
+  # Ping SkillTrigger and wait for the result. This proves the editor's
+  # event loop is alive AND the editor extension has compiled — the only
+  # signal that actually matters before the next tool call.
+  TRIG_DIR="$PROJECT/.sbox/skill-triggers"
+  RES_DIR="$PROJECT/.sbox/skill-results"
+  mkdir -p "$TRIG_DIR"
+  PING_ID="$(date +%Y%m%d-%H%M%S)-$$-ready"
+  printf 'ping' > "$TRIG_DIR/$PING_ID.txt"
+  echo "waiting for editor to be ready (ping trigger $PING_ID)..."
+  DEADLINE=$(( $(date +%s) + WAIT_READY_TIMEOUT ))
+  while [[ $(date +%s) -lt $DEADLINE ]]; do
+    if [[ -f "$RES_DIR/$PING_ID.json" ]]; then
+      ELAPSED=$(( $(date +%s) - $(date +%s -r "$RES_DIR/$PING_ID.json") + WAIT_READY_TIMEOUT - (DEADLINE - $(date +%s)) ))
+      echo "editor ready ($(($(date +%s) - DEADLINE + WAIT_READY_TIMEOUT))s)"
+      exit 0
+    fi
+    sleep 2
+  done
+  echo "warning: editor still not ready after ${WAIT_READY_TIMEOUT}s (no SkillTrigger ping reply)"
+  echo "         compile may still be in progress; the editor binary is running but the extension hasn't responded."
+  exit 1
+fi
 
 if [[ $TAIL == 1 ]]; then
   # wait for editor to touch its log

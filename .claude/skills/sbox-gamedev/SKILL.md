@@ -39,7 +39,7 @@ All under `tools/` — invoke via Bash. Pre-authorized by `allowed-tools`.
 
 - `sbox-doctor [project-path]` — verify the Linux setup (Proton prefix, .NET 10, font registration, Proton Experimental forced); optionally scan a project for case-conflict dirs. **Run this first when invoked.**
 - `sbox-logs [--summary|--errors|--follow|--category <name>] [--tail N]` — tail and classify the editor log. Categories: `compile`, `asset`, `shader`, `null`, `missing`, `directwrite`, `reflection`, `other`.
-- `sbox-launch <project-dir>` — kill any running editor and relaunch directly on the given project (bypasses Steam project picker). Required for autonomous workflows because Wine's file watcher misses edits made from outside the editor — kill+relaunch is the reliable way to pick up changes. Use `--tail-log` to stream classified errors after launch, or `--kill` alone to just kill running editors.
+- `sbox-launch <project-dir>` — kill any running editor and relaunch directly on the given project (bypasses Steam project picker). Required for autonomous workflows because Wine's file watcher misses edits made from outside the editor — kill+relaunch is the reliable way to pick up changes. Use `--tail-log` to stream classified errors after launch, `--wait-ready` to block until SkillTrigger answers a ping (so the next tool call doesn't fight a still-compiling editor), or `--kill` alone to just kill running editors.
 - `sbox-set-startup-scene <project-dir> <scene-path>` — prime `<project>/.sbox/project.json` so the editor auto-opens a specific scene on next launch. Editor must be closed. Use right after generating a scene file so the next `sbox-launch` opens directly into it.
 - `sbox-models [query] [--category NAME] [--update] [--cloud]` — search the engine's installed model library (2800+ paths) and return canonical reference strings ready to paste into a scene's `"Model": "models/..."` field. Defaults to ~700 always-available models from `core+addons`; pass `--cloud` to include the 2100 cloud-pulled ones (which need project access to actually load).
 - `sbox-model-info <path...>` or `sbox-model-info --query <q>` — return verified bounding-box dimensions for one or more models, by loading each via `Model.Load` and reading `Model.Bounds`. Use this **before placing any unfamiliar model in a scene** — model names lie (`coin01` is a 27" Mario-style prop, `tree_oak_big_a` is 85 ft tall). Trigger-file based (same architecture as `sbox-screenshot`): writes to whichever project the editor's currently on, falls back to `model-probe/` (a small worker project at the repo root) if no editor is running. ~1s response once the project's editor-side helper is compiled.
@@ -47,6 +47,23 @@ All under `tools/` — invoke via Bash. Pre-authorized by `allowed-tools`.
 - `sbox-eval '<csharp>'` — evaluate a C# expression or statement block inside the running editor's process. Uses Roslyn (`Microsoft.CodeAnalysis.CSharp`, already in s&box's `bin/managed/`) to compile + emit + load + invoke. Available namespaces: `System`, `System.Collections.Generic`, `System.Linq`, `System.Text`, `Sandbox`, `Editor`. Expressions are auto-wrapped (`return (expr);`); statement blocks must contain an explicit `return`. Use when you need to know what something *actually* returns right now: `sbox-eval 'SceneEditorSession.Active?.Scene.GetAllComponents<ModelRenderer>().Count()'` → `8`. ~1s. Errors come back with full Roslyn diagnostics.
 - `sbox-do <action> [args…]` — universal action driver. Subcommands: `menu <Game/Play>` (invoke a menu item by slash-separated path), `shortcut <editor.toggle-play>` (invoke any registered `[Shortcut("name", …)]` by its identifier), `cmd "<raw concmd>"` (run any console command), `play` / `stop-play` (toggle play mode). All ~1s, all via the trigger-file pattern. Discover available shortcut identifiers by grepping the engine source: `grep -r '\[Shortcut(' engine/ | grep -oE '"[^"]+"' | sort -u`.
 - `sbox-screenshot <project> [--width W] [--height H] [--out PATH] [--mode screenshot|video] [--duration S]` — capture a screenshot (PNG) or video (MP4) of a project's scene. Output saved to `<project>/captures/<project>-<timestamp>.<ext>` by default; pass `--out PATH` to override. **Architecture**: writes a trigger file under `<project>/.sbox/skill-triggers/`; an editor-side helper (`Editor/SkillTrigger.cs`, auto-installed into the project on first use) sees the file, runs the corresponding ConCmd, deletes the trigger. Capture time ~5s once the editor is warm — no xdotool, no F5, no kill+relaunch. First call after installing the helper triggers a recompile (~30s). Video mode kicks off a play→record→stop→exit sequence internally; screenshot stays in edit mode. **Caveats:** (a) `screenshot_highres` taps post-postprocess camera output (warm, correct colors). `video` taps the SceneLayer color target pre-postprocess, so video colors look cooler/bluer than screenshots — engine pipeline-tap difference, not a tool bug. (b) Edit-mode screenshots don't render the HUD (`ScreenPanel` only renders in play). Video clips do show the HUD because the trigger enters play. (c) Video is AV1+Opus by default; tool auto-re-encodes to H.264 via ffmpeg when `--out` is set.
+
+### Resuming after a context compaction
+
+Long autonomous builds will hit context compaction. **Before starting fresh
+work in `<project>/`, check whether the project already exists and what
+state it's in:**
+
+1. `ls <project>/Code/ <project>/Assets/scenes/` — see what's already there.
+2. `sbox-scene` (if the editor's running on it) — current GameObject tree.
+3. `ls <project>/captures/` — sorted by mtime, the most recent screenshot
+   shows what the game last looked like. Open it with `Read`.
+4. `<project>/.sbox/skill-results/*.json` — recent tool replies (eval
+   results, scene snapshots) tell you what the prior session was checking.
+
+If you find substantial prior work, treat it as the starting point and
+build forward — don't redo what's already done. The first dry-run of
+`flappy-bird` did exactly this after compaction (correctly).
 
 ### End-to-end "create a game from scratch" workflow
 

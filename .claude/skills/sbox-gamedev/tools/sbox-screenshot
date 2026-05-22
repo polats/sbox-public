@@ -58,11 +58,15 @@ def ensure_editor_extension(project: Path) -> bool:
     editor_dir.mkdir(parents=True, exist_ok=True)
 
     name = project.name  # e.g. "coin-rush"
-    code_csproj = project_csproj_name(project)  # e.g. "coin_rush"
+    code_csproj = project_csproj_name(project)  # e.g. "coin_rush" (snake_case)
     namespace = "".join(p.capitalize() for p in name.split("-"))  # "CoinRush"
 
+    # IMPORTANT: csproj filename MUST be snake_case. The editor auto-rewrites
+    # `<project>.slnx` to expect the underscore form; if we ship a hyphenated
+    # file, the editor silently creates a second snake_case csproj on first
+    # open and the original is orphaned.
     trigger_dest = editor_dir / "SkillTrigger.cs"
-    csproj_dest = editor_dir / f"{name}.editor.csproj"
+    csproj_dest = editor_dir / f"{code_csproj}.editor.csproj"
 
     installed = False
     if not trigger_dest.exists():

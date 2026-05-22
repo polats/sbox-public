@@ -84,7 +84,8 @@ def ensure_skill_trigger_installed(project: Path) -> bool:
     text = text.replace("Local.ModelProbe.EditorTools", f"Local.{namespace}.EditorTools")
     trigger_dest.write_text(text, encoding="utf-8")
 
-    csproj_dest = editor_dir / f"{name}.editor.csproj"
+    # Editor rewrites slnx to snake_case csproj names; ship snake_case to start.
+    csproj_dest = editor_dir / f"{code_csproj}.editor.csproj"
     text = csproj_template.read_text(encoding="utf-8")
     text = (text.replace("model-probe", name)
                 .replace("model_probe", code_csproj)

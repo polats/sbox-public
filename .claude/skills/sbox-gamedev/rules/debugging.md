@@ -79,6 +79,41 @@ This streams new error entries as they happen with category coloring, so you
 see at a glance whether your latest edit broke compilation, references a
 missing asset, or triggered a different class of failure.
 
+## Failure mode: "Video recording finished" log line but no file on disk
+
+Symptom: `sbox-screenshot --mode video` reports success in the log:
+
+```
+[Generic] Video recording started: screenshots\sbox.YYYY...mp4
+[Generic] Video recording finished: <a href="screenshots\sbox.YYYY...mp4">…</a>
+```
+
+…but no MP4 exists at that path. Screenshots taken in the same play session
+work fine. Confusing because the engine logs "finished" unconditionally on
+`StopRecording`, even when the VideoWriter was never initialized.
+
+Root cause: `MediaRecorderLayer` is only attached to a camera whose
+`SceneCamera.IsRecordingCamera` is true, and that property is a derived
+check against the static `SceneCamera.RecordingCamera`. That static is set
+by `SceneRenderingWidget` **only when the widget has Qt focus** — which
+doesn't happen when Play is triggered programmatically (file trigger, no
+input event). So MediaRecorderLayer never attaches → recorder gets zero
+frames → 0-byte file → "finished" log line.
+
+Fix: SkillTrigger.cs's video-clip handler now reflects into
+`SceneCamera.RecordingCamera` and sets it to `Game.ActiveScene.Camera.SceneCamera`
+explicitly right before the `video` ConCmd fires. If you ever see this
+failure mode return, check that `EnsureRecordingCameraSet()` is being
+called and the reflection didn't break against an engine update.
+
+Diagnostic: after a video-clip trigger, the log should show:
+
+```
+[SkillTrigger] video-clip: SceneCamera.RecordingCamera set
+```
+
+If that line is missing, the fix didn't run.
+
 ## What's not in the log
 
 - **GPU / Vulkan crashes** — those land in stderr of the editor process,
