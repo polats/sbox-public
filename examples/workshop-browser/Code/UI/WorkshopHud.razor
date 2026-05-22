@@ -1,0 +1,159 @@
+@namespace Local.WorkshopBrowser
+@using System
+@using System.Linq
+@using Sandbox
+@using Sandbox.UI
+@inherits PanelComponent
+
+<root>
+	@if ( GM is null )
+	{
+		<div class="loading">Loading workshop…</div>
+	}
+	else
+	{
+		<div class="title-bar">
+			<i class="mi">storefront</i>
+			<div class="title">Workshop Browser</div>
+			<div class="spacer"></div>
+			<div class="counter">Mounted: @GM.MountedCount</div>
+			<div class="counter @(GM.RealCloudWorked ? "real" : "sim")">@(GM.RealCloudWorked ? "CLOUD" : "SIM")</div>
+		</div>
+
+		<div class="main">
+			<div class="left-pane">
+				<div class="pane-title">Cloud Packages</div>
+				<div class="search-row">
+					<TextEntry class="search" Placeholder="Search…" Value:bind=@SearchText />
+					<div class="refresh-btn" onclick=@OnRefresh>
+						<i class="mi">refresh</i>
+					</div>
+				</div>
+
+				<div class="package-list">
+					@foreach ( var pkg in GM.FilteredPackages )
+					{
+						var local = pkg;
+						var selectedClass = (GM.SelectedPackage == local) ? "selected" : "";
+						var mountedClass = local.IsMounted ? "mounted" : "";
+						<div class="package-card @selectedClass @mountedClass" onclick=@(() => GM.SelectPackage(local))>
+							<div class="icon" style="background-color: @ColorCss(local.TintHint);">
+								<i class="mi">@local.IconGlyph</i>
+							</div>
+							<div class="info">
+								<div class="name">@local.Title</div>
+								<div class="author">by @local.Author</div>
+								<div class="desc">@local.Description</div>
+							</div>
+							<div class="actions">
+								@if ( local.IsMounted )
+								{
+									<div class="mount-ok"><i class="mi">check_circle</i> Mounted</div>
+								}
+								else
+								{
+									<div class="mount-btn" onclick=@(_ => OnMount(local))>
+										<i class="mi">cloud_download</i>
+										Mount
+									</div>
+								}
+							</div>
+						</div>
+					}
+				</div>
+
+				<div class="status">@GM.Status</div>
+			</div>
+
+			<div class="right-pane">
+				<div class="pane-title">Spawnable Assets</div>
+				@if ( GM.SelectedPackage == null )
+				{
+					<div class="hint">Pick a package on the left.</div>
+				}
+				else if ( !GM.SelectedPackage.IsMounted )
+				{
+					<div class="hint">Mount the package to see its assets.</div>
+				}
+				else
+				{
+					<div class="package-summary">
+						<div class="name">@GM.SelectedPackage.Title</div>
+						<div class="ident">@GM.SelectedPackage.Ident</div>
+					</div>
+					<div class="asset-grid">
+						@foreach ( var asset in GM.SelectedPackage.Assets )
+						{
+							var local = asset;
+							var sel = (GM.SelectedAsset == local) ? "selected" : "";
+							<div class="asset @sel" onclick=@(() => GM.SelectAsset(local))>
+								<div class="swatch" style="background-color: @ColorCss(local.Tint);"></div>
+								<div class="asset-name">@local.Name</div>
+							</div>
+						}
+					</div>
+				}
+			</div>
+		</div>
+
+		<div class="footer">
+			<div class="footer-section">
+				<i class="mi">mouse</i>
+				<span>Left-click ground to spawn</span>
+			</div>
+			<div class="footer-section">
+				<i class="mi">keyboard</i>
+				<span>WASD move · Right-click drag to look</span>
+			</div>
+			<div class="footer-section selected-asset">
+				<i class="mi">inventory_2</i>
+				<span>Selected: <b>@(GM.SelectedAsset?.Name ?? "—")</b></span>
+			</div>
+			<div class="footer-section">
+				<i class="mi">view_in_ar</i>
+				<span>Spawned: @GM.SpawnedProps.Count</span>
+			</div>
+		</div>
+	}
+</root>
+
+@code
+{
+	public GameManager GM => Game.ActiveScene?.GetAllComponents<GameManager>().FirstOrDefault();
+
+	private string SearchText
+	{
+		get => GM?.SearchText ?? "";
+		set { if ( GM != null ) GM.SearchText = value; }
+	}
+
+	private void OnRefresh()
+	{
+		if ( GM == null ) return;
+		_ = GM.RefreshAsync();
+	}
+
+	private void OnMount( WorkshopPackageInfo pkg )
+	{
+		if ( GM == null || pkg == null ) return;
+		_ = GM.MountPackageAsync( pkg );
+	}
+
+	private string ColorCss( Color c )
+	{
+		int r = (int)(Math.Clamp( c.r, 0f, 1f ) * 255);
+		int g = (int)(Math.Clamp( c.g, 0f, 1f ) * 255);
+		int b = (int)(Math.Clamp( c.b, 0f, 1f ) * 255);
+		return $"rgb({r},{g},{b})";
+	}
+
+	protected override int BuildHash() => HashCode.Combine(
+		GM?.Packages?.Count,
+		GM?.SelectedPackage?.Ident,
+		GM?.SelectedAsset?.Name,
+		GM?.MountedCount,
+		GM?.SpawnedProps?.Count,
+		GM?.Status,
+		GM?.SearchText,
+		GM?.RealCloudWorked );
+}

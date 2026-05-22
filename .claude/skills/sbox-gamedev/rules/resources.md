@@ -144,6 +144,43 @@ Convert at the boundary (`new Vector3(t.X, t.Y, t.Z)` on load,
 `new TowerData(type, pos.x, pos.y, pos.z)` on save). Verified pattern
 from `examples/tower-defense/`.
 
+## `Package.FindAsync` / `Package.MountAsync` (cloud workshop)
+
+The API exists and the listing half works from the sandboxed editor:
+
+```csharp
+var pkgs = await Package.FindAsync( "type:asset", take: 20 );
+foreach ( var pkg in pkgs )
+    Log.Info( $"{pkg.Ident}: {pkg.Title} by {pkg.AuthorIdent}" );
+
+await Package.MountAsync( "facepunch.something", partial: false );
+// pkg.IsMounted() may not flip without auth context — verify before relying
+```
+
+Caveats observed in our autonomous environment:
+
+- `FindAsync` returns real results from sbox.game but the result count
+  can be small (sometimes a single package matches a broad query).
+- `MountAsync` does not always complete — the asset-download stage
+  may need auth context the sandboxed editor doesn't provide.
+  `pkg.IsMounted()` stays false after the call returns. No error in the
+  log. Worth defending with a timeout + `IsMounted` check.
+
+For autonomous demos: ship a "simulated catalog" fallback (a list of
+locally-authored GameResources styled as packages) so the demo works
+end-to-end regardless of cloud availability. Toggle between real and
+simulated via a `[Property] bool ForceSimulated` flag.
+
+## Sandbox project itself can't cleanly host `SkillTrigger.cs`
+
+If you ever try to use `sbox-eval` / `sbox-recompile` inside the
+`sandbox/` submodule directly, the auto-installed `SkillTrigger.cs`
+will fail to compile with namespace collisions
+(`Local.Sandbox.Internal` clashes with `Sandbox.Internal`,
+`Local.Sandbox.ConsoleSystem` with `Sandbox.ConsoleSystem`).
+Workaround: build in a fresh subproject under `examples/` and reference
+sandbox content from there, not from inside sandbox itself.
+
 ## sbox-eval can't see `Local.<X>` namespaces directly
 
 `sbox-eval` snippets are compiled against engine assemblies only; your

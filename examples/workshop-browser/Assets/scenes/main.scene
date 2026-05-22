@@ -1,0 +1,204 @@
+{
+  "__guid": "aaaaaaaa-0000-0000-0000-000000000001",
+  "GameObjects": [
+    {
+      "__guid": "aaaaaaaa-0000-0000-0000-00000000c00a",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Camera",
+      "Position": "-520,0,320",
+      "Rotation": "0,0.2588,0,0.9659",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.CameraComponent",
+          "__guid": "bbbbbbbb-0000-0000-0000-00000000c00a",
+          "__enabled": true,
+          "Flags": 0,
+          "BackgroundColor": "0.08,0.10,0.14,1",
+          "ClearFlags": "All",
+          "EnablePostProcessing": false,
+          "FieldOfView": 70,
+          "FovAxis": "Horizontal",
+          "IsMainCamera": true,
+          "Orthographic": false,
+          "OrthographicHeight": 120,
+          "Priority": 1,
+          "RenderExcludeTags": "",
+          "RenderTags": "",
+          "TargetEye": "None",
+          "Viewport": "0,0,1,1",
+          "ZFar": 20000,
+          "ZNear": 1
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "aaaaaaaa-0000-0000-0000-000000000040",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Sun",
+      "Position": "0,0,400",
+      "Rotation": "-0.3535534,0.3535534,0.1464466,0.8535534",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.DirectionalLight",
+          "__guid": "bbbbbbbb-0000-0000-0000-000000000040",
+          "__enabled": true,
+          "Flags": 0,
+          "FogMode": "Disabled",
+          "FogStrength": 1,
+          "LightColor": "1,0.97,0.9,1.6",
+          "ShadowBias": 0.0005,
+          "ShadowCascadeCount": 4,
+          "ShadowCascadeSplitRatio": 0.91,
+          "ShadowHardness": 0,
+          "Shadows": true,
+          "SkyColor": "0.35,0.45,0.62,1",
+          "Visualizer": {}
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "aaaaaaaa-0000-0000-0000-000000000050",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "GameManager",
+      "Position": "0,0,0",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Local.WorkshopBrowser.GameManager",
+          "__guid": "bbbbbbbb-0000-0000-0000-000000000050",
+          "__enabled": true,
+          "Flags": 0,
+          "AutoPlay": false,
+          "AutoInterval": 1.5,
+          "ForceSimulated": false,
+          "DefaultQuery": "type:asset"
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "aaaaaaaa-0000-0000-0000-000000000010",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Player",
+      "Position": "0,0,0",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Local.WorkshopBrowser.Player",
+          "__guid": "bbbbbbbb-0000-0000-0000-000000000010",
+          "__enabled": true,
+          "Flags": 0,
+          "MoveSpeed": 350,
+          "AutoPlay": false
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "aaaaaaaa-0000-0000-0000-000000000030",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "WorkshopHud",
+      "Position": "0,0,0",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.ScreenPanel",
+          "__guid": "bbbbbbbb-0000-0000-0000-000000000030",
+          "__enabled": true,
+          "Flags": 0,
+          "AutoScreenScale": true,
+          "Opacity": 1,
+          "Scale": 1,
+          "ScaleStrategy": "ConsistentHeight",
+          "TargetCamera": null,
+          "ZIndex": 100
+        }
+      ],
+      "Children": [
+        {
+          "__guid": "aaaaaaaa-0000-0000-0000-000000000031",
+          "__version": 2,
+          "Flags": 0,
+          "Name": "HudPanel",
+          "Position": "0,0,0",
+          "Rotation": "0,0,0,1",
+          "Scale": "1,1,1",
+          "Tags": "",
+          "Enabled": true,
+          "NetworkMode": 2,
+          "NetworkFlags": 0,
+          "NetworkOrphaned": 0,
+          "NetworkTransmit": true,
+          "OwnerTransfer": 1,
+          "Components": [
+            {
+              "__type": "Local.WorkshopBrowser.WorkshopHud",
+              "__guid": "bbbbbbbb-0000-0000-0000-000000000031",
+              "__enabled": true,
+              "Flags": 0
+            }
+          ],
+          "Children": []
+        }
+      ]
+    }
+  ],
+  "SceneProperties": {
+    "NetworkInterpolation": true,
+    "TimeScale": 1,
+    "WantsSystemScene": false,
+    "Metadata": {}
+  },
+  "ResourceVersion": 3,
+  "Title": "Workshop Browser",
+  "Description": "Browse cloud packages via Package.MountAsync; spawn props from the mounted package by clicking the ground.",
+  "__references": [],
+  "__version": 3
+}
