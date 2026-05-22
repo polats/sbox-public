@@ -185,9 +185,28 @@ public sealed class WoidClient : Component
 				var to   = args.TryGetProperty( "to",   out var toEl ) ? toEl.GetString() ?? "" : "";
 				list.Add( new SpeechBubble { Kind = "speech_bubble", Actor = actor, Text = text, To = to, DurationMs = 5000 } );
 				list.Add( new Need { Kind = "need", Actor = actor, Axis = "social", Op = "+", Amount = 8 } );
+
+				// Push the speech back into brain-server's perception bus so the
+				// listener's next observation includes it. Fire-and-forget; if
+				// brain-server hiccups, the next tick still runs with the older
+				// world.nearby_characters.last_said data we already provide.
+				_ = PushPerceptionAsync( target: !string.IsNullOrEmpty( to ) ? to : "*all*", evt: new {
+					kind = "speech", from_id = actor, text, to,
+					ts = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+				} );
 				break;
 		}
 		return list;
+	}
+
+	async Task PushPerceptionAsync( string target, object evt )
+	{
+		try
+		{
+			var body = JsonSerializer.Serialize( new { target, @event = evt } );
+			await PostJsonAsync( "/perception/event", body );
+		}
+		catch ( Exception e ) { LastError = $"perception/event: {e.Message}"; }
 	}
 
 	async Task<JsonElement> PostJsonAsync( string path, string body )

@@ -1,5 +1,6 @@
 @namespace Woid
 @using System
+@using System.Collections.Generic
 @using System.Linq
 @using System.Text.Json
 @using System.Threading.Tasks
@@ -40,6 +41,17 @@
 			<div class="section-label">LAST ACTION</div>
 			<div class="action">@LastAction</div>
 
+			@if (!string.IsNullOrEmpty(MoodBand))
+			{
+				<div class="section-label">MOOD: @MoodBand &nbsp;·&nbsp; @MoodletCount MOODLET@(MoodletCount == 1 ? "" : "S")</div>
+				<div class="moodlets">
+					@foreach (var m in MoodletTopTags)
+					{
+						<div class="moodlet">@m</div>
+					}
+				</div>
+			}
+
 			<div class="footer">
 				<div class="stat">@LastMs ms</div>
 				<div class="stat">@InTokens in</div>
@@ -74,6 +86,10 @@
 	public int InTokens { get; private set; }
 	public int OutTokens { get; private set; }
 	public int Tick { get; private set; }
+
+	public string MoodBand { get; private set; } = "";
+	public int MoodletCount { get; private set; }
+	public List<string> MoodletTopTags { get; private set; } = new();
 
 	/// <summary>Derived from trace: started_at > 0, ended_at == 0, < 25s old.</summary>
 	public bool IsThinking { get; private set; }
@@ -123,9 +139,31 @@
 				using var cdoc = JsonDocument.Parse( c );
 				if ( cdoc.RootElement.GetProperty( "ok" ).GetBoolean() )
 				{
-					var idn = cdoc.RootElement.GetProperty( "data" ).GetProperty( "character" ).GetProperty( "identity" );
+					var ch = cdoc.RootElement.GetProperty( "data" ).GetProperty( "character" );
+					var idn = ch.GetProperty( "identity" );
 					PersonaName = idn.GetProperty( "name" ).GetString() ?? "";
 					Vibe = idn.TryGetProperty( "vibe", out var v ) ? (v.GetString() ?? "") : "";
+
+					// Moodlets (top 3 by weight, sign-prefixed tag)
+					if ( ch.TryGetProperty( "moodlets", out var mod ) && mod.ValueKind == JsonValueKind.Array )
+					{
+						MoodletCount = mod.GetArrayLength();
+						var top = new List<string>();
+						int n = 0;
+						foreach ( var m in mod.EnumerateArray() )
+						{
+							if ( n++ >= 3 ) break;
+							var tag = m.TryGetProperty( "tag", out var tagEl ) ? tagEl.GetString() ?? "" : "";
+							var w   = m.TryGetProperty( "weight", out var wEl ) && wEl.TryGetInt32(out var wi) ? wi : 0;
+							var sign = w >= 0 ? "+" : "";
+							top.Add( $"{sign}{w} {tag}" );
+						}
+						MoodletTopTags = top;
+					}
+					if ( ch.TryGetProperty( "mood", out var moodObj ) )
+					{
+						MoodBand = moodObj.TryGetProperty( "band", out var bEl ) ? (bEl.GetString() ?? "") : "";
+					}
 				}
 			}
 			catch { /* ignore */ }
@@ -181,5 +219,5 @@
 	}
 
 	protected override int BuildHash() => HashCode.Combine(
-		PersonaName, Vibe, Reasoning, LastAction, IsThinking, LastMs, OutTokens, Tick );
+		PersonaName, Reasoning, LastAction, IsThinking, MoodBand, MoodletCount, OutTokens, Tick );
 }
