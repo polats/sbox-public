@@ -1,0 +1,28 @@
+@namespace Local.Fireworks
+@using System
+@using System.Linq
+@using Sandbox
+@using Sandbox.UI
+@inherits PanelComponent
+
+<root>
+	<div class="counter">
+		<div class="icon">celebration</div>
+		<div class="text">
+			<div class="label">FIREWORKS</div>
+			<div class="value">@(Manager?.FireworkCount ?? 0)</div>
+		</div>
+	</div>
+
+	<div class="hint">
+		<div class="hint-icon">mouse</div>
+		<div class="hint-text">Left-click to launch</div>
+	</div>
+</root>
+
+@code
+{
+	public GameManager Manager => Game.ActiveScene?.GetAllComponents<GameManager>().FirstOrDefault();
+
+	protected override int BuildHash() => HashCode.Combine( Manager?.FireworkCount );
+}

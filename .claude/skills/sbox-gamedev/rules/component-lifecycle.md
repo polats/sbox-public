@@ -166,3 +166,16 @@ public sealed class Pickup : Component, Component.ITriggerListener
 - **`Collider.Elasticity` and `Collider.Friction` are `float?`, not `Curve`.**
   Code that assumes they're a Curve fails to compile with a non-obvious
   message. See `rules/physics.md`.
+- **Game code can't call `Type.GetProperty(string)`.** The compiler
+  whitelist blocks reflective property lookup in `local.<project>` Code/.
+  Error: `'System.Private.CoreLib/System.Type.GetProperty(System.String)' is not allowed when whitelist is enabled`.
+  If you need to probe an API surface for unknown property names, do it
+  out-of-band via `sbox-eval` once, then hardcode the result in your
+  Component. Wholesale reflection belongs in Editor/ code only, not in
+  game code.
+- **`RenderOptions.BloomLayer` does not exist** in current builds. Bloom
+  is configured on a `PostProcessVolume` Component, not as a per-renderer
+  flag. The `RenderOptions` struct has `GameLayer`, `OverlayLayer`,
+  `AfterUILayer` — `BloomLayer` was removed/never-existed. If you want a
+  renderer to glow, give it a bright tint and add a global PostProcessVolume
+  with bloom enabled.
