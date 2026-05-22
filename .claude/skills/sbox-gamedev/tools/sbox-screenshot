@@ -186,7 +186,11 @@ def main():
     ap.add_argument("--scene", help="scene path relative to Assets/ (default: .sbproj StartupScene)")
     ap.add_argument("--width", type=int, default=1280)
     ap.add_argument("--height", type=int, default=720)
-    ap.add_argument("--out", help="copy screenshot to this path when done")
+    ap.add_argument("--out", help="copy result to this path (default: <project>/captures/<name>.<ext>)")
+    ap.add_argument("--no-relaunch", action="store_true",
+        help="don't kill+relaunch the editor; just send F5 to the running editor "
+             "(much faster — ~10s instead of 2-5min — but requires the editor to "
+             "already be on the right project with the capture sidecar scene loaded)")
     ap.add_argument("--timeout", type=int, default=420,
         help="seconds to wait for editor compile + F5 + capture (default: 420; first run after a code change can take 5 min)")
     ap.add_argument("--no-keep", action="store_true",
@@ -201,22 +205,33 @@ def main():
     if not project.is_dir():
         raise SystemExit(f"{project} is not a directory")
 
+    # Default --out to <project>/captures/<timestamp>.<ext>
+    if not args.out:
+        captures = project / "captures"
+        captures.mkdir(parents=True, exist_ok=True)
+        ext = "mp4" if args.mode == "video" else "png"
+        ts = time.strftime("%Y%m%d-%H%M%S")
+        args.out = str(captures / f"{project.name}-{ts}.{ext}")
+
     install_capture_component(project)
     scene = find_startup_scene(project, args.scene)
     print(f"base scene: {scene}", file=sys.stderr)
     sidecar = make_sidecar(scene, args.mode, args.width, args.height, args.duration)
     print(f"sidecar: {sidecar}", file=sys.stderr)
 
-    # Prime sidecar as open scene
-    sidecar_rel = sidecar.relative_to(project / "Assets")
-    subprocess.run([str(LAUNCH), "--kill"], check=False)
-    time.sleep(1)
-    subprocess.run([str(SET_STARTUP), str(project), str(sidecar_rel)], check=True)
-
     started_at = time.time()
     start_byte = LOG.stat().st_size if LOG.exists() else 0
-    subprocess.run([str(LAUNCH), str(project)], check=False)
-    print(f"editor launching at {time.strftime('%H:%M:%S')}...", file=sys.stderr)
+
+    if args.no_relaunch:
+        print("--no-relaunch: reusing running editor", file=sys.stderr)
+    else:
+        # Prime sidecar as open scene + kill+relaunch
+        sidecar_rel = sidecar.relative_to(project / "Assets")
+        subprocess.run([str(LAUNCH), "--kill"], check=False)
+        time.sleep(1)
+        subprocess.run([str(SET_STARTUP), str(project), str(sidecar_rel)], check=True)
+        subprocess.run([str(LAUNCH), str(project)], check=False)
+        print(f"editor launching at {time.strftime('%H:%M:%S')}...", file=sys.stderr)
 
     f5_sent = False
     play_active_seen = False  # video: saw VIDEO_REQUEST_START
