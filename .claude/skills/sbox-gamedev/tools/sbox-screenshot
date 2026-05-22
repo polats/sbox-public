@@ -193,6 +193,8 @@ def main():
         help="delete the sidecar scene after capture (default: keep it for re-runs)")
     ap.add_argument("--mode", choices=["screenshot", "video"], default="screenshot")
     ap.add_argument("--duration", type=float, default=5.0, help="video duration (sec)")
+    ap.add_argument("--no-reencode", action="store_true",
+        help="don't re-encode video to H.264; keep raw AV1+Opus from s&box")
     args = ap.parse_args()
 
     project = Path(args.project).resolve()
@@ -290,10 +292,31 @@ def main():
     if args.out:
         out = Path(args.out).expanduser().resolve()
         out.parent.mkdir(parents=True, exist_ok=True)
+        # AV1 video → re-encode to H.264 for universal player compat
+        if args.mode == "video" and shutil.which("ffmpeg") and not args.no_reencode:
+            try:
+                subprocess.run([
+                    "ffmpeg", "-y", "-loglevel", "error",
+                    "-i", str(result),
+                    "-c:v", "libx264", "-preset", "fast", "-crf", "22", "-pix_fmt", "yuv420p",
+                    "-c:a", "aac", "-b:a", "96k",
+                    str(out),
+                ], check=True)
+                print(f"saved (re-encoded H.264): {out}", file=sys.stderr)
+                print(out)
+                return
+            except subprocess.CalledProcessError as e:
+                print(f"ffmpeg re-encode failed ({e}); copying raw AV1", file=sys.stderr)
         shutil.copy2(result, out)
         print(f"saved: {out}")
     else:
         print(f"saved: {result}")
+        if args.mode == "video":
+            print(
+                "  note: AV1+Opus mp4 — may not play in older video players.\n"
+                "  use --out PATH for an auto-re-encoded H.264 copy (needs ffmpeg).",
+                file=sys.stderr,
+            )
 
 
 if __name__ == "__main__":
