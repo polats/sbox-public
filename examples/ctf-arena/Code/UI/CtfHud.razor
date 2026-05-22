@@ -1,0 +1,78 @@
+@namespace Local.CtfArena
+@using System
+@using System.Linq
+@using Sandbox
+@using Sandbox.UI
+@inherits PanelComponent
+
+<root>
+	@if ( GM is null )
+	{
+		<div class="loading">Loading…</div>
+	}
+	else
+	{
+		<div class="scorebar">
+			<div class="team red">
+				<div class="label">RED</div>
+				<div class="score">@GM.RedScore</div>
+				<div class="flagstatus">@RedFlagStatus()</div>
+			</div>
+			<div class="vs">vs</div>
+			<div class="team blue">
+				<div class="label">BLUE</div>
+				<div class="score">@GM.BlueScore</div>
+				<div class="flagstatus">@BlueFlagStatus()</div>
+			</div>
+		</div>
+
+		<div class="topright">
+			<div class="state">@GM.StateName</div>
+			<div class="winto">First to @GameManager.WinningScore</div>
+		</div>
+
+		<div class="hint @HintClass()">
+			@GM.HudHint
+		</div>
+	}
+</root>
+
+@code
+{
+	public GameManager GM => Game.ActiveScene?.GetAllComponents<GameManager>().FirstOrDefault();
+
+	private string RedFlagStatus()
+	{
+		if ( GM is null ) return "—";
+		if ( GM.RedFlagCarrier == default ) return "AT BASE";
+		var go = Game.ActiveScene?.Directory.FindByGuid( GM.RedFlagCarrier );
+		return go is null ? "TAKEN" : $"CARRIED ({go.Name})";
+	}
+
+	private string BlueFlagStatus()
+	{
+		if ( GM is null ) return "—";
+		if ( GM.BlueFlagCarrier == default ) return "AT BASE";
+		var go = Game.ActiveScene?.Directory.FindByGuid( GM.BlueFlagCarrier );
+		return go is null ? "TAKEN" : $"CARRIED ({go.Name})";
+	}
+
+	private string HintClass()
+	{
+		if ( GM is null ) return "";
+		return GM.StateName switch
+		{
+			"Scored" => "celebrate",
+			"GameOver" => "gameover",
+			_ => "",
+		};
+	}
+
+	protected override int BuildHash() => HashCode.Combine(
+		GM?.RedScore,
+		GM?.BlueScore,
+		GM?.RedFlagCarrier,
+		GM?.BlueFlagCarrier,
+		GM?.StateName,
+		GM?.HudHint );
+}
