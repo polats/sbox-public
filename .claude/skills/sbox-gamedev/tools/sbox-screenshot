@@ -29,20 +29,17 @@ Usage:
   sbox-screenshot <project> --no-relaunch            reuse editor that's already up
 """
 from __future__ import annotations
-import argparse, json, os, re, shutil, subprocess, sys, time, uuid
+import argparse, os, re, shutil, subprocess, sys, time
 from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 SKILL_ROOT = SCRIPT_DIR.parent
-TEMPLATE_CAPTURE = SKILL_ROOT / "templates" / "Capture.cs"
 TEMPLATE_EDITOR_DIR = SKILL_ROOT / "templates" / "Editor"
 TEMPLATE_TRIGGER = TEMPLATE_EDITOR_DIR / "SkillTrigger.cs"
 TEMPLATE_EDITOR_CSPROJ = TEMPLATE_EDITOR_DIR / "PROJECT.editor.csproj"
 LAUNCH = SCRIPT_DIR / "sbox-launch"
-SET_STARTUP = SCRIPT_DIR / "sbox-set-startup-scene"
 LOG = Path.home() / ".steam/root/steamapps/common/sbox/logs/sbox-dev.log"
 SCREENSHOTS_DIR = Path.home() / ".steam/root/steamapps/common/sbox/screenshots"
-EDITOR_WIN_TITLE = "s&box editor"
 
 
 def project_csproj_name(project: Path) -> str:
@@ -106,97 +103,6 @@ def editor_running_on(project: Path) -> bool:
     except Exception:
         return False
 
-LIFECYCLE_NULLS = {
-    "OnComponentDestroy": None, "OnComponentDisabled": None,
-    "OnComponentEnabled": None, "OnComponentFixedUpdate": None,
-    "OnComponentStart": None,   "OnComponentUpdate": None,
-}
-
-
-def install_capture_component(project: Path) -> Path:
-    """Copy Capture.cs into the project's Code/ if not already there."""
-    target = project / "Code" / "_skill_capture" / "Capture.cs"
-    target.parent.mkdir(parents=True, exist_ok=True)
-    if not target.exists() or target.read_bytes() != TEMPLATE.read_bytes():
-        shutil.copy2(TEMPLATE, target)
-    return target
-
-
-def find_startup_scene(project: Path, override: str | None) -> Path:
-    if override:
-        p = project / "Assets" / override if not override.startswith("Assets/") else project / override
-        if p.exists():
-            return p
-    # Read .sbproj StartupScene
-    sbproj = next((p for p in project.glob("*.sbproj") if p.is_file()), project / ".sbproj")
-    if sbproj.exists():
-        try:
-            sub = json.loads(sbproj.read_text(encoding="utf-8"))
-            scene = sub.get("Metadata", {}).get("StartupScene")
-            if scene:
-                p = project / "Assets" / scene
-                if p.exists():
-                    return p
-        except Exception:
-            pass
-    # Fallback: first .scene under Assets/scenes/
-    cand = list((project / "Assets" / "scenes").glob("*.scene"))
-    if not cand:
-        raise SystemExit(f"no scene found in {project}/Assets/scenes/")
-    return cand[0]
-
-
-def make_sidecar(scene: Path, mode: str, width: int, height: int, video_dur: float) -> Path:
-    """Read the scene, add a Capture GameObject, write to scene-capture.scene."""
-    data = json.loads(scene.read_text(encoding="utf-8"))
-    capture_go = {
-        "__guid": str(uuid.uuid4()), "__version": 2, "Flags": 0,
-        "Name": "_SkillCapture",
-        "Position": "0,0,0", "Rotation": "0,0,0,1", "Scale": "1,1,1",
-        "Tags": "", "Enabled": True,
-        "NetworkMode": 2, "NetworkFlags": 0, "NetworkOrphaned": 0,
-        "NetworkTransmit": True, "OwnerTransfer": 1,
-        "Components": [
-            {
-                "__type": "Local.SkillHelper.Capture",
-                "__guid": str(uuid.uuid4()),
-                "__enabled": True, "Flags": 0,
-                **LIFECYCLE_NULLS,
-                "Mode": "Video" if mode == "video" else "Screenshot",
-                "Width": width, "Height": height,
-                "DelaySeconds": 0.5,
-                "VideoDurationSeconds": video_dur,
-            }
-        ],
-        "Children": [],
-    }
-    data.setdefault("GameObjects", []).append(capture_go)
-    sidecar = scene.with_suffix(".capture.scene")
-    sidecar.write_text(json.dumps(data, indent=2), encoding="utf-8")
-    return sidecar
-
-
-def send_f5_to_editor() -> bool:
-    try:
-        r = subprocess.run(["xdotool", "search", "--name", EDITOR_WIN_TITLE],
-                           capture_output=True, text=True, timeout=5)
-        wids = [w for w in r.stdout.split() if w.strip()]
-        if not wids:
-            return False
-        target = wids[0]
-        for w in wids:
-            name = subprocess.run(["xdotool", "getwindowname", w],
-                                  capture_output=True, text=True, timeout=2).stdout.strip()
-            if " - " in name:
-                target = w
-                break
-        subprocess.run(["xdotool", "windowactivate", "--sync", target], timeout=5, check=False)
-        time.sleep(0.3)
-        subprocess.run(["xdotool", "key", "--window", target, "F5"], timeout=5, check=False)
-        return True
-    except Exception as e:
-        print(f"xdotool error: {e}", file=sys.stderr)
-        return False
 
 
 # Matches:

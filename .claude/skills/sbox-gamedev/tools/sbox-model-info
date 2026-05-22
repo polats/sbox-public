@@ -20,11 +20,15 @@ from __future__ import annotations
 import argparse, os, re, subprocess, sys, time
 from pathlib import Path
 
-REPO = Path("/home/paul/projects/sbox-public")
+SCRIPT_DIR = Path(__file__).resolve().parent
+SKILL_ROOT = SCRIPT_DIR.parent
+# Repo root holds project dirs alongside the skill; skill lives at
+# <repo>/.claude/skills/sbox-gamedev/. Walk up 4 levels.
+REPO = SKILL_ROOT.parent.parent.parent
+
 PROBE = REPO / "model-probe"
 LOG = Path.home() / ".steam/root/steamapps/common/sbox/logs/sbox-dev.log"
 
-SCRIPT_DIR = Path(__file__).resolve().parent
 LAUNCH = SCRIPT_DIR / "sbox-launch"
 
 

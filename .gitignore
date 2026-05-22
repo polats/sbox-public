@@ -104,3 +104,5 @@ engine/TestResults/
 /game/tools
 /game/aftermath_dumps
 /game/gamecache
+
+# Python bytecode cache from skill tools
