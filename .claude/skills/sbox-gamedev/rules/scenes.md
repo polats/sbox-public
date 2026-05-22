@@ -320,7 +320,7 @@ produces stable diffs.
 ## Generating scenes from Python
 
 For non-trivial scenes, write a generator script. See
-`bullet-hell/Assets/scenes/main.scene.gen.py` for a worked example. The
+`games/bullet-hell/Assets/scenes/main.scene.gen.py` for a worked example. The
 pattern:
 
 ```python
