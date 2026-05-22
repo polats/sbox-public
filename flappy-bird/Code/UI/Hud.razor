@@ -1,0 +1,56 @@
+@namespace Local.FlappyBird
+@using System;
+@using System.Linq;
+@using Sandbox;
+@using Sandbox.UI;
+@inherits PanelComponent
+
+<root>
+	@if ( GM is null )
+	{
+		<div class="loading">Loading...</div>
+	}
+	else if ( GM.State == GameState.Menu )
+	{
+		<div class="center menu">
+			<div class="title">FLAPPY BIRD</div>
+			<div class="icon big">flutter_dash</div>
+			<div class="prompt">
+				<div class="icon">keyboard</div>
+				<div class="text">Press SPACE to start</div>
+			</div>
+			@if ( GM.HighScore > 0 )
+			{
+				<div class="highscore">Best: @GM.HighScore</div>
+			}
+		</div>
+	}
+	else if ( GM.State == GameState.Playing )
+	{
+		<div class="top score-only">
+			<div class="score">@GM.Score</div>
+		</div>
+	}
+	else
+	{
+		<div class="center gameover">
+			<div class="title">GAME OVER</div>
+			<div class="row">
+				<div class="icon">stars</div>
+				<div class="score-big">@GM.Score</div>
+			</div>
+			<div class="highscore">Best: @GM.HighScore</div>
+			<div class="prompt">
+				<div class="icon">refresh</div>
+				<div class="text">Press R to restart</div>
+			</div>
+		</div>
+	}
+</root>
+
+@code
+{
+	public GameManager GM => Game.ActiveScene?.GetAllComponents<GameManager>().FirstOrDefault();
+
+	protected override int BuildHash() => HashCode.Combine( GM?.State, GM?.Score, GM?.HighScore );
+}

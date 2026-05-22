@@ -84,6 +84,13 @@ public static class SkillTrigger
 				if ( Game.IsPlaying )
 				{
 					Log.Info( $"[SkillTrigger] video-clip: play engaged after {(float)_videoPhaseStart:F2}s; starting recorder" );
+					// CRITICAL: when Play() is invoked programmatically (no
+					// SceneRenderingWidget focus change), SceneCamera.RecordingCamera
+					// is never set, so RenderPipeline doesn't attach the
+					// MediaRecorderLayer and the recorder gets zero frames.
+					// Explicitly point RecordingCamera at the active scene's main
+					// camera. Both members are internal — reflect.
+					EnsureRecordingCameraSet();
 					Sandbox.ConsoleSystem.Run( "video" );
 					_videoPhase = VideoClipPhase.Recording;
 					_videoPhaseStart = 0;
@@ -123,6 +130,51 @@ public static class SkillTrigger
 					_videoPhase = VideoClipPhase.None;
 				}
 				return;
+		}
+	}
+
+	// SceneCamera.RecordingCamera is internal; reflect to set it. RenderPipeline
+	// uses sceneCamera.IsRecordingCamera (also internal — backed by this static)
+	// to decide whether to attach MediaRecorderLayer.
+	private static void EnsureRecordingCameraSet()
+	{
+		try
+		{
+			var cam = Game.ActiveScene?.Camera;
+			if ( cam == null )
+			{
+				Log.Warning( "[SkillTrigger] video-clip: Game.ActiveScene has no Camera — recording will fail" );
+				return;
+			}
+			// CameraComponent.SceneCamera holds the engine-level SceneCamera.
+			var sceneCamProp = cam.GetType().GetProperty( "SceneCamera", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic );
+			var sceneCam = sceneCamProp?.GetValue( cam );
+			if ( sceneCam == null )
+			{
+				Log.Warning( "[SkillTrigger] video-clip: CameraComponent.SceneCamera is null" );
+				return;
+			}
+			var sceneCameraType = sceneCam.GetType();
+			// Walk up the type hierarchy until we find RecordingCamera (declared on SceneCamera).
+			var t = sceneCameraType;
+			System.Reflection.PropertyInfo recordingProp = null;
+			while ( t != null )
+			{
+				recordingProp = t.GetProperty( "RecordingCamera", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public );
+				if ( recordingProp != null ) break;
+				t = t.BaseType;
+			}
+			if ( recordingProp == null )
+			{
+				Log.Warning( "[SkillTrigger] video-clip: couldn't find SceneCamera.RecordingCamera property via reflection" );
+				return;
+			}
+			recordingProp.SetValue( null, sceneCam );
+			Log.Info( "[SkillTrigger] video-clip: SceneCamera.RecordingCamera set" );
+		}
+		catch ( Exception ex )
+		{
+			Log.Warning( $"[SkillTrigger] video-clip: EnsureRecordingCameraSet failed: {ex.GetType().Name}: {ex.Message}" );
 		}
 	}
 

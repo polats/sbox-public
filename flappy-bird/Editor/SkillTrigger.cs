@@ -11,7 +11,7 @@ using System.Runtime.Loader;
 using System.Text;
 using System.Text.Json;
 
-namespace Local.ModelProbe.EditorTools;
+namespace Local.FlappyBird.EditorTools;
 
 /// <summary>
 /// Editor-side helper for the sbox-gamedev skill.
