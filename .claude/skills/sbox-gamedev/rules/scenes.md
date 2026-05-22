@@ -93,6 +93,29 @@ s&box stores rotation as `"Rotation": "x,y,z,w"` quaternion.
 **Sign trap:** the Y component is *positive* to rotate the camera downward
 (pitch the forward vector toward -Z). Negative Y rotates it upward.
 
+## `.sbproj` Ident dictates the C# assembly name
+
+The `.sbproj` file has an `Ident` field. The editor auto-generates the
+Code csproj as `<Ident>.csproj` and the assembly name as
+`package.local.<Ident>`. If you ship a manually-named `arena-themes.csproj`
+(with a hyphen) but the .sbproj says `"Ident": "arena_themes"`, the
+editor silently creates `arena_themes.csproj` next to it and ignores
+your hyphen-named one. Your code in the hyphenated csproj never
+compiles.
+
+Rules:
+
+- **`Ident` must be snake_case** — C# identifier rules, no hyphens.
+- **Let the editor own the Code csproj filename**. Use `<Ident>.csproj`
+  to match what the editor auto-generates.
+- **Project directory** can still be hyphenated (`examples/arena-themes/`)
+  — that's a folder, not a C# identifier. The mapping is
+  `dir-name` → `Ident: dir_name` → `dir_name.csproj` →
+  `package.local.dir_name` assembly.
+
+Reflection from `sbox-eval` against your project's types must use that
+`package.local.<ident>` assembly name — see `rules/resources.md`.
+
 ## `__guid` must be a valid GUID
 
 Every GameObject and Component needs a unique `__guid`. The format is

@@ -1,0 +1,52 @@
+@namespace Local.ArenaThemes
+@using System
+@using System.Linq
+@using Sandbox
+@using Sandbox.UI
+@inherits PanelComponent
+
+<root>
+	@if ( GM is null )
+	{
+		<div class="loading">Loading themes…</div>
+	}
+	else
+	{
+		<div class="topbar">
+			<div class="title">Arena Theme: <span class="name">@(GM.CurrentTheme?.DisplayName ?? "—")</span></div>
+			<div class="hint">WASD to walk · 1-@(Math.Min(GM.Themes.Count,9)) to switch theme</div>
+		</div>
+
+		<div class="bottom">
+			@for ( int i = 0; i < GM.Themes.Count; i++ )
+			{
+				var idx = i;
+				var theme = GM.Themes[idx];
+				var active = (idx == GM.CurrentIndex) ? "active" : "";
+				<div class="card @active">
+					<div class="key">@(idx + 1)</div>
+					<div class="swatch" style="background-color: @ColorCss(theme.FloorColor);"></div>
+					<div class="label">@theme.DisplayName</div>
+				</div>
+			}
+		</div>
+	}
+</root>
+
+@code
+{
+	public GameManager GM => Game.ActiveScene?.GetAllComponents<GameManager>().FirstOrDefault();
+
+	private string ColorCss( Color c )
+	{
+		int r = (int)(Math.Clamp( c.r, 0f, 1f ) * 255);
+		int g = (int)(Math.Clamp( c.g, 0f, 1f ) * 255);
+		int b = (int)(Math.Clamp( c.b, 0f, 1f ) * 255);
+		return $"rgb({r},{g},{b})";
+	}
+
+	protected override int BuildHash() => HashCode.Combine(
+		GM?.CurrentIndex,
+		GM?.Themes?.Count,
+		GM?.CurrentTheme?.DisplayName );
+}
