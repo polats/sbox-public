@@ -1,0 +1,37 @@
+@namespace Local.NpcPatrol
+@using System
+@using System.Linq
+@using Sandbox
+@using Sandbox.UI
+@inherits PanelComponent
+
+<root>
+	@if ( GM is null )
+	{
+		<div class="loading">Loading…</div>
+	}
+	else
+	{
+		<div class="topbar">
+			<div class="title">Layered NPC Patrol</div>
+			<div class="hint">WASD + mouse · sneak past the guard's sight cone</div>
+		</div>
+
+		<div class="state @StateClass">
+			<div class="label">Guard state</div>
+			<div class="value">@StateName</div>
+			<div class="sub">@GM.Status</div>
+		</div>
+	}
+</root>
+
+@code
+{
+	public GameManager GM => Game.ActiveScene?.GetAllComponents<GameManager>().FirstOrDefault();
+
+	private string StateName => GM?.Guard?.State.ToString() ?? "—";
+
+	private string StateClass => StateName.ToLowerInvariant();
+
+	protected override int BuildHash() => HashCode.Combine( StateName, GM?.Status );
+}
