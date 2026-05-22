@@ -1,0 +1,212 @@
+{
+  "__guid": "aaaaaaaa-0000-0000-0000-000000000001",
+  "GameObjects": [
+    {
+      "__guid": "aaaaaaaa-0000-0000-0000-000000000040",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Sun",
+      "Position": "200,100,500",
+      "Rotation": "-0.3535534,0.3535534,0.1464466,0.8535534",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.DirectionalLight",
+          "__guid": "bbbbbbbb-0000-0000-0000-000000000040",
+          "__enabled": true,
+          "Flags": 0,
+          "FogMode": "Disabled",
+          "FogStrength": 1,
+          "LightColor": "1,0.95,0.85,1.6",
+          "ShadowBias": 0.0005,
+          "ShadowCascadeCount": 4,
+          "ShadowCascadeSplitRatio": 0.91,
+          "ShadowHardness": 0,
+          "Shadows": true,
+          "SkyColor": "0.45,0.50,0.60,1",
+          "Visualizer": {}
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "aaaaaaaa-0000-0000-0000-000000000005",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "GameController",
+      "Position": "0,0,0",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Local.FpsWeapons.GameController",
+          "__guid": "bbbbbbbb-0000-0000-0000-000000000005",
+          "__enabled": true,
+          "Flags": 0
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "aaaaaaaa-0000-0000-0000-000000000010",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Player",
+      "Position": "-300,0,0",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Local.FpsWeapons.Player",
+          "__guid": "bbbbbbbb-0000-0000-0000-000000000010",
+          "__enabled": true,
+          "Flags": 0,
+          "MouseSensitivity": 0.1,
+          "MaxTraceDistance": 12000,
+          "AutoPlay": false,
+          "AutoSwapInterval": 4,
+          "AutoFireInterval": 0.55
+        },
+        {
+          "__type": "Local.FpsWeapons.PlayerInventory",
+          "__guid": "bbbbbbbb-0000-0000-0000-000000000011",
+          "__enabled": true,
+          "Flags": 0
+        }
+      ],
+      "Children": [
+        {
+          "__guid": "aaaaaaaa-0000-0000-0000-00000000c00a",
+          "__version": 2,
+          "Flags": 0,
+          "Name": "Camera",
+          "Position": "0,0,64",
+          "Rotation": "0,0,0,1",
+          "Scale": "1,1,1",
+          "Tags": "",
+          "Enabled": true,
+          "NetworkMode": 2,
+          "NetworkFlags": 0,
+          "NetworkOrphaned": 0,
+          "NetworkTransmit": true,
+          "OwnerTransfer": 1,
+          "Components": [
+            {
+              "__type": "Sandbox.CameraComponent",
+              "__guid": "bbbbbbbb-0000-0000-0000-00000000c00a",
+              "__enabled": true,
+              "Flags": 0,
+              "BackgroundColor": "0.10,0.12,0.16,1",
+              "ClearFlags": "All",
+              "EnablePostProcessing": false,
+              "FieldOfView": 80,
+              "FovAxis": "Horizontal",
+              "IsMainCamera": true,
+              "Orthographic": false,
+              "OrthographicHeight": 120,
+              "PostProcessAnchor": null,
+              "Priority": 1,
+              "RenderExcludeTags": "",
+              "RenderTags": "",
+              "RenderTexture": null,
+              "TargetEye": "None",
+              "Viewport": "0,0,1,1",
+              "ZFar": 20000,
+              "ZNear": 1
+            }
+          ],
+          "Children": []
+        }
+      ]
+    },
+    {
+      "__guid": "aaaaaaaa-0000-0000-0000-000000000030",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Hud",
+      "Position": "0,0,0",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.ScreenPanel",
+          "__guid": "bbbbbbbb-0000-0000-0000-000000000030",
+          "__enabled": true,
+          "Flags": 0,
+          "AutoScreenScale": true,
+          "Opacity": 1,
+          "Scale": 1,
+          "ScaleStrategy": "ConsistentHeight",
+          "TargetCamera": null,
+          "ZIndex": 100
+        }
+      ],
+      "Children": [
+        {
+          "__guid": "aaaaaaaa-0000-0000-0000-000000000031",
+          "__version": 2,
+          "Flags": 0,
+          "Name": "HudPanel",
+          "Position": "0,0,0",
+          "Rotation": "0,0,0,1",
+          "Scale": "1,1,1",
+          "Tags": "",
+          "Enabled": true,
+          "NetworkMode": 2,
+          "NetworkFlags": 0,
+          "NetworkOrphaned": 0,
+          "NetworkTransmit": true,
+          "OwnerTransfer": 1,
+          "Components": [
+            {
+              "__type": "Local.FpsWeapons.Hud",
+              "__guid": "bbbbbbbb-0000-0000-0000-000000000031",
+              "__enabled": true,
+              "Flags": 0
+            }
+          ],
+          "Children": []
+        }
+      ]
+    }
+  ],
+  "SceneProperties": {
+    "NetworkInterpolation": true,
+    "TimeScale": 1,
+    "WantsSystemScene": false,
+    "Metadata": {}
+  },
+  "ResourceVersion": 3,
+  "Title": "Main",
+  "Description": "FPS Weapons: pistol, shotgun, physgun with viewmodels.",
+  "__references": [],
+  "__version": 3
+}

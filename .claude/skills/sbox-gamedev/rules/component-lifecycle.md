@@ -173,6 +173,9 @@ public sealed class Pickup : Component, Component.ITriggerListener
   out-of-band via `sbox-eval` once, then hardcode the result in your
   Component. Wholesale reflection belongs in Editor/ code only, not in
   game code.
+- **`Noise.Perlin` does not exist.** No Perlin helper in `Sandbox.Noise`. For procedural noise / shake, use `MathF.Sin/Cos` composed with elapsed time, or write your own value-noise (see Python pattern in `rules/terrain.md`).
+- **`Game.ActiveScene` vs `SceneEditorSession.Active.Scene`.** In play mode `Game.ActiveScene` is the active running scene; in edit mode it can be null or different. When `sbox-eval`-debugging a scene, query `SceneEditorSession.Active?.Scene` for edit-mode contents, `Game.ActiveScene` for play-mode contents — they're often different scenes with different GameObject counts.
+- **Standard input action names** (confirmed against `sandbox/Code/UI/Inventory/Inventory.razor`): `Slot1`..`Slot9`, `SlotNext`, `SlotPrev`, `Attack1`, `Attack2`, `Reload`, `Use`, `Jump`, `Duck`, `Sprint`, `Forward`, `Backward`, `Left`, `Right`. Use these for `Input.Pressed("…")`/`Input.Down("…")` instead of inventing your own — they're already wired to default keys (1-9, mouse, R, E, Space, etc.).
 - **`RenderOptions.BloomLayer` does not exist** in current builds. Bloom
   is configured on a `PostProcessVolume` Component, not as a per-renderer
   flag. The `RenderOptions` struct has `GameLayer`, `OverlayLayer`,

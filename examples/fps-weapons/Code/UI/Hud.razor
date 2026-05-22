@@ -1,0 +1,87 @@
+@namespace Local.FpsWeapons
+@using System
+@using System.Linq
+@using Sandbox
+@using Sandbox.UI
+@inherits PanelComponent
+
+<root>
+	@if ( Player is null )
+	{
+		<div class="loading">Loading...</div>
+	}
+	else
+	{
+		<div class="crosshair">
+			<div class="cross-v"></div>
+			<div class="cross-h"></div>
+			<div class="cross-dot"></div>
+		</div>
+
+		<div class="weapon-card">
+			<div class="icon">@WeaponIcon</div>
+			<div class="info">
+				<div class="name">@WeaponName</div>
+				<div class="ammo">
+					@if ( IsPhysGun )
+					{
+						<span class="infinite">--</span>
+					}
+					else
+					{
+						<span class="num">@CurrentAmmo</span>
+						<span class="slash">/</span>
+						<span class="max">@MaxAmmo</span>
+					}
+				</div>
+			</div>
+		</div>
+
+		@if ( IsReloading )
+		{
+			<div class="reloading">RELOADING</div>
+		}
+
+		<div class="hint">
+			<div class="row"><span class="key">1</span><span class="lbl">Pistol</span></div>
+			<div class="row"><span class="key">2</span><span class="lbl">Shotgun</span></div>
+			<div class="row"><span class="key">3</span><span class="lbl">PhysGun</span></div>
+			<div class="row"><span class="key">LMB</span><span class="lbl">Fire / Grab</span></div>
+			<div class="row"><span class="key">RMB</span><span class="lbl">Freeze (PhysGun)</span></div>
+			<div class="row"><span class="key">R</span><span class="lbl">Reload</span></div>
+		</div>
+	}
+</root>
+
+@code
+{
+	public Player Player => Game.ActiveScene?.GetAllComponents<Player>().FirstOrDefault();
+
+	private BaseWeapon Active => Player?.Inventory?.Active;
+
+	private string WeaponName => Active?.DisplayName ?? "—";
+	private string WeaponIcon => Active switch
+	{
+		PistolWeapon => "sports_handball",
+		ShotgunWeapon => "filter_drama",
+		PhysGunWeapon => "auto_fix_high",
+		_ => "help"
+	};
+	private bool IsPhysGun => Active is PhysGunWeapon;
+	private int CurrentAmmo => Active?.Ammo ?? 0;
+	private int MaxAmmo => Active?.MaxAmmo ?? 0;
+
+	private bool IsReloading => Active switch
+	{
+		PistolWeapon p => p.IsReloading,
+		ShotgunWeapon s => s.IsReloading,
+		_ => false
+	};
+
+	protected override int BuildHash() => HashCode.Combine(
+		WeaponName,
+		CurrentAmmo,
+		MaxAmmo,
+		IsReloading,
+		IsPhysGun );
+}
