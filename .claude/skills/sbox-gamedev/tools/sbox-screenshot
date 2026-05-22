@@ -1,0 +1,266 @@
+#!/usr/bin/env python3
+"""
+sbox-screenshot — capture a screenshot of a project's main scene from the
+editor's running game.
+
+How it works:
+  1. Inject a `Capture` Component into the project (copies templates/Capture.cs
+     into <project>/Code/_skill_capture/).
+  2. Generate a sidecar scene `<scene>.capture.scene` = original scene + a
+     Capture GameObject. Prime it as the open scene.
+  3. Kill + relaunch editor on the project.
+  4. Send F5 (xdotool) to enter play mode → Capture.OnStart fires →
+     `screenshot_highres W H` runs → engine writes
+     `~/.steam/.../sbox/screenshots/sbox.<timestamp>.png` and logs
+     `Screenshot saved to: <path>`.
+  5. Parse log for the saved path, optionally move/rename to --out.
+  6. Send F5 again to leave play. Clean up sidecar scene (Capture.cs left
+     in place for re-use — harmless if not in any scene).
+
+Usage:
+  sbox-screenshot <project-dir>
+  sbox-screenshot <project-dir> --width 1920 --height 1080
+  sbox-screenshot <project-dir> --out /tmp/coin-rush.png
+  sbox-screenshot <project-dir> --scene scenes/main.scene
+  sbox-screenshot <project-dir> --keep   # don't delete the sidecar scene
+"""
+from __future__ import annotations
+import argparse, json, os, re, shutil, subprocess, sys, time, uuid
+from pathlib import Path
+
+SCRIPT_DIR = Path(__file__).resolve().parent
+SKILL_ROOT = SCRIPT_DIR.parent
+TEMPLATE = SKILL_ROOT / "templates" / "Capture.cs"
+LAUNCH = SCRIPT_DIR / "sbox-launch"
+SET_STARTUP = SCRIPT_DIR / "sbox-set-startup-scene"
+LOG = Path.home() / ".steam/root/steamapps/common/sbox/logs/sbox-dev.log"
+SCREENSHOTS_DIR = Path.home() / ".steam/root/steamapps/common/sbox/screenshots"
+EDITOR_WIN_TITLE = "s&box editor"
+
+LIFECYCLE_NULLS = {
+    "OnComponentDestroy": None, "OnComponentDisabled": None,
+    "OnComponentEnabled": None, "OnComponentFixedUpdate": None,
+    "OnComponentStart": None,   "OnComponentUpdate": None,
+}
+
+
+def install_capture_component(project: Path) -> Path:
+    """Copy Capture.cs into the project's Code/ if not already there."""
+    target = project / "Code" / "_skill_capture" / "Capture.cs"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    if not target.exists() or target.read_bytes() != TEMPLATE.read_bytes():
+        shutil.copy2(TEMPLATE, target)
+    return target
+
+
+def find_startup_scene(project: Path, override: str | None) -> Path:
+    if override:
+        p = project / "Assets" / override if not override.startswith("Assets/") else project / override
+        if p.exists():
+            return p
+    # Read .sbproj StartupScene
+    sbproj = next((p for p in project.glob("*.sbproj") if p.is_file()), project / ".sbproj")
+    if sbproj.exists():
+        try:
+            sub = json.loads(sbproj.read_text(encoding="utf-8"))
+            scene = sub.get("Metadata", {}).get("StartupScene")
+            if scene:
+                p = project / "Assets" / scene
+                if p.exists():
+                    return p
+        except Exception:
+            pass
+    # Fallback: first .scene under Assets/scenes/
+    cand = list((project / "Assets" / "scenes").glob("*.scene"))
+    if not cand:
+        raise SystemExit(f"no scene found in {project}/Assets/scenes/")
+    return cand[0]
+
+
+def make_sidecar(scene: Path, mode: str, width: int, height: int, video_dur: float) -> Path:
+    """Read the scene, add a Capture GameObject, write to scene-capture.scene."""
+    data = json.loads(scene.read_text(encoding="utf-8"))
+    capture_go = {
+        "__guid": str(uuid.uuid4()), "__version": 2, "Flags": 0,
+        "Name": "_SkillCapture",
+        "Position": "0,0,0", "Rotation": "0,0,0,1", "Scale": "1,1,1",
+        "Tags": "", "Enabled": True,
+        "NetworkMode": 2, "NetworkFlags": 0, "NetworkOrphaned": 0,
+        "NetworkTransmit": True, "OwnerTransfer": 1,
+        "Components": [
+            {
+                "__type": "Local.SkillHelper.Capture",
+                "__guid": str(uuid.uuid4()),
+                "__enabled": True, "Flags": 0,
+                **LIFECYCLE_NULLS,
+                "Mode": "Video" if mode == "video" else "Screenshot",
+                "Width": width, "Height": height,
+                "DelaySeconds": 0.5,
+                "VideoDurationSeconds": video_dur,
+            }
+        ],
+        "Children": [],
+    }
+    data.setdefault("GameObjects", []).append(capture_go)
+    sidecar = scene.with_suffix(".capture.scene")
+    sidecar.write_text(json.dumps(data, indent=2), encoding="utf-8")
+    return sidecar
+
+
+def send_f5_to_editor() -> bool:
+    try:
+        r = subprocess.run(["xdotool", "search", "--name", EDITOR_WIN_TITLE],
+                           capture_output=True, text=True, timeout=5)
+        wids = [w for w in r.stdout.split() if w.strip()]
+        if not wids:
+            return False
+        target = wids[0]
+        for w in wids:
+            name = subprocess.run(["xdotool", "getwindowname", w],
+                                  capture_output=True, text=True, timeout=2).stdout.strip()
+            if " - " in name:
+                target = w
+                break
+        subprocess.run(["xdotool", "windowactivate", "--sync", target], timeout=5, check=False)
+        time.sleep(0.3)
+        subprocess.run(["xdotool", "key", "--window", target, "F5"], timeout=5, check=False)
+        return True
+    except Exception as e:
+        print(f"xdotool error: {e}", file=sys.stderr)
+        return False
+
+
+# Matches both "Screenshot saved to: …" and "High-res screenshot saved to: …".
+# Captured group is the path (which may be Windows-style relative like
+# "screenshots\sbox.YYYY...png" — we resolve below).
+PATH_RE = re.compile(r"(?:High-res s|S)creenshot saved to:\s+(\S+)")
+
+
+def _resolve_screenshot_path(raw: str) -> Path:
+    p = raw
+    if p.startswith(("Z:\\", "Z:/")):
+        p = "/" + p[3:].replace("\\", "/")
+    p = p.replace("\\", "/")
+    candidate = Path(p)
+    if candidate.is_absolute():
+        return candidate
+    # Relative — the engine logs "screenshots\<file>.png" rooted at the
+    # installed-sbox base directory.
+    return Path.home() / ".steam/root/steamapps/common/sbox" / p
+
+
+def wait_for_screenshot(timeout: int, start_byte: int) -> Path | None:
+    """Watch the log for a Screenshot saved line after `start_byte`."""
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        time.sleep(2)
+        if not LOG.exists():
+            continue
+        with LOG.open("r", encoding="utf-8", errors="replace") as f:
+            f.seek(start_byte)
+            text = f.read()
+        for ln in text.splitlines():
+            m = PATH_RE.search(ln)
+            if m:
+                p = _resolve_screenshot_path(m.group(1))
+                if p.exists():
+                    return p
+    return None
+
+
+def find_newest_screenshot(after_ts: float) -> Path | None:
+    if not SCREENSHOTS_DIR.exists():
+        return None
+    cands = [p for p in SCREENSHOTS_DIR.glob("*.png") if p.stat().st_mtime > after_ts]
+    if not cands:
+        return None
+    return max(cands, key=lambda p: p.stat().st_mtime)
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("project")
+    ap.add_argument("--scene", help="scene path relative to Assets/ (default: .sbproj StartupScene)")
+    ap.add_argument("--width", type=int, default=1280)
+    ap.add_argument("--height", type=int, default=720)
+    ap.add_argument("--out", help="copy screenshot to this path when done")
+    ap.add_argument("--timeout", type=int, default=300,
+        help="seconds to wait for editor compile + F5 + capture (default: 300; first run after a code change is slow)")
+    ap.add_argument("--no-keep", action="store_true",
+        help="delete the sidecar scene after capture (default: keep it for re-runs)")
+    ap.add_argument("--mode", choices=["screenshot", "video"], default="screenshot")
+    ap.add_argument("--duration", type=float, default=5.0, help="video duration (sec)")
+    args = ap.parse_args()
+
+    project = Path(args.project).resolve()
+    if not project.is_dir():
+        raise SystemExit(f"{project} is not a directory")
+
+    install_capture_component(project)
+    scene = find_startup_scene(project, args.scene)
+    print(f"base scene: {scene}", file=sys.stderr)
+    sidecar = make_sidecar(scene, args.mode, args.width, args.height, args.duration)
+    print(f"sidecar: {sidecar}", file=sys.stderr)
+
+    # Prime sidecar as open scene
+    sidecar_rel = sidecar.relative_to(project / "Assets")
+    subprocess.run([str(LAUNCH), "--kill"], check=False)
+    time.sleep(1)
+    subprocess.run([str(SET_STARTUP), str(project), str(sidecar_rel)], check=True)
+
+    started_at = time.time()
+    start_byte = LOG.stat().st_size if LOG.exists() else 0
+    subprocess.run([str(LAUNCH), str(project)], check=False)
+    print(f"editor launching at {time.strftime('%H:%M:%S')}...", file=sys.stderr)
+
+    # Wait for editor to come up, then F5 to enter play mode
+    f5_sent = False
+    deadline = time.time() + args.timeout
+    result: Path | None = None
+    while time.time() < deadline:
+        time.sleep(2)
+        if not f5_sent:
+            if send_f5_to_editor():
+                print(f"sent F5 at {time.strftime('%H:%M:%S')}", file=sys.stderr)
+                f5_sent = True
+                if args.mode == "video":
+                    extra = args.duration + 5
+                    print(f"waiting {extra:.0f}s for video to finish", file=sys.stderr)
+                    time.sleep(extra)
+                    break
+                continue
+
+        result = wait_for_screenshot(timeout=5, start_byte=start_byte)
+        if result and result.exists():
+            break
+
+    # leave play mode
+    if f5_sent:
+        time.sleep(1)
+        send_f5_to_editor()
+
+    if result is None or not result.exists():
+        result = find_newest_screenshot(started_at - 1)
+
+    if args.no_keep:
+        try:
+            sidecar.unlink()
+        except FileNotFoundError:
+            pass
+
+    if not result or not result.exists():
+        print("no screenshot/video file found.", file=sys.stderr)
+        print(f"check log: {LOG} for SCREENSHOT_REQUEST / Screenshot saved entries", file=sys.stderr)
+        sys.exit(2)
+
+    if args.out:
+        out = Path(args.out).expanduser().resolve()
+        out.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(result, out)
+        print(f"saved: {out}")
+    else:
+        print(f"saved: {result}")
+
+
+if __name__ == "__main__":
+    main()

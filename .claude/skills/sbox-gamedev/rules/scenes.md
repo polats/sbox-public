@@ -14,7 +14,68 @@ creating a project, prime it with `tools/sbox-set-startup-scene <project> <scene
 - **+X = forward** (the way characters face by default)
 - **+Y = left/right** (depends on handedness convention; positive Y is typically left)
 - **+Z = up**
-- Units are roughly 1 unit ≈ 1 inch.
+- **1 unit = 1 inch** (real-world scale).
+
+## Scaling rule: keep models at scale 1, fit the camera to the world
+
+s&box models are authored at real-world inch scale. Hand-tweaking `Scale` to
+make things "fit" usually compounds — a player at `0.5`, a coin at `0.3` and a
+tree at `0.3` all look reasonable individually but produce a broken-feeling
+world when next to each other.
+
+Better: **keep `Scale: "1,1,1"` for all models**, lay them out at realistic
+distances, and position the camera to frame the playfield.
+
+### Reference real-world sizes (verified via tools/sbox-model-info)
+
+`tools/sbox-model-info <model-path...>` returns ground-truth dimensions by
+loading the model in a probe project and reading `Model.Bounds`. Use it whenever
+scale matters. The numbers below were captured this way — **do not guess**.
+
+| Model | Real size (X × Y × Z, inches) | Suggested scale for human-sized world |
+|---|---|---|
+| `models/citizen_human/citizen_human_male.vmdl` | 12 × 48 × **69**  | 1.0  |
+| `models/citizen_props/coin01.vmdl`              | 27 × 27 × 4.5     | 1.0  (already prop-sized, ~knee-high) |
+| `models/citizen_props/crate01.vmdl`             | 37 × 36 × 39      | 1.0  |
+| `models/sbox_props/trees/oak/tree_oak_big_a.vmdl` | 1125 × 1161 × **1029** | **0.07–0.15** (a real Source 2 oak is ~85 ft tall) |
+| `models/dev/box.vmdl`                           | 50 × 50 × 50      | 1.0  |
+| `models/dev/sphere.vmdl`                        | 32 × 32 × 32 (approx) | 1.0  |
+
+The pattern: **don't trust a model's name to imply its size.** `coin01` sounds
+small but is a 27" Mario-style prop coin; `tree_oak_big_a` is an 85 ft hero
+tree, not a backyard sapling. Always probe before placing.
+
+### Framing a scene at human scale
+
+Rule of thumb for a 3/4 view with a citizen in frame and ~6 humans of breathing room around them:
+
+- **Look-at point**: roughly head height of the player, `(0, 0, 70)`.
+- **Camera distance**: 500–700 units from look-at.
+- **Camera pitch**: 25–35° downward.
+- **FOV**: 70° horizontal (default).
+
+Position formula (pitch P, distance D, look-at `(lx, ly, lz)`):
+```
+forward = (cos(P), 0, -sin(P))
+cam_pos = look_at - forward * D
+```
+
+Quaternion for pitching N° down around +Y: `(0, sin(N/2°), 0, cos(N/2°))`.
+Common values:
+
+| Pitch | Quaternion |
+|---|---|
+| 20° | `0, 0.1736, 0, 0.9848` |
+| 30° | `0, 0.2588, 0, 0.9659` |
+| 45° | `0, 0.3827, 0, 0.9239` |
+| 60° | `0, 0.5,    0, 0.8660` |
+| 90° (top-down) | `0, 0.7071, 0, 0.7071` |
+
+Worked example (`coin-rush`):
+- Look-at `(0, 0, 70)`, 30° pitch, distance 600
+- Camera position: `(0,0,70) - (cos30°, 0, -sin30°)*600 = (-520, 0, 370)`
+- Coins placed at radius ~150 from player
+- Trees placed at radius ~300 (just behind the playfield, framing it)
 
 ## Quaternion rotation cheatsheet
 

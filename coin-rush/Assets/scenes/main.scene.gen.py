@@ -23,6 +23,14 @@ G = {
     "coin3":         "11111111-0000-0000-0000-000000000023",
     "coin3_model":   "22222222-0000-0000-0000-000000000023",
     "coin3_cmp":     "33333333-0000-0000-0000-000000000023",
+    "tree1":         "11111111-0000-0000-0000-000000000050",
+    "tree1_model":   "22222222-0000-0000-0000-000000000050",
+    "tree2":         "11111111-0000-0000-0000-000000000051",
+    "tree2_model":   "22222222-0000-0000-0000-000000000051",
+    "tree3":         "11111111-0000-0000-0000-000000000052",
+    "tree3_model":   "22222222-0000-0000-0000-000000000052",
+    "tree4":         "11111111-0000-0000-0000-000000000053",
+    "tree4_model":   "22222222-0000-0000-0000-000000000053",
     "hud":           "11111111-0000-0000-0000-000000000030",
     "screenpanel":   "22222222-0000-0000-0000-000000000030",
     "scorepanel":    "11111111-0000-0000-0000-000000000031",
@@ -74,8 +82,12 @@ def model_renderer(guid, model_path, tint):
 
 camera = go(
     G["camera"], "Camera",
-    pos="100,0,800",
-    rot="0,0.7071068,0,0.7071068",
+    # Verified-bounds-aware framing. citizen_human is 70" tall, coin01 is 27"
+    # across, tree_oak_big_a at scale 0.1 is ~103" (8.5 ft) tall. Camera
+    # 30° pitched 3/4 view, look-at (0,0,40), distance 400 — visible width
+    # ~560". Trees at ±200 frame the play area without dwarfing it.
+    pos="-346,0,240",
+    rot="0,0.2588,0,0.9659",
     components=[
         cmp("Sandbox.CameraComponent", G["camera_cmp"], **LIFECYCLE_NULLS,
             BackgroundColor="0.05,0.06,0.10,1",
@@ -119,7 +131,7 @@ sun = go(
 )
 
 player = go(
-    G["player"], "Player", pos="0,0,16", scale="0.5,0.5,0.5",
+    G["player"], "Player", pos="0,0,0", scale="1,1,1",
     components=[
         model_renderer(G["player_model"], "models/citizen_human/citizen_human_male.vmdl", "1,1,1,1"),
         cmp("Local.CoinRush.Player", G["player_cmp"], **LIFECYCLE_NULLS,
@@ -130,8 +142,10 @@ player = go(
 
 
 def coin(go_guid, model_guid, cmp_guid, pos):
+    # coin01 verified size = 27 × 27 × 4.5 in (it's a prop coin, knee-height
+    # already). Scale 1 is correct. Raise to z=30 so center is at ~32" — waist.
     return go(
-        go_guid, "Coin", pos=pos, scale="0.3,0.3,0.3",
+        go_guid, "Coin", pos=pos, scale="1,1,1",
         components=[
             model_renderer(model_guid, "models/citizen_props/coin01.vmdl", "1,1,1,1"),
             cmp("Local.CoinRush.Coin", cmp_guid, **LIFECYCLE_NULLS, Value=10),
@@ -139,9 +153,28 @@ def coin(go_guid, model_guid, cmp_guid, pos):
     )
 
 
-coin1 = coin(G["coin1"], G["coin1_model"], G["coin1_cmp"], "200,-200,16")
-coin2 = coin(G["coin2"], G["coin2_model"], G["coin2_cmp"], "0,200,16")
-coin3 = coin(G["coin3"], G["coin3_model"], G["coin3_cmp"], "-200,-100,16")
+# Coins ~100 inches (~8 ft) apart, raised 30 units above ground.
+coin1 = coin(G["coin1"], G["coin1_model"], G["coin1_cmp"], "100,-50,30")
+coin2 = coin(G["coin2"], G["coin2_model"], G["coin2_cmp"], "0,100,30")
+coin3 = coin(G["coin3"], G["coin3_model"], G["coin3_cmp"], "-100,-60,30")
+
+
+def tree(go_guid, model_guid, pos):
+    # tree_oak_big_a verified size = 1125 × 1161 × 1029 in (≈85 ft tall hero
+    # tree!). Scale 0.1 → ~103 in = ~8.5 ft. Reasonable backyard tree.
+    return go(
+        go_guid, "Tree", pos=pos, scale="0.1,0.1,0.1",
+        components=[
+            model_renderer(model_guid, "models/sbox_props/trees/oak/tree_oak_big_a.vmdl", "1,1,1,1"),
+        ],
+    )
+
+
+# Four scaled-down oaks at the corners of the play area (~200 in = 17 ft).
+tree1 = tree(G["tree1"], G["tree1_model"], "200, 200,0")
+tree2 = tree(G["tree2"], G["tree2_model"], "-200, 200,0")
+tree3 = tree(G["tree3"], G["tree3_model"], "200,-200,0")
+tree4 = tree(G["tree4"], G["tree4_model"], "-200,-200,0")
 
 hud = go(
     G["hud"], "Hud",
@@ -162,7 +195,7 @@ hud = go(
 
 scene = {
     "__guid": G["scene"],
-    "GameObjects": [camera, sun, player, coin1, coin2, coin3, hud],
+    "GameObjects": [camera, sun, player, coin1, coin2, coin3, tree1, tree2, tree3, tree4, hud],
     "SceneProperties": {
         "NetworkInterpolation": True,
         "TimeScale": 1,
