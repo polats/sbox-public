@@ -146,6 +146,55 @@ Sound.Play has a few overloads; the position-bearing one gives 3D falloff:
 Sound.Play( soundEvent, worldPosition );
 ```
 
+## Hitscan and `Scene.Trace.Ray`
+
+The everyday pattern for "did I shoot something":
+
+```csharp
+var camPos = camera.WorldPosition;
+var camFwd = camera.WorldRotation.Forward;
+var tr = Scene.Trace.Ray( camPos, camPos + camFwd * 10000f ).Run();
+if ( !tr.Hit ) return;
+
+// CRITICAL: tr.GameObject is the renderer's GameObject, not necessarily
+// the one carrying your Target Component. The hit lands on whichever
+// GameObject hosts the actual Collider — usually a child of the logical
+// "Target" object. Walk up the Parent chain to find it.
+var go = tr.GameObject;
+while ( go != null && go.Components.Get<Target>() == null )
+    go = go.Parent;
+go?.Components.Get<Target>()?.OnShot( tr.HitPosition, tr.Normal );
+```
+
+Without the walk-up, half your hits land on a child mesh and silently do
+nothing.
+
+## Sound resource gotcha
+
+`ResourceLibrary.Get<SoundEvent>("path/to.sound")` returning non-null does
+NOT guarantee `Sound.Play` actually emits. Some `.sound` files reference
+audio that wasn't shipped on Linux. Verify with an actual play call before
+relying on a path. Known-missing in current engine builds:
+
+- `sounds/editor/success.sound` — referenced in older examples but doesn't
+  resolve. Use `sounds/kenney/ui/ui.favourite.sound` for game-win fanfare.
+
+When picking sounds for a new game, do a one-time discovery pass:
+
+```bash
+sbox-eval '
+  var names = new[] { "shoot", "gun", "impact", "click", "footstep" };
+  return names.ToDictionary(n => n, n =>
+    ResourceLibrary.GetAll<SoundEvent>()
+      .Select(s => s.ResourcePath)
+      .Where(p => p.Contains(n))
+      .Take(5).ToList());
+'
+```
+
+…then verify each chosen path with `Sound.Play(event)` in a sandboxed
+`sbox-eval` call.
+
 ## Physics debugging via sbox-eval
 
 `sbox-eval` shines here. A live readout of all rigidbodies:

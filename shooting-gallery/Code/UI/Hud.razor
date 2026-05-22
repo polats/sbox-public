@@ -1,0 +1,72 @@
+@namespace Local.ShootingGallery
+@using System;
+@using System.Linq;
+@using Sandbox;
+@using Sandbox.UI;
+@inherits PanelComponent
+
+<root>
+	@if ( GM is null )
+	{
+		<div class="loading">Loading...</div>
+	}
+	else
+	{
+		<div class="crosshair">
+			<div class="cross-v"></div>
+			<div class="cross-h"></div>
+			<div class="cross-dot"></div>
+		</div>
+
+		<div class="top">
+			<div class="stat">
+				<div class="icon">military_tech</div>
+				<div class="num">@GM.Score</div>
+				<div class="label">SCORE</div>
+			</div>
+			<div class="stat">
+				<div class="icon">gps_fixed</div>
+				<div class="num">@GM.Hits</div>
+				<div class="label">HITS</div>
+			</div>
+			<div class="stat acc">
+				<div class="icon">percent</div>
+				<div class="num">@($"{GM.Accuracy * 100f:F0}")</div>
+				<div class="label">ACC</div>
+			</div>
+		</div>
+
+		<div class="timer @(GM.TimeRemaining < 10 ? "low" : "")">
+			<div class="icon">timer</div>
+			<div class="time">@($"{GM.TimeRemaining:F1}")</div>
+		</div>
+
+		@if ( GM.GameOver )
+		{
+			<div class="overlay">
+				<div class="title">GAME OVER</div>
+				<div class="final">Final Score: @GM.Score</div>
+				<div class="sub">@GM.Hits hits / @GM.Shots shots — @($"{GM.Accuracy * 100f:F0}")% accuracy</div>
+			</div>
+		}
+		else
+		{
+			<div class="hint">
+				<div class="icon">mouse</div>
+				<div class="text">Left-click to fire</div>
+			</div>
+		}
+	}
+</root>
+
+@code
+{
+	public GameController GM => Game.ActiveScene?.GetAllComponents<GameController>().FirstOrDefault();
+
+	protected override int BuildHash() => HashCode.Combine(
+		GM?.Score,
+		GM?.Hits,
+		GM?.Shots,
+		(int)((GM?.TimeRemaining ?? 0f) * 10f),
+		GM?.GameOver );
+}

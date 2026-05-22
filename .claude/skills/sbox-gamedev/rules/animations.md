@@ -141,6 +141,39 @@ if ( controller.IsOnGround && controller.Velocity.LengthSquared > 100f
 
 Tune `stride` to look right against the actual run animation cycle.
 
+## First-person camera + mouse look
+
+For an FPS, split yaw and pitch differently:
+- **Yaw goes on the player body's WorldRotation** (so movement is relative
+  to where you're looking).
+- **Pitch goes only on the camera child's WorldRotation** (so the body
+  doesn't lean).
+
+```csharp
+private Angles _eyeAngles;
+
+protected override void OnUpdate()
+{
+    _eyeAngles.yaw   -= Input.MouseDelta.x * 0.04f;
+    _eyeAngles.pitch =  Math.Clamp( _eyeAngles.pitch + Input.MouseDelta.y * 0.04f, -89f, 89f );
+
+    // Body yaw — keeps strafe/forward axis consistent with view
+    GameObject.WorldRotation = Rotation.FromYaw( _eyeAngles.yaw );
+
+    // Camera pitch only — body stays upright
+    camera.WorldRotation = Rotation.From( _eyeAngles.pitch, _eyeAngles.yaw, 0 );
+
+    Mouse.Visible = false;   // capture cursor
+}
+```
+
+`Input.MouseDelta` is already-DPI-adjusted; tune the sensitivity (`0.04f`)
+to taste. The sign on yaw may need flipping based on user expectation —
+flip if "drag right turns left" feels backwards.
+
+Re-enable `Mouse.Visible = true` when entering menus or on game end so
+the cursor returns to the player.
+
 ## 3rd-person camera follow
 
 Standard pattern (the parkour runner uses this):
