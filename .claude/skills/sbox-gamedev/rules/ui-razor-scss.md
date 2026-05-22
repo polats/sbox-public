@@ -191,5 +191,7 @@ Reference implementations live under `sandbox/Code/UI/`:
   Razor-file directive, not a CSS one. The SCSS compiler reports "Unknown
   rule @namespace" and the *entire stylesheet* is silently dropped — your
   HUD renders with default layout. Keep `.scss` pure SCSS.
+- **`MathF` is NOT in scope inside Razor `@code` blocks** even with `@using System`. Use fully-qualified `System.Math.Sin(...)`/`System.MathF.Sin(...)` or cast through `(float)Math.Sin(...)`. Surfaced building world-space nameplates with sine pulse animation.
+- **World-space Razor**: `Sandbox.WorldPanel` Component exists and is the right path for over-head nameplates, floating HUD, etc. Attach `WorldPanel { PanelSize=600x200, LookAtCamera=true }` to a child GameObject above the actor; the child `PanelComponent` Razor renders in world space, billboards to camera automatically. Cleaner than per-frame screen-space projection.
 - **Avoid CRLF line endings on Linux.** The editor on Windows writes CRLF; if
   you open and save the file on Linux it switches to LF and `git diff` floods.

@@ -1,0 +1,32 @@
+@using Sandbox
+@using Sandbox.UI
+@using System.Linq
+@using Local.MpErgonomics
+@inherits PanelComponent
+@namespace Local.MpErgonomics
+
+<root>
+	@if ( GameManager.Instance is not null )
+	{
+		@foreach ( var k in GameManager.Instance.KillFeed.AsEnumerable().Reverse() )
+		{
+			var fade = MathX.Clamp( 1f - ((float)k.SinceAdded - 4f), 0f, 1f );
+			<div class="entry @(k.AttackerIsMe ? "is-me" : "")" style="opacity: @(fade.ToString("0.##"))">
+				<label class="attacker">@k.Attacker</label>
+				<div class="icons">
+					<i class="weapon">gps_fixed</i>
+					@if ( k.Headshot )
+					{
+						<i class="headshot">star</i>
+					}
+				</div>
+				<label class="victim">@k.Victim</label>
+			</div>
+		}
+	}
+</root>
+
+@code
+{
+	protected override int BuildHash() => System.HashCode.Combine( Time.Now.CeilToInt(), GameManager.Instance?.KillFeed.Count ?? 0 );
+}

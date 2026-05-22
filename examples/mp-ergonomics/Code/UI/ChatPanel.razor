@@ -1,0 +1,76 @@
+@using Sandbox
+@using Sandbox.UI
+@using System.Linq
+@using Local.MpErgonomics
+@inherits PanelComponent
+@namespace Local.MpErgonomics
+
+<root class="@(IsOpen ? "open" : "closed")">
+	<div class="entries">
+		@if ( GameManager.Instance is not null )
+		{
+			@foreach ( var c in GameManager.Instance.Chat )
+			{
+				var fade = MathX.Clamp( 1f - ((float)c.SinceAdded - 12f) / 3f, 0.25f, 1f );
+				<div class="entry" style="opacity: @(fade.ToString("0.##"))">
+					<label class="author">@c.Author:</label>
+					<label class="msg">@c.Message</label>
+				</div>
+			}
+		}
+	</div>
+	@if ( IsOpen )
+	{
+		<div class="input-row">
+			<label class="prompt">Say:</label>
+			<textentry @ref="Entry" @onblur="@OnEntryBlur" @onsubmit="@OnEntrySubmit"></textentry>
+		</div>
+	}
+</root>
+
+@code
+{
+	private bool IsOpen => GameManager.Instance?.ChatOpen ?? false;
+	private TextEntry Entry { get; set; }
+	private bool _focused;
+
+	protected override void OnUpdate()
+	{
+		var gm = GameManager.Instance;
+		if ( gm is null ) return;
+
+		if ( !gm.ChatOpen && Input.Pressed( "chat" ) )
+		{
+			gm.ChatOpen = true;
+			_focused = false;
+		}
+
+		if ( gm.ChatOpen && Entry.IsValid() && !_focused )
+		{
+			Entry.Focus();
+			_focused = true;
+		}
+	}
+
+	private void OnEntrySubmit()
+	{
+		var gm = GameManager.Instance;
+		if ( gm is null || !Entry.IsValid() ) return;
+		if ( !string.IsNullOrWhiteSpace( Entry.Text ) )
+			gm.AddChat( "You", Entry.Text.Trim(), Color.Cyan );
+		Entry.Text = "";
+		gm.ChatOpen = false;
+		_focused = false;
+	}
+
+	private void OnEntryBlur()
+	{
+		var gm = GameManager.Instance;
+		if ( gm is null ) return;
+		if ( Entry.IsValid() ) Entry.Text = "";
+		gm.ChatOpen = false;
+		_focused = false;
+	}
+
+	protected override int BuildHash() => System.HashCode.Combine( IsOpen, GameManager.Instance?.Chat.Count ?? 0, GameManager.Instance?.ChatDraft ?? "", Time.Now.CeilToInt() );
+}

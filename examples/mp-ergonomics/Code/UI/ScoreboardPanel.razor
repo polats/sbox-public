@@ -1,0 +1,60 @@
+@using Sandbox
+@using Sandbox.UI
+@using System.Linq
+@using Local.MpErgonomics
+@inherits PanelComponent
+@namespace Local.MpErgonomics
+
+<root class="@(IsOpen ? "visible" : "")">
+	<div class="body">
+		<div class="title">
+			<label class="big">Lobby</label>
+			<label class="small">@(Scene.GetAllComponents<FakePlayer>().Count()) connected</label>
+		</div>
+
+		<div class="table">
+			<div class="header row">
+				<div class="avatar-spacer"></div>
+				<div class="name">Player</div>
+				<div class="stat">Score</div>
+				<div class="stat">Deaths</div>
+				<div class="stat">Ping</div>
+			</div>
+
+			@foreach ( var p in Scene.GetAllComponents<FakePlayer>().OrderByDescending( x => x.Score ).ThenBy( x => x.PlayerName ) )
+			{
+				<div class="row player @(p.IsLocal ? "me" : "") @(p.IsFriend ? "friend" : "")">
+					<div class="avatar" style="background-color: @AvatarColor( p );">
+						<label class="initial">@(p.PlayerName.Substring(0,1))</label>
+					</div>
+					<div class="name">@p.PlayerName @(p.IsFriend ? "(friend)" : "")</div>
+					<div class="stat">@p.Score</div>
+					<div class="stat">@p.Deaths</div>
+					<div class="stat">@p.Ping</div>
+				</div>
+			}
+		</div>
+
+		<div class="footnote">
+			<label>Hold Tab to view scoreboard · Press Enter to chat · WASD to move</label>
+		</div>
+	</div>
+</root>
+
+@code
+{
+	private bool IsOpen => GameManager.Instance?.ScoreboardOpen ?? false;
+
+	private static readonly string[] Palette = new[] {
+		"rgba(220,90,90,1)", "rgba(90,170,220,1)", "rgba(120,200,120,1)",
+		"rgba(220,170,90,1)", "rgba(180,120,220,1)", "rgba(90,200,200,1)"
+	};
+
+	private string AvatarColor( FakePlayer p )
+	{
+		var hash = System.Math.Abs( p.PlayerName.GetHashCode() );
+		return Palette[hash % Palette.Length];
+	}
+
+	protected override int BuildHash() => System.HashCode.Combine( IsOpen, Time.Now.CeilToInt() );
+}

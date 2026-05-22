@@ -1,0 +1,50 @@
+@using System
+@using Sandbox
+@using Sandbox.UI
+@using System.Linq
+@using Local.MpErgonomics
+@inherits PanelComponent
+@namespace Local.MpErgonomics
+
+<root>
+	@foreach ( var p in Scene.GetAllComponents<FakePlayer>().Where( x => x.IsTalking ) )
+	{
+		<div class="item-row">
+			<div class="avatar-wrap">
+				<div class="speaking-glow" style="opacity: @GetGlow( p ); transform: scale( @GetScale( p ) )"></div>
+				<div class="avatar" style="background-color: @AvatarColor( p );">
+					<label class="initial">@(p.PlayerName.Substring(0,1))</label>
+				</div>
+			</div>
+			<label class="name">@p.PlayerName</label>
+		</div>
+	}
+</root>
+
+@code
+{
+	private string GetGlow( FakePlayer p )
+	{
+		var s = 0.5f + (float)System.Math.Sin( Time.Now * 6f ) * 0.4f;
+		return MathX.Clamp( s, 0.2f, 0.9f ).ToString( "0.##" );
+	}
+
+	private string GetScale( FakePlayer p )
+	{
+		var s = 1.1f + (float)System.Math.Sin( Time.Now * 6f ) * 0.25f;
+		return s.ToString( "0.##" );
+	}
+
+	private static readonly string[] Palette = new[] {
+		"rgba(220,90,90,1)", "rgba(90,170,220,1)", "rgba(120,200,120,1)",
+		"rgba(220,170,90,1)", "rgba(180,120,220,1)", "rgba(90,200,200,1)"
+	};
+
+	private string AvatarColor( FakePlayer p )
+	{
+		var hash = System.Math.Abs( p.PlayerName.GetHashCode() );
+		return Palette[hash % Palette.Length];
+	}
+
+	protected override int BuildHash() => System.HashCode.Combine( Time.Now );
+}
