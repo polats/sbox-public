@@ -1,0 +1,115 @@
+#!/usr/bin/env python3
+"""
+sbox-eval — evaluate a C# snippet inside the running editor.
+
+Writes an `eval` trigger containing the snippet; SkillTrigger compiles
+it via Roslyn (Microsoft.CodeAnalysis.CSharp), executes, returns the
+result via the standard skill-results JSON file.
+
+Available namespaces: System, System.Collections.Generic, System.Linq,
+System.Text, Sandbox, Editor.
+
+Usage:
+  sbox-eval 'Scene.GetAllComponents<ModelRenderer>().Count()'
+  sbox-eval 'Game.ActiveScene?.GetAllObjects(true).Select(go => go.Name).ToList()'
+  sbox-eval -f script.cs
+  sbox-eval -                                  # read snippet from stdin
+
+  --project <path>     write the trigger to a specific project (else the running one)
+  --timeout <sec>      result-wait timeout (default 30)
+"""
+from __future__ import annotations
+import argparse, json, os, re, subprocess, sys, time
+from pathlib import Path
+
+SCRIPT_DIR = Path(__file__).resolve().parent
+SKILL_ROOT = SCRIPT_DIR.parent
+REPO = SKILL_ROOT.parent.parent.parent
+
+
+def detect_running_project() -> Path | None:
+    try:
+        r = subprocess.run(["pgrep", "-af", "sbox-dev.exe"], capture_output=True, text=True, timeout=3)
+    except Exception:
+        return None
+    for ln in r.stdout.splitlines():
+        m = re.search(r"-project\s+Z:\\([^ ]+)\.sbproj", ln)
+        if m:
+            p = Path("/" + m.group(1).replace("\\", "/") + ".sbproj")
+            if p.exists():
+                return p.parent
+    return None
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("snippet", nargs="?", help="C# expression or statement block. Use '-' to read from stdin.")
+    ap.add_argument("-f", "--file", help="read snippet from this file")
+    ap.add_argument("--project", help="target project (else detect from running editor)")
+    ap.add_argument("--timeout", type=int, default=30)
+    ap.add_argument("--json", action="store_true", help="print the full result JSON")
+    args = ap.parse_args()
+
+    if args.file:
+        code = Path(args.file).read_text(encoding="utf-8")
+    elif args.snippet == "-":
+        code = sys.stdin.read()
+    elif args.snippet:
+        code = args.snippet
+    else:
+        ap.print_help()
+        sys.exit(1)
+
+    if args.project:
+        target = (REPO / args.project).resolve() if not args.project.startswith("/") else Path(args.project)
+    else:
+        target = detect_running_project()
+        if target is None:
+            raise SystemExit("no editor running. pass --project <path> to target a specific project.")
+
+    triggers = target / ".sbox" / "skill-triggers"
+    triggers.mkdir(parents=True, exist_ok=True)
+    trig_id = f"{time.strftime('%Y%m%d-%H%M%S')}-{os.getpid()}-eval"
+    trigger_file = triggers / (trig_id + ".txt")
+    trigger_file.write_text("eval\n" + code, encoding="utf-8")
+    print(f"wrote trigger: {trigger_file.name}", file=sys.stderr)
+
+    result_file = target / ".sbox" / "skill-results" / (trig_id + ".json")
+    deadline = time.time() + args.timeout
+    result = None
+    while time.time() < deadline:
+        if result_file.exists():
+            try:
+                result = json.loads(result_file.read_text(encoding="utf-8"))
+                break
+            except Exception:
+                time.sleep(0.1)
+                continue
+        time.sleep(0.1)
+
+    if result is None:
+        raise SystemExit(f"no result after {args.timeout}s")
+
+    if args.json:
+        print(json.dumps(result, indent=2))
+        return
+
+    if not result.get("ok"):
+        err = result.get("error", "unknown")
+        data = result.get("data") or {}
+        print(f"\033[31merror:\033[0m {err}", file=sys.stderr)
+        if data.get("diagnostics"):
+            for d in data["diagnostics"]:
+                print(f"  {d}", file=sys.stderr)
+        if data.get("stackTrace"):
+            print(data["stackTrace"], file=sys.stderr)
+        sys.exit(2)
+
+    d = result["data"]
+    BOLD, DIM, END = "\033[1m", "\033[2m", "\033[0m"
+    print(f"{BOLD}{d['result']}{END}")
+    print(f"{DIM}({d['resultType']}, {d['elapsedMs']}ms){END}", file=sys.stderr)
+
+
+if __name__ == "__main__":
+    main()

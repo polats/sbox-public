@@ -1,10 +1,14 @@
 using Editor;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Sandbox;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.Loader;
+using System.Text;
 using System.Text.Json;
 
 namespace Local.ModelProbe.EditorTools;
@@ -223,6 +227,9 @@ public static class SkillTrigger
 				break;
 			case "shortcut":
 				InvokeShortcut( file, parts.Length > 1 ? parts[1] : "" );
+				break;
+			case "eval":
+				EvalCSharp( file, content );
 				break;
 			default:
 				Log.Warning( $"[SkillTrigger] unknown trigger: {parts[0]}" );
@@ -478,6 +485,144 @@ public static class SkillTrigger
 			var ok = entry.Invoke( force: true );
 			Log.Info( $"[SkillTrigger] invoked shortcut: {shortcutName} (ok={ok})" );
 			WriteResult( triggerFile, ok, ok ? null : "shortcut returned false (no matching target widget?)", new { shortcutName } );
+		}
+		catch ( Exception ex )
+		{
+			WriteResult( triggerFile, false, $"{ex.GetType().Name}: {ex.Message}", null );
+		}
+	}
+
+	// Evaluate a C# snippet via raw Roslyn (no Microsoft.CodeAnalysis.Scripting
+	// available in s&box's managed bin). The trigger body after the "eval"
+	// line is the user's code; we try to interpret it as an expression first
+	// (wrap in `return …;`), fall back to statements (must contain an explicit
+	// return). Result, stdout, and timing are written to the result file.
+	private static void EvalCSharp( string triggerFile, string fullContent )
+	{
+		try
+		{
+			// Strip the leading "eval" line; everything else is the snippet.
+			var nl = fullContent.IndexOf( '\n' );
+			var userCode = (nl < 0 ? "" : fullContent.Substring( nl + 1 )).Trim();
+			if ( string.IsNullOrEmpty( userCode ) )
+			{
+				WriteResult( triggerFile, false, "empty eval body", null );
+				return;
+			}
+
+			// Try expression form first; if the snippet contains a semicolon
+			// or `return` keyword, treat as statements.
+			bool isExpression = !userCode.Contains( ';' ) && !userCode.Contains( "return " );
+			string body = isExpression
+				? $"return ({userCode});"
+				: userCode;
+
+			var source = $@"
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using Sandbox;
+using Editor;
+
+public static class _SkillEval
+{{
+    public static object Run()
+    {{
+        {body}
+    }}
+}}";
+			var tree = CSharpSyntaxTree.ParseText( source );
+			var refs = AppDomain.CurrentDomain.GetAssemblies()
+				.Where( a => !a.IsDynamic && !string.IsNullOrEmpty( a.Location ) )
+				.Select( a =>
+				{
+					try { return MetadataReference.CreateFromFile( a.Location ); }
+					catch { return null; }
+				} )
+				.Where( r => r != null )
+				.Cast<MetadataReference>()
+				.ToArray();
+
+			var compilation = CSharpCompilation.Create(
+				"SkillEval_" + Guid.NewGuid().ToString( "N" ),
+				new[] { tree },
+				refs,
+				new CSharpCompilationOptions( OutputKind.DynamicallyLinkedLibrary,
+					optimizationLevel: OptimizationLevel.Release ) );
+
+			using var ms = new MemoryStream();
+			var emitResult = compilation.Emit( ms );
+			if ( !emitResult.Success )
+			{
+				var errors = emitResult.Diagnostics
+					.Where( d => d.Severity == DiagnosticSeverity.Error )
+					.Select( d => d.ToString() )
+					.ToArray();
+				WriteResult( triggerFile, false, "compile failed",
+					new { diagnostics = errors, source } );
+				return;
+			}
+
+			ms.Position = 0;
+			var asm = AssemblyLoadContext.Default.LoadFromStream( ms );
+			var type = asm.GetType( "_SkillEval" );
+			var method = type?.GetMethod( "Run" );
+			if ( method == null )
+			{
+				WriteResult( triggerFile, false, "_SkillEval.Run() not found in emitted assembly", null );
+				return;
+			}
+
+			var sw = System.Diagnostics.Stopwatch.StartNew();
+			object rv;
+			try
+			{
+				rv = method.Invoke( null, null );
+			}
+			catch ( TargetInvocationException tie )
+			{
+				var inner = tie.InnerException ?? tie;
+				WriteResult( triggerFile, false, $"runtime error: {inner.GetType().Name}: {inner.Message}",
+					new { stackTrace = inner.StackTrace } );
+				return;
+			}
+			sw.Stop();
+
+			// Stringify the result. Enumerables get their items printed
+			// individually; other objects use ToString().
+			string formatted;
+			object structured;
+			if ( rv == null )
+			{
+				formatted = "null";
+				structured = null;
+			}
+			else if ( rv is System.Collections.IEnumerable en && rv is not string )
+			{
+				var items = new List<string>();
+				int count = 0;
+				foreach ( var item in en )
+				{
+					if ( count++ >= 100 ) { items.Add( "…(truncated)" ); break; }
+					items.Add( item?.ToString() ?? "null" );
+				}
+				formatted = $"[{count} items] " + string.Join( ", ", items.Take( 10 ) ) + (items.Count > 10 ? "…" : "");
+				structured = items;
+			}
+			else
+			{
+				formatted = rv.ToString();
+				structured = formatted;
+			}
+
+			WriteResult( triggerFile, true, null, new
+			{
+				result = formatted,
+				resultType = rv?.GetType().FullName ?? "null",
+				items = structured,
+				elapsedMs = sw.ElapsedMilliseconds,
+			} );
 		}
 		catch ( Exception ex )
 		{
