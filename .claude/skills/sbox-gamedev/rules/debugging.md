@@ -101,6 +101,18 @@ This streams new error entries as they happen with category coloring, so you
 see at a glance whether your latest edit broke compilation, references a
 missing asset, or triggered a different class of failure.
 
+## `sbox-eval` blocks the engine main thread
+
+Anything you run via `sbox-eval` executes synchronously on the editor's
+main thread. **Don't `Thread.Sleep` inside an eval call** — it freezes
+the physics simulation, the renderer, everything. Symptoms: the editor
+appears to hang; ragdolls freeze mid-air; the eval result file never
+appears.
+
+If you need to wait between two pieces of inspection, sleep from the
+shell between two separate `sbox-eval` calls instead. Each eval should
+do one cheap thing and return.
+
 ## Failure mode: "Video recording finished" log line but no file on disk
 
 Symptom: `sbox-screenshot --mode video` reports success in the log:

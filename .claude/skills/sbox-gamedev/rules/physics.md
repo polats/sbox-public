@@ -195,6 +195,118 @@ sbox-eval '
 …then verify each chosen path with `Sound.Play(event)` in a sandboxed
 `sbox-eval` call.
 
+## Ragdolls (`ModelPhysics` Component)
+
+The engine ragdoll is `ModelPhysics`, NOT a `SetRagdoll(bool)` call. The
+working setup (verified in examples/ragdoll-cannon — citizen tumbling
+through pendulum obstacles into a goal pit):
+
+```csharp
+var smr = go.Components.Create<SkinnedModelRenderer>();
+smr.Model = Model.Load( "models/citizen_human/citizen_human_male.vmdl" );
+smr.CreateBoneObjects = true;
+smr.UseAnimGraph = false;            // animation fights ragdoll physics
+
+var mp = go.Components.Create<ModelPhysics>();
+mp.Renderer = smr;
+mp.Model = smr.Model;
+mp.IgnoreRoot = true;                // CRITICAL — else the root pin keeps the ragdoll glued
+mp.MotionEnabled = true;
+```
+
+`SkinnedModelRenderer.SetRagdoll(bool)` does **not** exist — only
+`ClearPhysicsBones()`. The engine pattern is the `ModelPhysics`
+Component above. The citizen model ships with 16 physics parts + 15
+joints (verified with `sbox-eval`).
+
+### Launching a ragdoll (apply impulse to all bodies)
+
+`ModelPhysics.Bodies` is a `List<ModelPhysics+Body>` (a struct with
+`.Component` → `Rigidbody`, `.Bone`, `.LocalTransform`). It is **not**
+a list of `PhysicsBody`. To launch:
+
+```csharp
+foreach ( var b in mp.Bodies )
+{
+    var rb = b.Component;            // Rigidbody, not PhysicsBody
+    rb.LinearDamping = 0.05f;        // reset — defaults can halve flight range
+    rb.ApplyImpulse( direction * speed * rb.Mass );
+
+    // For tumble (limbs flailing), add a small angular impulse per body.
+    // Rigidbody has no ApplyAngularImpulse — route through PhysicsBody:
+    var spin = new Vector3(
+        Random.Shared.Float( -60f, 60f ),
+        Random.Shared.Float( -60f, 60f ),
+        Random.Shared.Float( -60f, 60f ) ) * rb.Mass;
+    rb.PhysicsBody.ApplyAngularImpulse( spin );
+}
+```
+
+Symmetric impulses across all bodies make the ragdoll fly as a T-pose
+plank — add a per-body random angular kick to break symmetry into a
+proper tumble.
+
+`mp.PhysicsGroup` returns null on freshly-spawned ragdolls even when
+`mp.Bodies` is populated. Iterate `Bodies` directly; don't rely on
+`PhysicsGroup`.
+
+## Joints (Hinge, Spring, Fixed, Slider, Ball, Upright, Filter, Control)
+
+### Anchor body must be a `Rigidbody`
+
+A joint to a GameObject that has **no** `Rigidbody` silently fails to
+constrain — the engine has no anchor to attach to. For static anchors:
+
+```csharp
+var anchor = Scene.CreateObject();
+var arb = anchor.Components.Create<Rigidbody>();
+arb.MotionEnabled = false;            // pinned in space
+arb.Gravity = false;
+```
+
+…then place the dynamic body and add the joint between them.
+
+### HingeJoint setup
+
+```csharp
+var joint = parent.Components.Create<HingeJoint>();
+joint.Body = bobRigidbody;
+joint.AnchorBody = anchorRigidbody;
+joint.Attachment = Joint.AttachmentMode.Auto;  // derives LocalFrames from current poses
+joint.EnableCollision = false;
+```
+
+`HingeJoint.Axis` is `[JsonIgnore]` and **computed at runtime from
+LocalFrame1/2**. Setting it directly has no persistent effect. Place
+the bodies at their desired relative orientation, then set
+`Attachment = Auto` — the engine reads the orientation and infers the
+hinge axis.
+
+To start the pendulum swinging, apply a one-time impulse on the bob's
+`PhysicsBody` after the joint is wired.
+
+### SpringJoint setup (trampoline pattern)
+
+```csharp
+var spring = pad.Components.Create<SpringJoint>();
+spring.Body = padRigidbody;
+spring.AnchorBody = anchorBelowGround;
+spring.Frequency = 8f;
+spring.Damping = 0.5f;
+spring.MinLength = 50f;
+spring.RestLength = 75f;
+spring.MaxLength = 90f;
+```
+
+Combine with `Collider.Elasticity = 1.2` on the pad's collider to get
+genuine bounce.
+
+### `RigidbodyFlags.None` does not exist
+
+The `RigidbodyFlags` enum has no `None` member. To start with no flags,
+use `default(RigidbodyFlags)` or just don't set the property — leave it
+at the default.
+
 ## Physics debugging via sbox-eval
 
 `sbox-eval` shines here. A live readout of all rigidbodies:

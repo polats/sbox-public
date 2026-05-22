@@ -1,0 +1,42 @@
+@namespace Local.RagdollCannon
+@using System
+@using System.Linq
+@using Sandbox
+@using Sandbox.UI
+@inherits PanelComponent
+
+<root>
+	<div class="stats">
+		<div class="row">
+			<div class="icon">stars</div>
+			<div class="text">
+				<div class="label">SCORE</div>
+				<div class="value">@(Manager?.Score ?? 0)</div>
+			</div>
+		</div>
+		<div class="row">
+			<div class="icon">my_location</div>
+			<div class="text">
+				<div class="label">SHOTS</div>
+				<div class="value">@(Manager?.Shots ?? 0)</div>
+			</div>
+		</div>
+	</div>
+
+	@if ( !string.IsNullOrEmpty( Manager?.Message ) )
+	{
+		<div class="popup">@Manager.Message</div>
+	}
+
+	<div class="hint">
+		<div class="hint-icon">mouse</div>
+		<div class="hint-text">Left-click to fire</div>
+	</div>
+</root>
+
+@code
+{
+	public GameManager Manager => Game.ActiveScene?.GetAllComponents<GameManager>().FirstOrDefault();
+
+	protected override int BuildHash() => HashCode.Combine( Manager?.Score, Manager?.Shots, Manager?.Message );
+}
