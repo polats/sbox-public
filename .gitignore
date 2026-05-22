@@ -109,4 +109,9 @@ engine/TestResults/
 **/.sbox/skill-triggers/
 **/.sbox/skill-results/
 
+# Editor-local dock state. Changes every session, no value in tracking.
+# (We commit the *initial* one when scaffolding a project, but ignore
+# subsequent modifications.)
+**/.sbox/project.json
+
 # Python bytecode cache from skill tools
