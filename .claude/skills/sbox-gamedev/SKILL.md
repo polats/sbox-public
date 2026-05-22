@@ -104,20 +104,20 @@ build forward — don't redo what's already done. The first dry-run of
 5. **Launch & verify**: `sbox-launch <project>`, then `sbox-logs --errors --tail 20` to spot compile or scene-load problems.
 6. **Iterate on code/scene**: edit files, then `sbox-launch <project>` again (it kills + relaunches so Wine picks up the changes).
 
-All worked-example games live under `<repo>/games/`. Skim several when starting a new project — each one covers different patterns:
+All worked examples live under `<repo>/examples/`. Skim several when starting a new project — each one covers different patterns:
 
 | Game | Demonstrates |
 |---|---|
-| `games/coin-rush/` | basic Component + scene + HUD scaffold, scene generated from Python |
-| `games/flappy-bird/` | side-scroller + game states (Menu/Playing/GameOver) + Razor HUD |
-| `games/pool/` | Rigidbody + Collider physics, sound-on-event, trigger pockets, mouse drag aim |
-| `games/parkour/` | CharacterController, citizen animgraph parameters, 3rd-person camera follow |
-| `games/shooting-gallery/` | First-person mouse-look, hitscan via `Scene.Trace.Ray`, target hit/respawn |
-| `games/bullet-hell/` | Top-down arcade prototype with multiple enemy/bullet types |
+| `examples/coin-rush/` | basic Component + scene + HUD scaffold, scene generated from Python |
+| `examples/flappy-bird/` | side-scroller + game states (Menu/Playing/GameOver) + Razor HUD |
+| `examples/pool/` | Rigidbody + Collider physics, sound-on-event, trigger pockets, mouse drag aim |
+| `examples/parkour/` | CharacterController, citizen animgraph parameters, 3rd-person camera follow |
+| `examples/shooting-gallery/` | First-person mouse-look, hitscan via `Scene.Trace.Ray`, target hit/respawn |
+| `examples/bullet-hell/` | Top-down arcade prototype with multiple enemy/bullet types |
 
-Plus `<repo>/model-probe/` (kept at the repo root, NOT under games/) — a worker project used by `sbox-model-info` as a fallback when no editor is running. Don't delete it.
+Plus `<repo>/model-probe/` (kept at the repo root, NOT under examples/) — a worker project used by `sbox-model-info` as a fallback when no editor is running. Don't delete it.
 
-New games go under `games/<name>/` to keep the repo root clean.
+New examples go under `examples/<name>/` to keep the repo root clean.
 
 ## Source patches in this repo
 
