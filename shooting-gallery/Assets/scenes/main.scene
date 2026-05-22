@@ -103,7 +103,7 @@
           "OnComponentUpdate": null,
           "MouseSensitivity": 0.08,
           "MaxTraceDistance": 12000,
-          "AutoPlay": true,
+          "AutoPlay": false,
           "AutoFireInterval": 0.55
         }
       ],

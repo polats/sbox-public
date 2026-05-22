@@ -172,7 +172,7 @@
           "JumpStrength": 350,
           "Gravity": 900,
           "RotationSpeed": 10,
-          "AutoPlay": true
+          "AutoPlay": false
         }
       ],
       "Children": [

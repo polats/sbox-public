@@ -53,7 +53,7 @@ public sealed class GameController : Component
 	[Property] public SoundEvent PocketSound { get; set; }
 	[Property] public SoundEvent WinSound { get; set; }
 
-	[Property] public bool AutoPlay { get; set; } = true;
+	[Property] public bool AutoPlay { get; set; } = false;
 	[Property] public float AutoFirstShotDelay { get; set; } = 1.5f;
 	[Property] public float AutoBetweenShotDelay { get; set; } = 1.2f;
 

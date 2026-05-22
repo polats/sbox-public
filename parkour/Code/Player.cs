@@ -22,7 +22,7 @@ public sealed class Player : Component
 	[Property] public SoundEvent LandSound { get; set; }
 	[Property] public SoundEvent GoalSound { get; set; }
 
-	[Property] public bool AutoPlay { get; set; } = true;
+	[Property] public bool AutoPlay { get; set; } = false;
 
 	public float CourseTime { get; private set; }
 	public bool ReachedGoal { get; private set; }

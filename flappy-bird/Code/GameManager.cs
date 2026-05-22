@@ -15,7 +15,7 @@ public sealed class GameManager : Component
 {
 	[Property] public Bird Bird { get; set; }
 	[Property] public PipeSpawner Spawner { get; set; }
-	[Property] public bool AutoPlay { get; set; } = true;
+	[Property] public bool AutoPlay { get; set; } = false;
 	[Property] public float AutoMenuDelay { get; set; } = 1.2f;
 	[Property] public float AutoRestartDelay { get; set; } = 1.5f;
 

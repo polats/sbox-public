@@ -51,6 +51,33 @@ All under `tools/` — invoke via Bash. Pre-authorized by `allowed-tools`.
 - `sbox-do <action> [args…]` — universal action driver. Subcommands: `menu <Game/Play>` (invoke a menu item by slash-separated path), `shortcut <editor.toggle-play>` (invoke any registered `[Shortcut("name", …)]` by its identifier), `cmd "<raw concmd>"` (run any console command), `play` / `stop-play` (toggle play mode). All ~1s, all via the trigger-file pattern. Discover available shortcut identifiers by grepping the engine source: `grep -r '\[Shortcut(' engine/ | grep -oE '"[^"]+"' | sort -u`.
 - `sbox-screenshot <project> [--width W] [--height H] [--out PATH] [--mode screenshot|video] [--duration S]` — capture a screenshot (PNG) or video (MP4) of a project's scene. Output saved to `<project>/captures/<project>-<timestamp>.<ext>` by default; pass `--out PATH` to override. **Architecture**: writes a trigger file under `<project>/.sbox/skill-triggers/`; an editor-side helper (`Editor/SkillTrigger.cs`, auto-installed into the project on first use) sees the file, runs the corresponding ConCmd, deletes the trigger. Capture time ~5s once the editor is warm — no xdotool, no F5, no kill+relaunch. First call after installing the helper triggers a recompile (~30s). Video mode kicks off a play→record→stop→exit sequence internally; screenshot stays in edit mode. **Caveats:** (a) `screenshot_highres` taps post-postprocess camera output (warm, correct colors). `video` taps the SceneLayer color target pre-postprocess, so video colors look cooler/bluer than screenshots — engine pipeline-tap difference, not a tool bug. (b) Edit-mode screenshots don't render the HUD (`ScreenPanel` only renders in play). Video clips do show the HUD because the trigger enters play. (c) Video is AV1+Opus by default; tool auto-re-encodes to H.264 via ffmpeg when `--out` is set.
 
+### Auto-play for video verification (and how to disable it before "done")
+
+To prove a game works without anyone manually pressing keys, agents commonly
+add an autonomous-demo path that drives the game from inside the Player /
+GameController Component. This is **useful for the verification video** but
+must be **disabled before declaring the game done**, otherwise the user
+opening the project in the editor sees the game play itself.
+
+**The convention**:
+
+1. Expose an `[Property] public bool AutoPlay { get; set; } = false;` field
+   on the Player/GameController Component.
+2. Wrap all autonomous-demo logic in `if ( AutoPlay ) { … }` blocks.
+3. **In the `.scene` file**, set `"AutoPlay": true` on that Component while
+   recording. The scene file is JSON — edit the value directly.
+4. **After the video is captured and you're about to declare done**: flip
+   the scene-file value back to `"AutoPlay": false` (or remove the field
+   entirely so the code default takes effect). Verify with:
+   `grep -E '"AutoPlay"|= true' <project>/Code/*.cs <project>/Assets/scenes/*.scene`
+   — both should show false (or absent).
+5. The code default must be `false` so a fresh user opening the project
+   gets a playable game, not a self-playing one.
+
+Don't ship games that play themselves. The user has to manually verify
+this in the final report ("AutoPlay defaults to false in both code and
+scene file").
+
 ### Resuming after a context compaction
 
 Long autonomous builds will hit context compaction. **Before starting fresh

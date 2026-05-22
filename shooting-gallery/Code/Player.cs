@@ -13,7 +13,7 @@ public sealed class Player : Component
 	[Property] public float MouseSensitivity { get; set; } = 0.08f;
 	[Property] public float MaxTraceDistance { get; set; } = 12000f;
 
-	[Property] public bool AutoPlay { get; set; } = true;
+	[Property] public bool AutoPlay { get; set; } = false;
 	[Property] public float AutoFireInterval { get; set; } = 0.55f;
 
 	private Angles _eyeAngles;
