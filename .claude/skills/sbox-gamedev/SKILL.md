@@ -32,6 +32,7 @@ the current project). Report green/red briefly, then ask what to do.
 - [rules/ui-razor-scss.md](rules/ui-razor-scss.md) — Razor file structure (with `@using` requirements), BuildHash, common patterns from `sandbox/Code/UI/`.
 - [rules/ui-icons-linux.md](rules/ui-icons-linux.md) — Why emoji `[Icon("📦")]` don't render under Wine; use Material Icons names. Includes a lookup table.
 - [rules/scenes.md](rules/scenes.md) — `.scene` JSON format, quaternion rotation cheatsheet, component field shapes (Camera/ModelRenderer/ScreenPanel/BoxCollider/DirectionalLight), scene-load gotchas. **Read this when authoring or modifying scenes from a script.**
+- [rules/physics.md](rules/physics.md) — `Rigidbody`/`Collider` setup, units & scale, impulses, EnhancedCcd for fast bodies, `Collision.Other` is a struct, `Collider.Elasticity`/`Friction` are `float?` (not Curve), how to "park" a body without it falling forever, listening to collisions/triggers, and sound-on-impact patterns. **Read when building any physics-driven game.**
 - [rules/debugging.md](rules/debugging.md) — Log location, error patterns we've seen, when to suspect Linux-specific vs real bug.
 
 ### Tools

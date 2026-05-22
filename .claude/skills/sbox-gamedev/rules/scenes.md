@@ -93,6 +93,18 @@ s&box stores rotation as `"Rotation": "x,y,z,w"` quaternion.
 **Sign trap:** the Y component is *positive* to rotate the camera downward
 (pitch the forward vector toward -Z). Negative Y rotates it upward.
 
+## `__guid` must be a valid GUID
+
+Every GameObject and Component needs a unique `__guid`. The format is
+`XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX` (8-4-4-4-12 hex). Anything else fails
+JSON deserialization with `InvalidOperationException: An element of type
+'String' cannot be converted to a 'System.Guid'`.
+
+When generating scenes from a Python script, **always** `str(uuid.uuid4())`,
+never hand-roll. A trick like `"...007" + "a"` to get a second GUID will
+silently corrupt the scene and the editor will refuse to load it (no
+useful error in the dock — the scene just doesn't appear).
+
 ## Minimum playable scene
 
 ```json

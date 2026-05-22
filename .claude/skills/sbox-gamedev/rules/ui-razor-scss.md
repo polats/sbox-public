@@ -187,5 +187,9 @@ Reference implementations live under `sandbox/Code/UI/`:
   attribute.
 - **`.razor.scss` SCSS errors don't surface as compile errors** — the panel
   just renders unstyled. Check the editor's UI inspector.
+- **Do not put `@namespace MyGame` in `.razor.scss`.** `@namespace` is a
+  Razor-file directive, not a CSS one. The SCSS compiler reports "Unknown
+  rule @namespace" and the *entire stylesheet* is silently dropped — your
+  HUD renders with default layout. Keep `.scss` pure SCSS.
 - **Avoid CRLF line endings on Linux.** The editor on Windows writes CRLF; if
   you open and save the file on Linux it switches to LF and `git diff` floods.

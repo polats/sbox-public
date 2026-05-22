@@ -1,0 +1,57 @@
+@namespace Local.Pool
+@using System;
+@using System.Linq;
+@using Sandbox;
+@using Sandbox.UI;
+@inherits PanelComponent
+
+<root>
+	@if ( GM is null )
+	{
+		<div class="loading">Loading...</div>
+	}
+	else
+	{
+		<div class="top">
+			<div class="counter">
+				<div class="icon">sports_bar</div>
+				<div class="num">@GM.BallsRemaining</div>
+				<div class="label">balls left</div>
+			</div>
+		</div>
+
+		@if ( GM.IsCharging )
+		{
+			<div class="power-wrap">
+				<div class="power-label">POWER</div>
+				<div class="power-bar">
+					<div class="power-fill" style="width: @($"{GM.PowerNormalized * 100f:F0}%")"></div>
+				</div>
+			</div>
+		}
+
+		@if ( !string.IsNullOrEmpty( GM.Message ) )
+		{
+			<div class="center @(GM.State == GameState.Won ? "win" : "warn")">
+				<div class="title">@GM.Message</div>
+			</div>
+		}
+
+		<div class="bottom-hint">
+			<div class="icon">mouse</div>
+			<div class="text">Left-click + hold + drag back, release to shoot</div>
+		</div>
+	}
+</root>
+
+@code
+{
+	public GameController GM => Game.ActiveScene?.GetAllComponents<GameController>().FirstOrDefault();
+
+	protected override int BuildHash() => HashCode.Combine(
+		GM?.State,
+		GM?.BallsRemaining,
+		GM?.Message,
+		GM?.IsCharging,
+		(int)((GM?.PowerNormalized ?? 0f) * 100f) );
+}
