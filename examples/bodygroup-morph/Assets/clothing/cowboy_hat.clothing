@@ -1,0 +1,21 @@
+{
+  "HasHumanSkin": false,
+  "Title": "Cowboy Hat",
+  "Subtitle": "Yeehaw",
+  "Category": "HatCostume",
+  "ConditionalModels": {},
+  "Tags": "hat",
+  "Model": "models/citizen_clothes/hat/cowboy_hat/models/cowboy_hat.vmdl",
+  "HumanAltModel": "models/citizen_clothes/hat/cowboy_hat/models/cowboy_hat_m_human.vmdl",
+  "HumanAltFemaleModel": null,
+  "SkinMaterial": null,
+  "EyesMaterial": null,
+  "MaterialGroup": null,
+  "SlotsUnder": "HeadTop",
+  "SlotsOver": 0,
+  "HideBody": 0,
+  "AllowTintSelect": false,
+  "TintDefault": 0.5,
+  "__references": [],
+  "__version": 0
+}

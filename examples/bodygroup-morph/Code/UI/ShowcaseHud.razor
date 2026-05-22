@@ -1,0 +1,193 @@
+@namespace Local.BodygroupMorph
+@using System
+@using System.Linq
+@using System.Collections.Generic
+@using Sandbox
+@using Sandbox.UI
+@inherits PanelComponent
+
+<root>
+	@if ( Mgr is null )
+	{
+		<div class="loading">Loading showcase…</div>
+	}
+	else
+	{
+		<div class="topbar">
+			<div class="title">Bodygroups + Morphs Showcase</div>
+			<div class="hint">Live HUD drives SkinnedModelRenderer state on three citizens</div>
+		</div>
+
+		<div class="columns">
+			<!-- Column 1: Bodygroups -->
+			<div class="col">
+				<div class="col-title">Bodygroups</div>
+				<div class="col-subtitle">Citizen 1 · SetBodyGroup(name, 0|1)</div>
+				<div class="controls">
+					@foreach ( var name in Mgr.BodygroupNames )
+					{
+						var ln = name;
+						var hidden = Mgr.BodygroupHidden[ln];
+						<div class="row">
+							<div class="label">@ln</div>
+							<button class="toggle @(hidden ? "on" : "")" onclick=@(() => Mgr.ToggleBg1(ln))>
+								@(hidden ? "HIDDEN" : "visible")
+							</button>
+						</div>
+					}
+				</div>
+			</div>
+
+			<!-- Column 2: Morphs or Tints -->
+			<div class="col">
+				<div class="col-title">@Col2Title</div>
+				<div class="col-subtitle">@Col2Subtitle</div>
+				<div class="controls">
+					@if ( Mgr.HasMorphs )
+					{
+						@foreach ( var name in Mgr.MorphNames )
+						{
+							var ln = name;
+							var val = Mgr.MorphValues[ln];
+							<div class="row">
+								<div class="label">@ln <span class="val">@val.ToString("F2")</span></div>
+								<input type="range" min="0" max="1" step="0.01" value=@val
+									@oninput=@(e => OnMorphInput(ln, e.Value.ToString())) />
+							</div>
+						}
+					}
+					else
+					{
+						<div class="row">
+							<div class="label">R <span class="val">@Mgr.TintR.ToString("F2")</span></div>
+							<input type="range" min="0" max="1" step="0.01" value=@Mgr.TintR
+								@oninput=@(e => OnTintInput("R", e.Value.ToString())) />
+						</div>
+						<div class="row">
+							<div class="label">G <span class="val">@Mgr.TintG.ToString("F2")</span></div>
+							<input type="range" min="0" max="1" step="0.01" value=@Mgr.TintG
+								@oninput=@(e => OnTintInput("G", e.Value.ToString())) />
+						</div>
+						<div class="row">
+							<div class="label">B <span class="val">@Mgr.TintB.ToString("F2")</span></div>
+							<input type="range" min="0" max="1" step="0.01" value=@Mgr.TintB
+								@oninput=@(e => OnTintInput("B", e.Value.ToString())) />
+						</div>
+						@if ( Mgr.MaterialGroupNames.Count > 0 )
+						{
+							<div class="row">
+								<div class="label">MatGroup</div>
+								<div class="mat-row">
+									<button class="btn" onclick=@(() => Mgr.CycleMaterialGroup(-1))>◀</button>
+									<div class="mat-name">@CurrentMatGroup</div>
+									<button class="btn" onclick=@(() => Mgr.CycleMaterialGroup(1))>▶</button>
+								</div>
+							</div>
+						}
+					}
+				</div>
+			</div>
+
+			<!-- Column 3: Combined -->
+			<div class="col">
+				<div class="col-title">Combined</div>
+				<div class="col-subtitle">Clothing + bodygroups + tint</div>
+				<div class="controls">
+					<div class="row">
+						<button class="btn wide" onclick=@(() => Mgr.ApplyRandomClothing())>Re-randomize Clothing</button>
+					</div>
+					@foreach ( var name in Mgr.BodygroupNames )
+					{
+						var ln = name;
+						var hidden = Mgr.Bg3Hidden.ContainsKey(ln) && Mgr.Bg3Hidden[ln];
+						<div class="row">
+							<div class="label">@ln</div>
+							<button class="toggle @(hidden ? "on" : "")" onclick=@(() => Mgr.ToggleBg3(ln))>
+								@(hidden ? "HIDDEN" : "visible")
+							</button>
+						</div>
+					}
+					<div class="row">
+						<div class="label">R <span class="val">@Mgr.Tint3R.ToString("F2")</span></div>
+						<input type="range" min="0" max="1" step="0.01" value=@Mgr.Tint3R
+							@oninput=@(e => OnTint3Input("R", e.Value.ToString())) />
+					</div>
+					<div class="row">
+						<div class="label">G <span class="val">@Mgr.Tint3G.ToString("F2")</span></div>
+						<input type="range" min="0" max="1" step="0.01" value=@Mgr.Tint3G
+							@oninput=@(e => OnTint3Input("G", e.Value.ToString())) />
+					</div>
+					<div class="row">
+						<div class="label">B <span class="val">@Mgr.Tint3B.ToString("F2")</span></div>
+						<input type="range" min="0" max="1" step="0.01" value=@Mgr.Tint3B
+							@oninput=@(e => OnTint3Input("B", e.Value.ToString())) />
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+</root>
+
+@code
+{
+	public ShowcaseManager Mgr => Game.ActiveScene?.GetAllComponents<ShowcaseManager>().FirstOrDefault();
+
+	private string Col2Title => Mgr is null ? "" : (Mgr.HasMorphs ? "Morphs" : "Tints & Material Variants");
+	private string Col2Subtitle => Mgr is null ? "" : (Mgr.HasMorphs ? "Citizen 2 · Morphs.Set(name, 0..1)" : "Citizen 2 · ModelRenderer.Tint + MaterialGroup");
+
+	private string CurrentMatGroup
+	{
+		get
+		{
+			if ( Mgr is null || Mgr.MaterialGroupNames.Count == 0 ) return "(none)";
+			var i = Mgr.MaterialGroupIndex;
+			if ( i < 0 || i >= Mgr.MaterialGroupNames.Count ) return "(?)";
+			return Mgr.MaterialGroupNames[i];
+		}
+	}
+
+	private static float ParseFloat( string s )
+	{
+		float.TryParse( s, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var v );
+		return v;
+	}
+
+	private void OnMorphInput( string name, string raw )
+	{
+		if ( Mgr is null ) return;
+		Mgr.SetMorph( name, ParseFloat( raw ) );
+	}
+
+	private void OnTintInput( string ch, string raw )
+	{
+		if ( Mgr is null ) return;
+		var v = ParseFloat( raw );
+		if ( ch == "R" ) Mgr.TintR = v;
+		else if ( ch == "G" ) Mgr.TintG = v;
+		else if ( ch == "B" ) Mgr.TintB = v;
+		Mgr.ApplyCitizen2Tint();
+	}
+
+	private void OnTint3Input( string ch, string raw )
+	{
+		if ( Mgr is null ) return;
+		var v = ParseFloat( raw );
+		if ( ch == "R" ) Mgr.Tint3R = v;
+		else if ( ch == "G" ) Mgr.Tint3G = v;
+		else if ( ch == "B" ) Mgr.Tint3B = v;
+		Mgr.ApplyCitizen3Tint();
+	}
+
+	protected override int BuildHash()
+	{
+		if ( Mgr is null ) return 0;
+		var bg1 = string.Join( ",", Mgr.BodygroupNames.Select( n => Mgr.BodygroupHidden[n] ) );
+		var bg3 = string.Join( ",", Mgr.BodygroupNames.Where( n => Mgr.Bg3Hidden.ContainsKey(n) ).Select( n => Mgr.Bg3Hidden[n] ) );
+		var morphs = string.Join( ",", Mgr.MorphNames.Select( n => Mgr.MorphValues[n].ToString("F2") ) );
+		return HashCode.Combine(
+			bg1, bg3, morphs,
+			Mgr.TintR + Mgr.TintG * 13 + Mgr.TintB * 29,
+			Mgr.Tint3R + Mgr.Tint3G * 13 + Mgr.Tint3B * 29,
+			Mgr.MaterialGroupIndex );
+	}
+}

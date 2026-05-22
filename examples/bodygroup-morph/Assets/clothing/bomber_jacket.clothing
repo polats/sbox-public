@@ -1,0 +1,21 @@
+{
+  "HasHumanSkin": false,
+  "Title": "Bomber Jacket",
+  "Subtitle": "Top gun vibes",
+  "Category": "Jacket",
+  "ConditionalModels": {},
+  "Tags": "jacket",
+  "Model": "models/citizen_clothes/jacket/bomber_jacket/models/bomber_jacket.vmdl",
+  "HumanAltModel": null,
+  "HumanAltFemaleModel": null,
+  "SkinMaterial": null,
+  "EyesMaterial": null,
+  "MaterialGroup": null,
+  "SlotsUnder": 0,
+  "SlotsOver": "LeftArm, RightArm",
+  "HideBody": 0,
+  "AllowTintSelect": false,
+  "TintDefault": 0.5,
+  "__references": [],
+  "__version": 0
+}

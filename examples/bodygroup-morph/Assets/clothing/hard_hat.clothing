@@ -1,0 +1,21 @@
+{
+  "HasHumanSkin": false,
+  "Title": "Hard Hat",
+  "Subtitle": "Safety first",
+  "Category": "HatCostume",
+  "ConditionalModels": {},
+  "Tags": "hat",
+  "Model": "models/citizen_clothes/hat/hard_hat/models/hard_hat.vmdl",
+  "HumanAltModel": null,
+  "HumanAltFemaleModel": null,
+  "SkinMaterial": null,
+  "EyesMaterial": null,
+  "MaterialGroup": null,
+  "SlotsUnder": "HeadTop",
+  "SlotsOver": 0,
+  "HideBody": 0,
+  "AllowTintSelect": false,
+  "TintDefault": 0.5,
+  "__references": [],
+  "__version": 0
+}

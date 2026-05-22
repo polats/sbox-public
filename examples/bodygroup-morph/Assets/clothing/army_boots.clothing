@@ -1,0 +1,21 @@
+{
+  "HasHumanSkin": false,
+  "Title": "Army Boots",
+  "Subtitle": "Stomp",
+  "Category": "Boots",
+  "ConditionalModels": {},
+  "Tags": "shoes",
+  "Model": "models/citizen_clothes/shoes/boots/models/army_boots.vmdl",
+  "HumanAltModel": null,
+  "HumanAltFemaleModel": null,
+  "SkinMaterial": null,
+  "EyesMaterial": null,
+  "MaterialGroup": null,
+  "SlotsUnder": "LeftFoot, RightFoot",
+  "SlotsOver": 0,
+  "HideBody": "Feet",
+  "AllowTintSelect": false,
+  "TintDefault": 0.5,
+  "__references": [],
+  "__version": 0
+}
