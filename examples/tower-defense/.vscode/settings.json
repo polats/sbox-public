@@ -1,0 +1,20 @@
+{
+  "files.associations": {
+    "*.shader": "slang",
+    "*.hlsl": "slang"
+  },
+  "slang.additionalSearchPaths": [
+    "S:\\common\\sbox\\core\\shaders",
+    "S:\\common\\sbox\\addons\\base\\Assets\\shaders",
+    "S:\\common\\sbox\\addons\\menu\\Assets\\shaders",
+    "S:\\common\\sbox\\addons\\tools\\Assets\\shaders",
+    "S:\\common\\sbox\\editor\\ShaderGraph\\Assets\\shaders",
+    "S:\\common\\sbox\\editor\\ActionGraph\\Assets\\shaders",
+    "S:\\common\\sbox\\editor\\MovieMaker\\Assets\\shaders",
+    "S:\\common\\sbox\\editor\\Hammer\\Assets\\shaders",
+    "S:\\common\\sbox\\editor\\DooEditor\\Assets\\shaders",
+    "Z:\\home\\paul\\projects\\sbox-public\\examples\\tower-defense\\Assets\\shaders"
+  ],
+  "slang.predefinedMacros": [],
+  "slang.workspaceFlavor": "vfx"
+}

@@ -127,6 +127,23 @@ containing engine types (Model/Material), see the GameResource caveat
 above — store the *resource path* (string) instead and re-resolve via
 `ResourceLibrary.Get<T>(path)` on load.
 
+## `System.Text.Json` + `Vector3`: use 3 floats, not engine "x,y,z"
+
+When you save data via `FileSystem.Data.WriteAllText` + `JsonSerializer`,
+you're using `System.Text.Json` — **not** the engine's GameResource
+serializer. The engine's "x,y,z" text encoding for `Vector3` is NOT
+applied; STJ writes it as `{"x": ..., "y": ..., "z": ...}` or fails
+to roundtrip. Easier: store coordinates as three separate floats:
+
+```csharp
+private record TowerData( string Type, float X, float Y, float Z );
+private record SaveState( int Gold, int Wave, List<TowerData> Towers );
+```
+
+Convert at the boundary (`new Vector3(t.X, t.Y, t.Z)` on load,
+`new TowerData(type, pos.x, pos.y, pos.z)` on save). Verified pattern
+from `examples/tower-defense/`.
+
 ## sbox-eval can't see `Local.<X>` namespaces directly
 
 `sbox-eval` snippets are compiled against engine assemblies only; your

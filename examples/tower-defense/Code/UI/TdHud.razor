@@ -1,0 +1,51 @@
+@namespace Local.TowerDefense
+@using System
+@using System.Linq
+@using Sandbox
+@using Sandbox.UI
+@inherits PanelComponent
+
+<root>
+	@if ( GM is null )
+	{
+		<div class="loading">Loading…</div>
+	}
+	else
+	{
+		<div class="topleft">
+			<div class="stat"><span class="label">Gold</span><span class="value gold">@GM.Gold</span></div>
+			<div class="stat"><span class="label">Wave</span><span class="value">@GM.Wave / @GameManager.MaxWaves</span></div>
+			<div class="stat"><span class="label">Base HP</span><span class="value hp">@HpDisplay()</span></div>
+			<div class="stat small"><span class="label">Towers</span><span class="value">@GM.TowerCount / @GameManager.MaxTowers</span></div>
+		</div>
+
+		<div class="topright">
+			<div class="stat"><span class="label">Best Wave</span><span class="value best">@GM.BestWave</span></div>
+			<div class="stat small"><span class="label">State</span><span class="value">@GM.StateName</span></div>
+		</div>
+
+		<div class="hint">
+			@GM.HudHint
+		</div>
+	}
+</root>
+
+@code
+{
+	public GameManager GM => Game.ActiveScene?.GetAllComponents<GameManager>().FirstOrDefault();
+
+	private string HpDisplay()
+	{
+		if ( GM?.Base == null ) return "—";
+		return $"{(int)GM.Base.CurrentHp} / {(int)GM.Base.MaxHp}";
+	}
+
+	protected override int BuildHash() => HashCode.Combine(
+		GM?.Gold,
+		GM?.Wave,
+		GM?.BestWave,
+		GM?.StateName,
+		GM?.HudHint,
+		GM?.TowerCount,
+		GM?.Base?.CurrentHp );
+}
