@@ -6,3 +6,6 @@
 	path = sandbox
 	url = https://github.com/polats/sbox-sandbox-linux.git
 	branch = linux-proton-emoji-icons
+[submodule "claude-sbox-setup"]
+	path = claude-sbox-setup
+	url = https://github.com/coffeegrind123/claude-sbox-setup.git
