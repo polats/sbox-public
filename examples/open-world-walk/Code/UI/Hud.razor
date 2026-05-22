@@ -1,0 +1,73 @@
+@namespace Local.OpenWorldWalk
+@using System
+@using System.Linq
+@using Sandbox
+@using Sandbox.UI
+@inherits PanelComponent
+
+<root>
+	@if ( P is null )
+	{
+		<div class="loading">Loading...</div>
+	}
+	else
+	{
+		<!-- Minimap (top-left), Razor-div fallback: 1px dot overlaid on a square canvas. -->
+		<div class="minimap">
+			<div class="map-bg"></div>
+			<div class="map-dot" style="left:@(MapX())px; top:@(MapY())px;"></div>
+			<div class="map-label">MAP</div>
+		</div>
+
+		<!-- Coordinates bottom-left -->
+		<div class="coords">
+			<div class="icon">explore</div>
+			<div class="text">@($"X:{(int)P.Coordinates.x,5}  Y:{(int)P.Coordinates.y,5}  Z:{(int)P.Coordinates.z,4}")</div>
+		</div>
+
+		<!-- Biome top-right -->
+		<div class="biome" style="color:@BiomeColor();">
+			<div class="icon">landscape</div>
+			<div class="text">@P.Biome.ToUpper()</div>
+		</div>
+
+		<div class="hint">
+			WASD walk · Shift sprint · Mouse look
+		</div>
+	}
+</root>
+
+@code
+{
+	public Player P => Game.ActiveScene?.GetAllComponents<Player>().FirstOrDefault();
+
+	// terrain extents ~ +-1000, minimap is 200x200 px
+	private float MapX()
+	{
+		if ( P is null ) return 100;
+		return MathX.Clamp( 100f + P.Coordinates.x / 1000f * 100f, 0f, 200f );
+	}
+	private float MapY()
+	{
+		if ( P is null ) return 100;
+		// flip Y so up on map = +Y in world
+		return MathX.Clamp( 100f - P.Coordinates.y / 1000f * 100f, 0f, 200f );
+	}
+
+	private string BiomeColor()
+	{
+		return P?.Biome switch
+		{
+			"valley"   => "#84d4ff",
+			"meadow"   => "#a9ff84",
+			"highland" => "#ffd584",
+			_          => "#ffffff",
+		};
+	}
+
+	protected override int BuildHash() => HashCode.Combine(
+		(int)(P?.Coordinates.x ?? 0f),
+		(int)(P?.Coordinates.y ?? 0f),
+		(int)(P?.Coordinates.z ?? 0f),
+		P?.Biome );
+}
