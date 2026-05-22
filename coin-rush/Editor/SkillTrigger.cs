@@ -32,25 +32,96 @@ namespace Local.CoinRush.EditorTools;
 /// </summary>
 public static class SkillTrigger
 {
-	// Triggers under any project's `.sbox/skill-triggers/` directory.
 	private const string TriggerSubdir = ".sbox/skill-triggers";
 
-	// Cache of project roots we've seen so we don't re-stat every frame.
-	private static readonly HashSet<string> _knownDirs = new();
 	private static RealTimeSince _timeSinceScan = 0;
+
+	// State for the multi-step "video-clip" sequence (play → record →
+	// stop → leave play). Managed across editor frames.
+	private enum VideoClipPhase { None, WaitForPlay, Recording, Stopping, WaitForExit }
+	private static VideoClipPhase _videoPhase = VideoClipPhase.None;
+	private static RealTimeSince _videoPhaseStart;
+	private static float _videoDuration;
 
 	[EditorEvent.Frame]
 	public static void OnFrame()
 	{
-		// Only scan ~4 times a second to keep editor responsive.
+		// Drive an in-flight video-clip sequence if any.
+		TickVideoClip();
+
+		// Only scan triggers ~4 times a second to keep editor responsive.
 		if ( _timeSinceScan < 0.25f ) return;
 		_timeSinceScan = 0;
 
-		// Process triggers in every project root we know about.
-		// We discover projects lazily by scanning known sbox-project parents
-		// for "<project>/.sbox/skill-triggers". For now, just check the
-		// Active project's own .sbox dir.
 		ScanProject( GetActiveProjectRoot() );
+	}
+
+	private static void TickVideoClip()
+	{
+		switch ( _videoPhase )
+		{
+			case VideoClipPhase.None: return;
+
+			case VideoClipPhase.WaitForPlay:
+				// Wait for Game.IsPlaying to actually become true (Play() may
+				// be async). Cap at 5s — if play never engages, abort.
+				if ( Game.IsPlaying )
+				{
+					Log.Info( $"[SkillTrigger] video-clip: play engaged after {(float)_videoPhaseStart:F2}s; starting recorder" );
+					Sandbox.ConsoleSystem.Run( "video" );
+					_videoPhase = VideoClipPhase.Recording;
+					_videoPhaseStart = 0;
+				}
+				else if ( _videoPhaseStart >= 5.0f )
+				{
+					Log.Warning( "[SkillTrigger] video-clip: Play() didn't engage after 5s — aborting" );
+					_videoPhase = VideoClipPhase.None;
+				}
+				return;
+
+			case VideoClipPhase.Recording:
+				if ( _videoPhaseStart >= _videoDuration )
+				{
+					Log.Info( $"[SkillTrigger] video-clip: stopping after {_videoDuration:F1}s" );
+					Sandbox.ConsoleSystem.Run( "video" );
+					_videoPhase = VideoClipPhase.Stopping;
+					_videoPhaseStart = 0;
+				}
+				return;
+
+			case VideoClipPhase.Stopping:
+				// Give encoder ~1s to flush
+				if ( _videoPhaseStart >= 1.0f )
+				{
+					Log.Info( "[SkillTrigger] video-clip: exiting play mode" );
+					EditorScene.Stop();
+					_videoPhase = VideoClipPhase.WaitForExit;
+					_videoPhaseStart = 0;
+				}
+				return;
+
+			case VideoClipPhase.WaitForExit:
+				if ( _videoPhaseStart >= 0.5f )
+				{
+					Log.Info( "[SkillTrigger] video-clip: done" );
+					_videoPhase = VideoClipPhase.None;
+				}
+				return;
+		}
+	}
+
+	private static void StartVideoClip( float seconds )
+	{
+		if ( _videoPhase != VideoClipPhase.None )
+		{
+			Log.Warning( "[SkillTrigger] video-clip already in progress, ignoring" );
+			return;
+		}
+		_videoDuration = Math.Clamp( seconds, 0.5f, 60f );
+		Log.Info( $"[SkillTrigger] video-clip: entering play mode for {_videoDuration:F1}s clip" );
+		EditorScene.Play();
+		_videoPhase = VideoClipPhase.WaitForPlay;
+		_videoPhaseStart = 0;
 	}
 
 	private static string GetActiveProjectRoot()
@@ -109,9 +180,22 @@ public static class SkillTrigger
 					break;
 				}
 			case "video":
-				// either "video start" or "video stop" — both call the `video`
-				// ConCmd, which toggles. Or just "video" works the same.
+				// "video" alone toggles the recorder.
 				Sandbox.ConsoleSystem.Run( "video" );
+				break;
+			case "video-clip":
+				// "video-clip N" — runs the full sequence: enter play, start
+				// recorder, wait N seconds, stop recorder, exit play.
+				{
+					var secs = parts.Length > 1 && float.TryParse( parts[1], out var s ) ? s : 5f;
+					StartVideoClip( secs );
+				}
+				break;
+			case "play":
+				EditorScene.Play();
+				break;
+			case "stop-play":
+				EditorScene.Stop();
 				break;
 			case "cmd":
 				Sandbox.ConsoleSystem.Run( first.Substring( 4 ) );

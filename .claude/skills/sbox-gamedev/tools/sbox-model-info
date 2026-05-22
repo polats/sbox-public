@@ -2,122 +2,98 @@
 """
 sbox-model-info — get verified bounding-box dimensions for s&box models.
 
-s&box has no built-in `model_info` console command. This tool uses the
-engine itself as ground truth by:
-  1. Writing a scene under `<repo>/model-probe/Assets/scenes/probe.scene`
-     that holds a single `Local.ModelProbe.ModelProbe` component with the
-     requested model paths as a [Property].
-  2. Killing any running editor and launching the model-probe project.
-  3. Waiting for the editor to compile + load the scene + log
-     `BOUNDS_PROBE_DONE`.
-  4. Parsing the log for `BOUNDS_PROBE <path> mins=… maxs=… size=…` lines.
-  5. Printing a table.
+Uses the trigger-file pattern (see SkillTrigger.cs): writes a
+`probe-models` trigger into model-probe's `.sbox/skill-triggers/`,
+SkillTrigger reads it in edit mode, calls `Model.Load(path).Bounds`
+for each path, logs `BOUNDS_PROBE …` lines. Tool parses the log.
+
+No F5, no play mode, no xdotool. First call after editor cold-start
+needs ~30s for compile; warm calls are sub-second.
 
 Usage:
   sbox-model-info models/citizen_human/citizen_human_male.vmdl
   sbox-model-info models/citizen_props/coin01.vmdl models/sbox_props/trees/oak/tree_oak_big_a.vmdl
-  sbox-model-info --query "citizen_human"     # use sbox-models substring search to expand
+  sbox-model-info --query "citizen_human"     # expand via sbox-models first
+  sbox-model-info --no-relaunch <paths...>    # reuse running editor
 """
 from __future__ import annotations
-import argparse, json, os, re, subprocess, sys, time, uuid
+import argparse, os, re, subprocess, sys, time
 from pathlib import Path
 
 REPO = Path("/home/paul/projects/sbox-public")
 PROBE = REPO / "model-probe"
-SCENE = PROBE / "Assets" / "scenes" / "probe.scene"
-SCENE_GUID = "33333333-0000-0000-0000-000000000001"
-GO_GUID = "33333333-0000-0000-0000-000000000010"
-CMP_GUID = "33333333-0000-0000-0000-000000000011"
 LOG = Path.home() / ".steam/root/steamapps/common/sbox/logs/sbox-dev.log"
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 LAUNCH = SCRIPT_DIR / "sbox-launch"
 
-# Match either "<Scene> - s&box editor" (the scene-editor window) or just "s&box editor"
-EDITOR_WIN_TITLE = "s&box editor"
 
-
-def send_f5_to_editor() -> bool:
-    """Locate the editor's main window and send F5 to toggle play mode.
-    Returns True if F5 was dispatched, False otherwise."""
+def detect_running_project() -> Path | None:
+    """Return the absolute path of the project the editor is currently on
+    (by parsing the running sbox-dev.exe command line), or None."""
     try:
-        r = subprocess.run(
-            ["xdotool", "search", "--name", EDITOR_WIN_TITLE],
-            capture_output=True, text=True, timeout=5,
-        )
-        wids = [w for w in r.stdout.split() if w.strip()]
-        if not wids:
-            return False
-        # Prefer the scene-editor window over the launcher (it has a title like "Probe - s&box editor")
-        target = wids[0]
-        for w in wids:
-            name = subprocess.run(
-                ["xdotool", "getwindowname", w],
-                capture_output=True, text=True, timeout=2,
-            ).stdout.strip()
-            if " - " in name:
-                target = w
-                break
-        # Activate, then send F5
-        subprocess.run(["xdotool", "windowactivate", "--sync", target], timeout=5, check=False)
-        time.sleep(0.3)
-        subprocess.run(["xdotool", "key", "--window", target, "F5"], timeout=5, check=False)
-        return True
-    except Exception as e:
-        print(f"xdotool error: {e}", file=sys.stderr)
+        r = subprocess.run(["pgrep", "-af", "sbox-dev.exe"],
+                           capture_output=True, text=True, timeout=3)
+    except Exception:
+        return None
+    for ln in r.stdout.splitlines():
+        # The arg looks like: -project Z:\home\paul\projects\sbox-public\<name>\<name>.sbproj
+        m = re.search(r"-project\s+Z:\\([^ ]+)\.sbproj", ln)
+        if m:
+            wine_path = m.group(1)
+            linux = "/" + wine_path.replace("\\", "/")
+            sbproj = Path(linux + ".sbproj")
+            if sbproj.exists():
+                return sbproj.parent
+    return None
+
+
+def write_trigger(project: Path, content: str) -> Path:
+    """Drop a trigger file into <project>/.sbox/skill-triggers/."""
+    d = project / ".sbox" / "skill-triggers"
+    d.mkdir(parents=True, exist_ok=True)
+    f = d / f"{time.strftime('%Y%m%d-%H%M%S')}-{os.getpid()}-probe.txt"
+    f.write_text(content, encoding="utf-8")
+    return f
+
+
+def ensure_skill_trigger_installed(project: Path) -> bool:
+    """Check that this project has Editor/SkillTrigger.cs installed. Returns
+    True if the install was performed (so caller knows to give the editor
+    time to recompile)."""
+    if (project / "Editor" / "SkillTrigger.cs").exists():
         return False
+    # Delegate to sbox-screenshot's helper if absent
+    screenshot = SCRIPT_DIR / "sbox-screenshot"
+    # Easiest path: import the helper. Both tools live in the same dir.
+    src = SKILL_ROOT / "templates" / "Editor" / "SkillTrigger.cs"
+    csproj_template = SKILL_ROOT / "templates" / "Editor" / "PROJECT.editor.csproj"
+    name = project.name
+    code_csproj = next((f.stem for f in (project / "Code").glob("*.csproj")), name.replace("-", "_"))
+    namespace = "".join(p.capitalize() for p in name.split("-"))
 
-LIFECYCLE_NULLS = {
-    "OnComponentDestroy": None, "OnComponentDisabled": None,
-    "OnComponentEnabled": None, "OnComponentFixedUpdate": None,
-    "OnComponentStart": None,   "OnComponentUpdate": None,
-}
+    editor_dir = project / "Editor"
+    editor_dir.mkdir(parents=True, exist_ok=True)
 
+    trigger_dest = editor_dir / "SkillTrigger.cs"
+    text = src.read_text(encoding="utf-8")
+    text = text.replace("Local.ModelProbe.EditorTools", f"Local.{namespace}.EditorTools")
+    trigger_dest.write_text(text, encoding="utf-8")
 
-def write_scene(model_paths: list[str]) -> None:
-    SCENE.parent.mkdir(parents=True, exist_ok=True)
-    scene = {
-        "__guid": SCENE_GUID,
-        "GameObjects": [
-            {
-                "__guid": GO_GUID, "__version": 2, "Flags": 0,
-                "Name": "Probe", "Position": "0,0,0", "Rotation": "0,0,0,1",
-                "Scale": "1,1,1", "Tags": "", "Enabled": True,
-                "NetworkMode": 2, "NetworkFlags": 0, "NetworkOrphaned": 0,
-                "NetworkTransmit": True, "OwnerTransfer": 1,
-                "Components": [
-                    {
-                        "__type": "Local.ModelProbe.ModelProbe",
-                        "__guid": CMP_GUID,
-                        "__enabled": True, "Flags": 0,
-                        **LIFECYCLE_NULLS,
-                        "ModelPaths": model_paths,
-                    }
-                ],
-                "Children": [],
-            }
-        ],
-        "SceneProperties": {
-            "NetworkInterpolation": True, "TimeScale": 1,
-            "WantsSystemScene": False, "Metadata": {},
-        },
-        "ResourceVersion": 3, "Title": "Probe",
-        "Description": "Model bounds probe. Generated by sbox-model-info.",
-        "__references": [], "__version": 3,
-    }
-    SCENE.write_text(json.dumps(scene, indent=2), encoding="utf-8")
+    csproj_dest = editor_dir / f"{name}.editor.csproj"
+    text = csproj_template.read_text(encoding="utf-8")
+    text = (text.replace("model-probe", name)
+                .replace("model_probe", code_csproj)
+                .replace("MODEL_PROBE", namespace.upper()))
+    csproj_dest.write_text(text, encoding="utf-8")
+    return True
 
 
-def prime_open_scene() -> None:
-    """Mark probe.scene as the open scene so the editor restores it on launch."""
-    setter = SCRIPT_DIR / "sbox-set-startup-scene"
-    subprocess.run([str(setter), str(PROBE), "scenes/probe.scene"], check=True)
+SKILL_ROOT = SCRIPT_DIR.parent
 
 
-def parse_log_for_bounds(_unused_started: int = 0) -> tuple[dict, bool]:
-    """Read the most-recent BOUNDS_PROBE_START → BOUNDS_PROBE_DONE block from
-    the log. Returns (results, done). Done=True only if the DONE marker is
-    present after the last START."""
+def parse_log_for_bounds() -> tuple[dict, bool]:
+    """Find the most-recent BOUNDS_PROBE_START → BOUNDS_PROBE_DONE block."""
     if not LOG.exists():
         return {}, False
     text = LOG.read_text(encoding="utf-8", errors="replace")
@@ -149,15 +125,18 @@ def parse_log_for_bounds(_unused_started: int = 0) -> tuple[dict, bool]:
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("paths", nargs="*", help="model paths to probe (e.g. models/citizen_human/citizen_human_male.vmdl)")
+    ap.add_argument("paths", nargs="*", help="model paths (e.g. models/citizen_human/citizen_human_male.vmdl)")
     ap.add_argument("--query", help="instead of paths, use sbox-models to find paths and probe them")
-    ap.add_argument("--timeout", type=int, default=120, help="max seconds to wait for the editor to load + log results")
+    ap.add_argument("--no-relaunch", action="store_true",
+        help="don't launch the editor — assume it's already running on model-probe")
+    ap.add_argument("--timeout", type=int, default=120)
     args = ap.parse_args()
 
     paths = list(args.paths)
     if args.query:
         models_tool = SCRIPT_DIR / "sbox-models"
-        r = subprocess.run([str(models_tool), args.query, "-n", "20"], capture_output=True, text=True)
+        r = subprocess.run([str(models_tool), args.query, "-n", "20"],
+                           capture_output=True, text=True)
         for ln in r.stdout.splitlines():
             ln = ln.strip()
             if ln.startswith("models/") and ln.endswith(".vmdl"):
@@ -171,53 +150,48 @@ def main():
     for p in paths:
         print(f"  • {p}", file=sys.stderr)
 
-    write_scene(paths)
-    print("scene written", file=sys.stderr)
+    # Decide which project to write the trigger to. Prefer the project the
+    # editor is currently running on (any project with SkillTrigger handles
+    # `probe-models` triggers). Otherwise fall back to model-probe and
+    # launch the editor on it.
+    target = detect_running_project()
+    if target is None:
+        target = PROBE
+        if not args.no_relaunch:
+            print(f"editor not running; launching on {target.name}…", file=sys.stderr)
+            subprocess.run([str(LAUNCH), str(target)], check=False)
+            time.sleep(30)
+    else:
+        print(f"editor running on {target.name} — writing trigger there", file=sys.stderr)
 
-    # Kill editor, prime scene, launch.
-    subprocess.run([str(LAUNCH), "--kill"], check=False)
-    time.sleep(1)
-    prime_open_scene()
-    started = int(time.time())
-    subprocess.run([str(LAUNCH), str(PROBE)], check=False)
+    installed = ensure_skill_trigger_installed(target)
+    if installed:
+        print("installed Editor/SkillTrigger.cs in target — needs editor restart…", file=sys.stderr)
+        subprocess.run([str(LAUNCH), "--kill"], check=False)
+        time.sleep(2)
+        subprocess.run([str(LAUNCH), str(target)], check=False)
+        time.sleep(45)
 
-    print(f"editor launching at {time.strftime('%H:%M:%S')} (will wait up to {args.timeout}s)...", file=sys.stderr)
+    trigger_content = "probe-models\n" + "\n".join(paths)
+    trigger = write_trigger(target, trigger_content)
+    print(f"wrote trigger: {trigger.name}", file=sys.stderr)
 
-    # Wait for the editor window to be ready, then send F5 to enter play mode
-    # (so the probe Component's OnStart fires). The component logs each model's
-    # bounds. After bounds are captured, we send F5 again to leave play.
-    f5_sent = False
-    play_started_at = None
     deadline = time.time() + args.timeout
     while time.time() < deadline:
-        time.sleep(2)
-
-        if not f5_sent:
-            if send_f5_to_editor():
-                print(f"sent F5 (enter play) at {time.strftime('%H:%M:%S')}", file=sys.stderr)
-                f5_sent = True
-                play_started_at = time.time()
-
-        results, done = parse_log_for_bounds(started)
+        time.sleep(1)
+        results, done = parse_log_for_bounds()
         if done and len(results) >= len(paths):
             break
         if all(p in results for p in paths):
             break
-    else:
-        print(f"timeout after {args.timeout}s — partial results below", file=sys.stderr)
 
-    if f5_sent and play_started_at is not None:
-        # Leave play mode so the editor returns to edit state for the next run
-        time.sleep(0.5)
-        send_f5_to_editor()
-
-    results, _ = parse_log_for_bounds(started)
+    results, _ = parse_log_for_bounds()
     if not results:
-        print("no BOUNDS_PROBE entries in log — probe didn't run", file=sys.stderr)
-        print("check `sbox-logs --category compile --tail 20` for build errors", file=sys.stderr)
+        print("no BOUNDS_PROBE entries in log — probe didn't run.", file=sys.stderr)
+        print("  • editor running and warmed up?", file=sys.stderr)
+        print("  • model-probe has Editor/SkillTrigger.cs installed?", file=sys.stderr)
         sys.exit(2)
 
-    # Print results table
     BOLD, DIM, END = "\033[1m", "\033[2m", "\033[0m"
     print(f"\n{BOLD}{'path':<60} {'size x×y×z (inches)':<30} suggested scale{END}")
     for p in paths:
@@ -230,10 +204,8 @@ def main():
             continue
         sx, sy, sz = info["size"]
         biggest = max(sx, sy, sz)
-        # Suggest a scale so the biggest dimension is ~70 inches (human-sized)
-        # (use 1.0 if already human-sized, smaller for trees, larger for coins)
         suggest = 70 / biggest if biggest > 0 else 1.0
-        print(f"  {p:<60} {f'{sx:.1f} × {sy:.1f} × {sz:.1f}':<30} {DIM}scale ≈ {suggest:.2f} for ~human size{END}")
+        print(f"  {p:<60} {f'{sx:.1f} × {sy:.1f} × {sz:.1f}':<30} {DIM}scale ≈ {suggest:.3f} for ~human size{END}")
 
 
 if __name__ == "__main__":

@@ -311,19 +311,14 @@ def main():
     if args.mode == "screenshot":
         trigger_content = f"screenshot {args.width}x{args.height}"
     else:
-        trigger_content = "video"
+        # video-clip: SkillTrigger handles play→record→stop→exit-play as a
+        # single sequence. We don't need to manage stop ourselves.
+        trigger_content = f"video-clip {args.duration:g}"
 
     # Fire the trigger
     trigger_file = write_trigger(project, trigger_content)
     print(f"wrote trigger: {trigger_file.name} → {trigger_content}", file=sys.stderr)
 
-    # For video: schedule a second "video" trigger to stop after the duration
-    video_stop_future = None
-    if args.mode == "video":
-        video_stop_future = time.time() + args.duration
-
-    video_started_seen = False
-    video_stop_fired = False
     deadline = time.time() + args.timeout
     result: Path | None = None
     while time.time() < deadline:
@@ -345,26 +340,14 @@ def main():
                 break
             continue
 
-        # video mode: watch for engine's "Video recording started" then fire
-        # a stop trigger after `duration` seconds, then wait for finish line.
-        if not video_started_seen:
-            if VIDEO_START_RE.search(tail) or "Video recording started" in tail:
-                video_started_seen = True
-                video_stop_future = time.time() + args.duration
-                print(f"video started; will stop in {args.duration:.0f}s", file=sys.stderr)
-            continue
-
-        if not video_stop_fired and time.time() >= video_stop_future:
-            write_trigger(project, "video")
-            video_stop_fired = True
-            print("wrote video-stop trigger", file=sys.stderr)
-            continue
-
+        # video mode: SkillTrigger drives the whole sequence; we just watch
+        # for "Video recording finished" then resolve the path.
         m = VIDEO_PATH_RE.search(tail)
-        if m and video_stop_fired:
-            time.sleep(2)  # let encoder flush
-            result = _resolve_screenshot_path(m.group(1))
-            if result.exists():
+        if m:
+            time.sleep(2)  # let encoder flush + skill-trigger exit play
+            p = _resolve_screenshot_path(m.group(1))
+            if p.exists():
+                result = p
                 break
 
     if result is None or not result.exists():
