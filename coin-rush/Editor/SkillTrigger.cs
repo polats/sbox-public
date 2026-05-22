@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text.Json;
 
 namespace Local.CoinRush.EditorTools;
@@ -18,21 +19,32 @@ namespace Local.CoinRush.EditorTools;
 /// xdotool-F5-and-pray dance with a deterministic file-poll handshake.
 ///
 /// Trigger formats currently supported:
-///   <file content = "screenshot WxH">         → screenshot_highres W H
-///   <file content = "video start">            → video
-///   <file content = "video stop">             → video
-///   <file content = "cmd <raw console cmd>">  → run that command verbatim
-///   <file content = "probe-models">           → read trigger.json's "paths"
-///                                              and log BOUNDS_PROBE entries
+///   "screenshot WxH"            → screenshot_highres W H
+///   "video"                     → toggle recorder
+///   "video-clip N"              → play→record N sec→stop→exit-play sequence
+///   "cmd <raw console cmd>"     → ConsoleSystem.Run verbatim
+///   "play" / "stop-play"        → EditorScene.Play() / .Stop()
+///   "probe-models" + paths      → log BOUNDS_PROBE entries
+///   "scene-state"               → write JSON snapshot of Game.ActiveScene
+///                                 to .sbox/skill-results/<trigger-id>.json
+///   "invoke-menu <path>"        → fire a menu item by its dot-path
+///                                 (e.g. "Game.Play", "Code.Recompile")
+///   "shortcut <name>"           → invoke a named [Shortcut] action
+///                                 (e.g. "editor.toggle-play", "editor.save")
 ///
-/// Result location (for tools to find):
-///   The engine logs the result path itself ("Screenshot saved to: …" or
-///   "Video recording finished: …"). The tool watches the editor log for
-///   those lines; this helper just kicks off the work.
+/// Result conventions:
+/// - For triggers with engine-side output (screenshot/video), the engine
+///   logs the result path itself ("Screenshot saved to:", "Video recording
+///   finished:"); the tool greps the log.
+/// - For triggers that return structured data (scene-state), SkillTrigger
+///   writes JSON to <project>/.sbox/skill-results/<trigger-id>.json where
+///   trigger-id is the basename of the trigger file without its extension.
+///   The tool polls for the result file.
 /// </summary>
 public static class SkillTrigger
 {
 	private const string TriggerSubdir = ".sbox/skill-triggers";
+	private const string ResultSubdir  = ".sbox/skill-results";
 
 	private static RealTimeSince _timeSinceScan = 0;
 
@@ -201,13 +213,275 @@ public static class SkillTrigger
 				Sandbox.ConsoleSystem.Run( first.Substring( 4 ) );
 				break;
 			case "probe-models":
-				{
-					ProbeModels( file );
-					break;
-				}
+				ProbeModels( file );
+				break;
+			case "scene-state":
+				DumpSceneState( file );
+				break;
+			case "invoke-menu":
+				InvokeMenu( file, parts.Length > 1 ? string.Join( " ", parts.Skip( 1 ) ) : "" );
+				break;
+			case "shortcut":
+				InvokeShortcut( file, parts.Length > 1 ? parts[1] : "" );
+				break;
 			default:
 				Log.Warning( $"[SkillTrigger] unknown trigger: {parts[0]}" );
+				WriteResult( file, false, $"unknown trigger: {parts[0]}", null );
 				break;
+		}
+	}
+
+	// Result-file plumbing: write to <project>/.sbox/skill-results/<id>.json
+	// where <id> is the trigger filename without its extension.
+	private static void WriteResult( string triggerFile, bool ok, string error, object data )
+	{
+		try
+		{
+			var triggerDir = Path.GetDirectoryName( triggerFile );
+			var projectRoot = Path.GetDirectoryName( Path.GetDirectoryName( triggerDir ) );
+			var resultsDir = Path.Combine( projectRoot, ResultSubdir );
+			Directory.CreateDirectory( resultsDir );
+			var id = Path.GetFileNameWithoutExtension( triggerFile );
+			var outPath = Path.Combine( resultsDir, id + ".json" );
+			var payload = new Dictionary<string, object>
+			{
+				["ok"] = ok,
+				["ts"] = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+				["error"] = error,
+				["data"] = data,
+			};
+			// Atomic write: write to .tmp then rename, so the tool never
+			// reads a half-written file.
+			var tmp = outPath + ".tmp";
+			File.WriteAllText( tmp, JsonSerializer.Serialize( payload, new JsonSerializerOptions { WriteIndented = true } ) );
+			File.Move( tmp, outPath, overwrite: true );
+		}
+		catch ( Exception ex )
+		{
+			Log.Warning( $"[SkillTrigger] failed to write result for {triggerFile}: {ex.Message}" );
+		}
+	}
+
+	private static void DumpSceneState( string triggerFile )
+	{
+		try
+		{
+			// In edit mode, the scene under the editor's cursor lives at
+			// SceneEditorSession.Active.Scene. Fall back to Game.ActiveScene
+			// (which is what play mode populates).
+			var scene = SceneEditorSession.Active?.Scene ?? Game.ActiveScene;
+			if ( scene == null )
+			{
+				WriteResult( triggerFile, false, "no active scene", null );
+				return;
+			}
+
+			var gos = new List<object>();
+			foreach ( var go in scene.GetAllObjects( true ) )
+			{
+				var components = new List<object>();
+				foreach ( var c in go.Components.GetAll() )
+				{
+					var props = new Dictionary<string, object>();
+					try
+					{
+						foreach ( var p in c.GetType().GetProperties() )
+						{
+							if ( p.GetCustomAttribute<PropertyAttribute>() == null ) continue;
+							try { props[p.Name] = p.GetValue( c )?.ToString(); }
+							catch { /* getter threw */ }
+						}
+					}
+					catch { /* type reflection threw */ }
+					components.Add( new
+					{
+						type = c.GetType().FullName,
+						enabled = c.Active,
+						properties = props,
+					} );
+				}
+				gos.Add( new
+				{
+					id = go.Id.ToString(),
+					name = go.Name,
+					enabled = go.Active,
+					position = $"{go.WorldPosition.x:F2},{go.WorldPosition.y:F2},{go.WorldPosition.z:F2}",
+					rotation = $"{go.WorldRotation.x:F4},{go.WorldRotation.y:F4},{go.WorldRotation.z:F4},{go.WorldRotation.w:F4}",
+					scale = $"{go.WorldScale.x:F2},{go.WorldScale.y:F2},{go.WorldScale.z:F2}",
+					tags = go.Tags?.TryGetAll()?.ToArray() ?? Array.Empty<string>(),
+					componentCount = components.Count,
+					components = components,
+				} );
+			}
+
+			// Scene.Title is obsolete in favor of a SceneInformation component;
+			// pull from that if present, else fall back to the file name.
+			string sceneName = null;
+			try
+			{
+				var info = scene.GetAllComponents<SceneInformation>().FirstOrDefault();
+				sceneName = info?.Title;
+			}
+			catch { /* SceneInformation may not exist in older builds */ }
+			sceneName ??= "(unnamed scene)";
+
+			WriteResult( triggerFile, true, null, new { sceneName, gameObjectCount = gos.Count, gameObjects = gos } );
+		}
+		catch ( Exception ex )
+		{
+			WriteResult( triggerFile, false, $"{ex.GetType().Name}: {ex.Message}", null );
+		}
+	}
+
+	private static void InvokeMenu( string triggerFile, string menuPath )
+	{
+		// menuPath is slash- or dot-separated, e.g. "Game/Play" or "Code.Recompile".
+		// We walk the menu tree manually because Menu.Options / Menu.Menus are
+		// protected; reflect to read them, match by Title (case-insensitive).
+		try
+		{
+			// EditorMainWindow.Current is internal — reflect.
+			var win = (Widget)typeof( EditorMainWindow )
+				.GetField( "Current", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public )
+				?.GetValue( null );
+			var menuBar = win == null ? null : (MenuBar)win.GetType()
+				.GetProperty( "MenuBar", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic )
+				?.GetValue( win );
+			if ( menuBar == null )
+			{
+				WriteResult( triggerFile, false, "no editor main window / menu bar", null );
+				return;
+			}
+
+			var parts = menuPath.Split( new[] { '/', '.' }, StringSplitOptions.RemoveEmptyEntries );
+			if ( parts.Length == 0 )
+			{
+				WriteResult( triggerFile, false, "empty menu path", null );
+				return;
+			}
+
+			Menu menu = FindChildMenu( menuBar, parts[0] );
+			if ( menu == null )
+			{
+				WriteResult( triggerFile, false, $"top-level menu not found: {parts[0]}", null );
+				return;
+			}
+
+			Option opt = null;
+			for ( int i = 1; i < parts.Length; i++ )
+			{
+				// Try option first; fall through to submenu lookup if absent
+				// (the last path component is usually an Option; intermediate
+				// components are usually submenus).
+				opt = FindOption( menu, parts[i] );
+				if ( opt == null )
+				{
+					var sub = FindChildMenu( menu, parts[i] );
+					if ( sub == null )
+					{
+						WriteResult( triggerFile, false, $"not found: {parts[i]} (in {(i == 1 ? parts[0] : parts[i - 1])})", null );
+						return;
+					}
+					menu = sub;
+				}
+				else if ( i < parts.Length - 1 )
+				{
+					// Found an option but path continues — descend into its menu if it has one
+					var sub = FindChildMenu( menu, parts[i] );
+					if ( sub == null )
+					{
+						WriteResult( triggerFile, false, $"option {parts[i]} has no submenu", null );
+						return;
+					}
+					menu = sub;
+					opt = null;
+				}
+			}
+
+			if ( opt?.Triggered != null )
+			{
+				opt.Triggered.Invoke();
+				Log.Info( $"[SkillTrigger] invoked menu: {menuPath}" );
+				WriteResult( triggerFile, true, null, new { menuPath } );
+			}
+			else
+			{
+				WriteResult( triggerFile, false, $"option {menuPath} has no Triggered action", null );
+			}
+		}
+		catch ( Exception ex )
+		{
+			WriteResult( triggerFile, false, $"{ex.GetType().Name}: {ex.Message}", null );
+		}
+	}
+
+	private static Menu FindChildMenu( object parent, string title )
+	{
+		var list = GetNonPublicEnumerable( parent, "Menus" );
+		if ( list == null ) return null;
+		foreach ( var m in list )
+		{
+			if ( m is Menu menu && string.Equals( menu.Title, title, StringComparison.OrdinalIgnoreCase ) )
+				return menu;
+		}
+		return null;
+	}
+
+	private static Option FindOption( Menu menu, string title )
+	{
+		var list = GetNonPublicEnumerable( menu, "Options" );
+		if ( list == null ) return null;
+		foreach ( var o in list )
+		{
+			if ( o is Option opt && string.Equals( opt.Text, title, StringComparison.OrdinalIgnoreCase ) )
+				return opt;
+		}
+		return null;
+	}
+
+	private static System.Collections.IEnumerable GetNonPublicEnumerable( object obj, string fieldName )
+	{
+		if ( obj == null ) return null;
+		var t = obj.GetType();
+		while ( t != null )
+		{
+			var f = t.GetField( fieldName, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public );
+			if ( f != null )
+				return f.GetValue( obj ) as System.Collections.IEnumerable;
+			var p = t.GetProperty( fieldName, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public );
+			if ( p != null )
+				return p.GetValue( obj ) as System.Collections.IEnumerable;
+			t = t.BaseType;
+		}
+		return null;
+	}
+
+	private static void InvokeShortcut( string triggerFile, string shortcutName )
+	{
+		try
+		{
+			if ( string.IsNullOrEmpty( shortcutName ) )
+			{
+				WriteResult( triggerFile, false, "empty shortcut name", null );
+				return;
+			}
+
+			// EditorShortcuts.Entries is a public list keyed on .Identifier.
+			var entry = EditorShortcuts.Entries.FirstOrDefault( e => e.Identifier == shortcutName );
+			if ( entry == null )
+			{
+				WriteResult( triggerFile, false, $"shortcut not found: {shortcutName}", null );
+				return;
+			}
+
+			// Each Entry has a public bool Invoke(bool force = false).
+			var ok = entry.Invoke( force: true );
+			Log.Info( $"[SkillTrigger] invoked shortcut: {shortcutName} (ok={ok})" );
+			WriteResult( triggerFile, ok, ok ? null : "shortcut returned false (no matching target widget?)", new { shortcutName } );
+		}
+		catch ( Exception ex )
+		{
+			WriteResult( triggerFile, false, $"{ex.GetType().Name}: {ex.Message}", null );
 		}
 	}
 

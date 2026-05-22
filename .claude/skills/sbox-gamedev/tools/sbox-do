@@ -1,0 +1,114 @@
+#!/usr/bin/env python3
+"""
+sbox-do — universal action driver for the running editor.
+
+Fires a trigger and waits for SkillTrigger's result JSON. Use for
+firing menu items, named shortcuts, or arbitrary ConCmds.
+
+Usage:
+  sbox-do menu Game.Play                       fire a menu item by dot path
+  sbox-do menu Code.Recompile
+  sbox-do shortcut editor.toggle-play          fire a [Shortcut("name", …)] action
+  sbox-do shortcut editor.save
+  sbox-do cmd "screenshot_highres 1280 720"   run an arbitrary console command
+  sbox-do play                                 EditorScene.Play()
+  sbox-do stop-play                            EditorScene.Stop()
+
+  --project <path>     write the trigger to a specific project instead of the running one
+  --timeout <sec>      result-wait timeout (default 15)
+"""
+from __future__ import annotations
+import argparse, json, os, re, subprocess, sys, time
+from pathlib import Path
+
+SCRIPT_DIR = Path(__file__).resolve().parent
+SKILL_ROOT = SCRIPT_DIR.parent
+REPO = SKILL_ROOT.parent.parent.parent
+
+
+def detect_running_project() -> Path | None:
+    try:
+        r = subprocess.run(["pgrep", "-af", "sbox-dev.exe"], capture_output=True, text=True, timeout=3)
+    except Exception:
+        return None
+    for ln in r.stdout.splitlines():
+        m = re.search(r"-project\s+Z:\\([^ ]+)\.sbproj", ln)
+        if m:
+            p = Path("/" + m.group(1).replace("\\", "/") + ".sbproj")
+            if p.exists():
+                return p.parent
+    return None
+
+
+def write_trigger(project: Path, content: str, kind: str) -> tuple[Path, str]:
+    triggers = project / ".sbox" / "skill-triggers"
+    triggers.mkdir(parents=True, exist_ok=True)
+    trig_id = f"{time.strftime('%Y%m%d-%H%M%S')}-{os.getpid()}-{kind}"
+    f = triggers / (trig_id + ".txt")
+    f.write_text(content, encoding="utf-8")
+    return f, trig_id
+
+
+def wait_for_result(project: Path, trig_id: str, timeout: int) -> dict | None:
+    result_file = project / ".sbox" / "skill-results" / (trig_id + ".json")
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        if result_file.exists():
+            try:
+                return json.loads(result_file.read_text(encoding="utf-8"))
+            except Exception:
+                time.sleep(0.1)
+                continue
+        time.sleep(0.2)
+    return None
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("action", choices=["menu", "shortcut", "cmd", "play", "stop-play"])
+    ap.add_argument("args", nargs="*", help="menu path, shortcut name, or console cmd words")
+    ap.add_argument("--project", help="target project (else detect from running editor)")
+    ap.add_argument("--timeout", type=int, default=15)
+    a = ap.parse_args()
+
+    if a.project:
+        target = (REPO / a.project).resolve() if not a.project.startswith("/") else Path(a.project)
+    else:
+        target = detect_running_project()
+        if target is None:
+            raise SystemExit("no editor running. pass --project <path> to target a specific project.")
+
+    arg_str = " ".join(a.args)
+    if a.action == "menu":
+        content = f"invoke-menu {arg_str}"
+    elif a.action == "shortcut":
+        content = f"shortcut {arg_str}"
+    elif a.action == "cmd":
+        content = f"cmd {arg_str}"
+    elif a.action == "play":
+        content = "play"
+    elif a.action == "stop-play":
+        content = "stop-play"
+    else:
+        raise SystemExit(f"unknown action: {a.action}")
+
+    trig, trig_id = write_trigger(target, content, a.action)
+    print(f"wrote trigger: {trig.name} → {content}", file=sys.stderr)
+
+    result = wait_for_result(target, trig_id, a.timeout)
+    if result is None:
+        # cmd / play / stop-play don't currently write result files (TODO);
+        # treat absence as success after a short wait.
+        if a.action in ("cmd", "play", "stop-play"):
+            print("(no result file written; assumed success)", file=sys.stderr)
+            return
+        raise SystemExit(f"no result after {a.timeout}s")
+
+    if result.get("ok"):
+        print(f"ok: {result.get('data')}")
+    else:
+        raise SystemExit(f"error: {result.get('error')}")
+
+
+if __name__ == "__main__":
+    main()

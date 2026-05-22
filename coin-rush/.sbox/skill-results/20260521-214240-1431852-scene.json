@@ -1,0 +1,517 @@
+{
+  "ok": true,
+  "ts": 1779414160724,
+  "error": null,
+  "data": {
+    "sceneName": "(unnamed scene)",
+    "gameObjectCount": 14,
+    "gameObjects": [
+      {
+        "id": "11111111-0000-0000-0000-000000000001",
+        "name": "Main",
+        "enabled": true,
+        "position": "0.00,0.00,0.00",
+        "rotation": "0.0000,0.0000,0.0000,1.0000",
+        "scale": "1.00,1.00,1.00",
+        "tags": [],
+        "componentCount": 0,
+        "components": []
+      },
+      {
+        "id": "11111111-0000-0000-0000-00000000c00a",
+        "name": "Camera",
+        "enabled": true,
+        "position": "-346.00,0.00,240.00",
+        "rotation": "0.0000,0.2588,0.0000,0.9659",
+        "scale": "1.00,1.00,1.00",
+        "tags": [],
+        "componentCount": 1,
+        "components": [
+          {
+            "type": "Sandbox.CameraComponent",
+            "enabled": true,
+            "properties": {
+              "ClearFlags": "All",
+              "BackgroundColor": "0.05, 0.06, 0.10, 1.00",
+              "IsMainCamera": "True",
+              "FovAxis": "Horizontal",
+              "FieldOfView": "70",
+              "ZNear": "1",
+              "ZFar": "10000",
+              "Priority": "1",
+              "Orthographic": "False",
+              "OrthographicHeight": "1200",
+              "TargetEye": "None",
+              "RenderTags": "",
+              "RenderExcludeTags": "",
+              "Viewport": "0,0,1,1",
+              "EnablePostProcessing": "False",
+              "PostProcessAnchor": null,
+              "OnComponentEnabled": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentDisabled": null,
+              "OnComponentDestroy": null
+            }
+          }
+        ]
+      },
+      {
+        "id": "11111111-0000-0000-0000-000000000040",
+        "name": "Sun",
+        "enabled": true,
+        "position": "0.00,0.00,800.00",
+        "rotation": "-0.3536,0.3536,0.1464,0.8536",
+        "scale": "1.00,1.00,1.00",
+        "tags": [
+          "light_directional",
+          "light"
+        ],
+        "componentCount": 1,
+        "components": [
+          {
+            "type": "Sandbox.DirectionalLight",
+            "enabled": true,
+            "properties": {
+              "SkyColor": "0.30, 0.40, 0.50, 1.00",
+              "ShadowCascadeCount": "4",
+              "ShadowCascadeSplitRatio": "0.91",
+              "Visualizer": "Sandbox.DirectionalLight\u002BCascadeVisualizer",
+              "LightColor": "1.00, 1.00, 1.00, 1.00",
+              "FogMode": "Enabled",
+              "FogStrength": "1",
+              "Shadows": "True",
+              "ShadowBias": "0.0005",
+              "ShadowHardness": "0",
+              "OnComponentEnabled": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentDisabled": null,
+              "OnComponentDestroy": null
+            }
+          }
+        ]
+      },
+      {
+        "id": "11111111-0000-0000-0000-000000000010",
+        "name": "Player",
+        "enabled": true,
+        "position": "0.00,0.00,0.00",
+        "rotation": "0.0000,0.0000,0.0000,1.0000",
+        "scale": "1.00,1.00,1.00",
+        "tags": [],
+        "componentCount": 2,
+        "components": [
+          {
+            "type": "Sandbox.ModelRenderer",
+            "enabled": true,
+            "properties": {
+              "Model": "Model:citizen_human_male",
+              "Tint": "1.00, 1.00, 1.00, 1.00",
+              "CreateAttachments": "False",
+              "BodyGroups": "18446744073709551615",
+              "MaterialGroup": null,
+              "RenderType": "On",
+              "LodOverride": null,
+              "MaterialOverride": null,
+              "Materials": "Sandbox.Engine.MaterialAccessor",
+              "RenderOptions": "Sandbox.RenderOptions",
+              "OnComponentEnabled": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentDisabled": null,
+              "OnComponentDestroy": null
+            }
+          },
+          {
+            "type": "Local.CoinRush.Player",
+            "enabled": true,
+            "properties": {
+              "MoveSpeed": "350",
+              "OnComponentEnabled": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentDisabled": null,
+              "OnComponentDestroy": null
+            }
+          }
+        ]
+      },
+      {
+        "id": "11111111-0000-0000-0000-000000000021",
+        "name": "Coin",
+        "enabled": true,
+        "position": "100.00,-50.00,30.00",
+        "rotation": "0.0000,0.0000,0.0000,1.0000",
+        "scale": "1.00,1.00,1.00",
+        "tags": [],
+        "componentCount": 2,
+        "components": [
+          {
+            "type": "Sandbox.ModelRenderer",
+            "enabled": true,
+            "properties": {
+              "Model": "Model:coin01",
+              "Tint": "1.00, 1.00, 1.00, 1.00",
+              "CreateAttachments": "False",
+              "BodyGroups": "18446744073709551615",
+              "MaterialGroup": null,
+              "RenderType": "On",
+              "LodOverride": null,
+              "MaterialOverride": null,
+              "Materials": "Sandbox.Engine.MaterialAccessor",
+              "RenderOptions": "Sandbox.RenderOptions",
+              "OnComponentEnabled": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentDisabled": null,
+              "OnComponentDestroy": null
+            }
+          },
+          {
+            "type": "Local.CoinRush.Coin",
+            "enabled": true,
+            "properties": {
+              "Value": "10",
+              "OnComponentEnabled": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentDisabled": null,
+              "OnComponentDestroy": null
+            }
+          }
+        ]
+      },
+      {
+        "id": "11111111-0000-0000-0000-000000000022",
+        "name": "Coin",
+        "enabled": true,
+        "position": "0.00,100.00,30.00",
+        "rotation": "0.0000,0.0000,0.0000,1.0000",
+        "scale": "1.00,1.00,1.00",
+        "tags": [],
+        "componentCount": 2,
+        "components": [
+          {
+            "type": "Sandbox.ModelRenderer",
+            "enabled": true,
+            "properties": {
+              "Model": "Model:coin01",
+              "Tint": "1.00, 1.00, 1.00, 1.00",
+              "CreateAttachments": "False",
+              "BodyGroups": "18446744073709551615",
+              "MaterialGroup": null,
+              "RenderType": "On",
+              "LodOverride": null,
+              "MaterialOverride": null,
+              "Materials": "Sandbox.Engine.MaterialAccessor",
+              "RenderOptions": "Sandbox.RenderOptions",
+              "OnComponentEnabled": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentDisabled": null,
+              "OnComponentDestroy": null
+            }
+          },
+          {
+            "type": "Local.CoinRush.Coin",
+            "enabled": true,
+            "properties": {
+              "Value": "10",
+              "OnComponentEnabled": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentDisabled": null,
+              "OnComponentDestroy": null
+            }
+          }
+        ]
+      },
+      {
+        "id": "11111111-0000-0000-0000-000000000023",
+        "name": "Coin",
+        "enabled": true,
+        "position": "-100.00,-60.00,30.00",
+        "rotation": "0.0000,0.0000,0.0000,1.0000",
+        "scale": "1.00,1.00,1.00",
+        "tags": [],
+        "componentCount": 2,
+        "components": [
+          {
+            "type": "Sandbox.ModelRenderer",
+            "enabled": true,
+            "properties": {
+              "Model": "Model:coin01",
+              "Tint": "1.00, 1.00, 1.00, 1.00",
+              "CreateAttachments": "False",
+              "BodyGroups": "18446744073709551615",
+              "MaterialGroup": null,
+              "RenderType": "On",
+              "LodOverride": null,
+              "MaterialOverride": null,
+              "Materials": "Sandbox.Engine.MaterialAccessor",
+              "RenderOptions": "Sandbox.RenderOptions",
+              "OnComponentEnabled": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentDisabled": null,
+              "OnComponentDestroy": null
+            }
+          },
+          {
+            "type": "Local.CoinRush.Coin",
+            "enabled": true,
+            "properties": {
+              "Value": "10",
+              "OnComponentEnabled": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentDisabled": null,
+              "OnComponentDestroy": null
+            }
+          }
+        ]
+      },
+      {
+        "id": "11111111-0000-0000-0000-000000000050",
+        "name": "Tree",
+        "enabled": true,
+        "position": "200.00,200.00,0.00",
+        "rotation": "0.0000,0.0000,0.0000,1.0000",
+        "scale": "0.10,0.10,0.10",
+        "tags": [],
+        "componentCount": 1,
+        "components": [
+          {
+            "type": "Sandbox.ModelRenderer",
+            "enabled": true,
+            "properties": {
+              "Model": "Model:tree_oak_big_a",
+              "Tint": "1.00, 1.00, 1.00, 1.00",
+              "CreateAttachments": "False",
+              "BodyGroups": "18446744073709551615",
+              "MaterialGroup": null,
+              "RenderType": "On",
+              "LodOverride": null,
+              "MaterialOverride": null,
+              "Materials": "Sandbox.Engine.MaterialAccessor",
+              "RenderOptions": "Sandbox.RenderOptions",
+              "OnComponentEnabled": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentDisabled": null,
+              "OnComponentDestroy": null
+            }
+          }
+        ]
+      },
+      {
+        "id": "11111111-0000-0000-0000-000000000051",
+        "name": "Tree",
+        "enabled": true,
+        "position": "-200.00,200.00,0.00",
+        "rotation": "0.0000,0.0000,0.0000,1.0000",
+        "scale": "0.10,0.10,0.10",
+        "tags": [],
+        "componentCount": 1,
+        "components": [
+          {
+            "type": "Sandbox.ModelRenderer",
+            "enabled": true,
+            "properties": {
+              "Model": "Model:tree_oak_big_a",
+              "Tint": "1.00, 1.00, 1.00, 1.00",
+              "CreateAttachments": "False",
+              "BodyGroups": "18446744073709551615",
+              "MaterialGroup": null,
+              "RenderType": "On",
+              "LodOverride": null,
+              "MaterialOverride": null,
+              "Materials": "Sandbox.Engine.MaterialAccessor",
+              "RenderOptions": "Sandbox.RenderOptions",
+              "OnComponentEnabled": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentDisabled": null,
+              "OnComponentDestroy": null
+            }
+          }
+        ]
+      },
+      {
+        "id": "11111111-0000-0000-0000-000000000052",
+        "name": "Tree",
+        "enabled": true,
+        "position": "200.00,-200.00,0.00",
+        "rotation": "0.0000,0.0000,0.0000,1.0000",
+        "scale": "0.10,0.10,0.10",
+        "tags": [],
+        "componentCount": 1,
+        "components": [
+          {
+            "type": "Sandbox.ModelRenderer",
+            "enabled": true,
+            "properties": {
+              "Model": "Model:tree_oak_big_a",
+              "Tint": "1.00, 1.00, 1.00, 1.00",
+              "CreateAttachments": "False",
+              "BodyGroups": "18446744073709551615",
+              "MaterialGroup": null,
+              "RenderType": "On",
+              "LodOverride": null,
+              "MaterialOverride": null,
+              "Materials": "Sandbox.Engine.MaterialAccessor",
+              "RenderOptions": "Sandbox.RenderOptions",
+              "OnComponentEnabled": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentDisabled": null,
+              "OnComponentDestroy": null
+            }
+          }
+        ]
+      },
+      {
+        "id": "11111111-0000-0000-0000-000000000053",
+        "name": "Tree",
+        "enabled": true,
+        "position": "-200.00,-200.00,0.00",
+        "rotation": "0.0000,0.0000,0.0000,1.0000",
+        "scale": "0.10,0.10,0.10",
+        "tags": [],
+        "componentCount": 1,
+        "components": [
+          {
+            "type": "Sandbox.ModelRenderer",
+            "enabled": true,
+            "properties": {
+              "Model": "Model:tree_oak_big_a",
+              "Tint": "1.00, 1.00, 1.00, 1.00",
+              "CreateAttachments": "False",
+              "BodyGroups": "18446744073709551615",
+              "MaterialGroup": null,
+              "RenderType": "On",
+              "LodOverride": null,
+              "MaterialOverride": null,
+              "Materials": "Sandbox.Engine.MaterialAccessor",
+              "RenderOptions": "Sandbox.RenderOptions",
+              "OnComponentEnabled": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentDisabled": null,
+              "OnComponentDestroy": null
+            }
+          }
+        ]
+      },
+      {
+        "id": "11111111-0000-0000-0000-000000000030",
+        "name": "Hud",
+        "enabled": true,
+        "position": "0.00,0.00,0.00",
+        "rotation": "0.0000,0.0000,0.0000,1.0000",
+        "scale": "1.00,1.00,1.00",
+        "tags": [],
+        "componentCount": 1,
+        "components": [
+          {
+            "type": "Sandbox.ScreenPanel",
+            "enabled": true,
+            "properties": {
+              "Opacity": "1",
+              "Scale": "1",
+              "AutoScreenScale": "True",
+              "ScaleStrategy": "ConsistentHeight",
+              "ZIndex": "100",
+              "TargetCamera": null,
+              "OnComponentEnabled": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentDisabled": null,
+              "OnComponentDestroy": null
+            }
+          }
+        ]
+      },
+      {
+        "id": "11111111-0000-0000-0000-000000000031",
+        "name": "ScoreHud",
+        "enabled": true,
+        "position": "0.00,0.00,0.00",
+        "rotation": "0.0000,0.0000,0.0000,1.0000",
+        "scale": "1.00,1.00,1.00",
+        "tags": [],
+        "componentCount": 1,
+        "components": [
+          {
+            "type": "Local.CoinRush.ScoreHud",
+            "enabled": true,
+            "properties": {
+              "OnComponentEnabled": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentDisabled": null,
+              "OnComponentDestroy": null
+            }
+          }
+        ]
+      },
+      {
+        "id": "ff55d7fa-652a-4021-8acc-a88692cbe4bb",
+        "name": "editor_camera",
+        "enabled": true,
+        "position": "1637.17,88.67,668.61",
+        "rotation": "0.1848,0.0050,-0.9824,0.0266",
+        "scale": "1.00,1.00,1.00",
+        "tags": [],
+        "componentCount": 1,
+        "components": [
+          {
+            "type": "Sandbox.CameraComponent",
+            "enabled": true,
+            "properties": {
+              "ClearFlags": "All",
+              "BackgroundColor": "0.20, 0.25, 0.37, 1.00",
+              "IsMainCamera": "False",
+              "FovAxis": "Horizontal",
+              "FieldOfView": "80",
+              "ZNear": "1",
+              "ZFar": "100000",
+              "Priority": "1",
+              "Orthographic": "False",
+              "OrthographicHeight": "1000",
+              "TargetEye": "None",
+              "RenderTags": "",
+              "RenderExcludeTags": "hidden",
+              "Viewport": "0,0,1,1",
+              "EnablePostProcessing": "True",
+              "PostProcessAnchor": null,
+              "OnComponentEnabled": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentDisabled": null,
+              "OnComponentDestroy": null
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

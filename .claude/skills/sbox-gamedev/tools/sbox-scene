@@ -1,0 +1,116 @@
+#!/usr/bin/env python3
+"""
+sbox-scene — snapshot the currently-loaded scene in the editor.
+
+Writes a `scene-state` trigger to the running editor's project (or the
+specified one), waits for SkillTrigger to produce a JSON result file,
+prints a summary (or the raw JSON with --json).
+
+Usage:
+  sbox-scene                                  snapshot whichever project's open
+  sbox-scene <project>                        snapshot a specific project
+  sbox-scene --json                           print full JSON
+  sbox-scene --filter Local.CoinRush          show only GameObjects with components matching this prefix
+  sbox-scene --grep <substring>               filter GameObjects by name/component
+"""
+from __future__ import annotations
+import argparse, json, os, re, subprocess, sys, time
+from pathlib import Path
+
+SCRIPT_DIR = Path(__file__).resolve().parent
+SKILL_ROOT = SCRIPT_DIR.parent
+REPO = SKILL_ROOT.parent.parent.parent
+LAUNCH = SCRIPT_DIR / "sbox-launch"
+
+
+def detect_running_project() -> Path | None:
+    try:
+        r = subprocess.run(["pgrep", "-af", "sbox-dev.exe"], capture_output=True, text=True, timeout=3)
+    except Exception:
+        return None
+    for ln in r.stdout.splitlines():
+        m = re.search(r"-project\s+Z:\\([^ ]+)\.sbproj", ln)
+        if m:
+            p = Path("/" + m.group(1).replace("\\", "/") + ".sbproj")
+            if p.exists():
+                return p.parent
+    return None
+
+
+def write_trigger(project: Path, content: str) -> tuple[Path, str]:
+    triggers = project / ".sbox" / "skill-triggers"
+    triggers.mkdir(parents=True, exist_ok=True)
+    trig_id = f"{time.strftime('%Y%m%d-%H%M%S')}-{os.getpid()}-scene"
+    f = triggers / (trig_id + ".txt")
+    f.write_text(content, encoding="utf-8")
+    return f, trig_id
+
+
+def wait_for_result(project: Path, trig_id: str, timeout: int) -> dict | None:
+    result_file = project / ".sbox" / "skill-results" / (trig_id + ".json")
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        if result_file.exists():
+            try:
+                return json.loads(result_file.read_text(encoding="utf-8"))
+            except Exception as e:
+                time.sleep(0.1)  # may be mid-write; retry
+                continue
+        time.sleep(0.2)
+    return None
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("project", nargs="?")
+    ap.add_argument("--json", action="store_true", help="print full JSON result")
+    ap.add_argument("--filter", help="filter GameObjects to those with a component type starting with this prefix")
+    ap.add_argument("--grep", help="case-insensitive substring filter against GameObject names and component types")
+    ap.add_argument("--timeout", type=int, default=20)
+    args = ap.parse_args()
+
+    if args.project:
+        target = (REPO / args.project).resolve() if not args.project.startswith("/") else Path(args.project)
+    else:
+        target = detect_running_project()
+        if target is None:
+            raise SystemExit("no editor running. specify a project as the first arg.")
+
+    if not target.is_dir():
+        raise SystemExit(f"{target} is not a directory")
+
+    trig, trig_id = write_trigger(target, "scene-state")
+    print(f"wrote trigger: {trig.name}", file=sys.stderr)
+
+    result = wait_for_result(target, trig_id, args.timeout)
+    if result is None:
+        raise SystemExit(f"no result after {args.timeout}s. is the editor running on {target.name} with SkillTrigger compiled?")
+    if not result.get("ok"):
+        raise SystemExit(f"editor reported error: {result.get('error')}")
+
+    data = result["data"]
+    if args.json:
+        print(json.dumps(data, indent=2))
+        return
+
+    gos = data["gameObjects"]
+    if args.filter:
+        gos = [g for g in gos if any(c["type"].startswith(args.filter) for c in g["components"])]
+    if args.grep:
+        q = args.grep.lower()
+        gos = [g for g in gos if q in g["name"].lower() or any(q in c["type"].lower() for c in g["components"])]
+
+    BOLD, DIM, END = "\033[1m", "\033[2m", "\033[0m"
+    print(f"{BOLD}scene: {data['sceneName']}{END} ({data['gameObjectCount']} objects{f', {len(gos)} shown' if len(gos) != data['gameObjectCount'] else ''})")
+    for g in gos:
+        marker = " " if g["enabled"] else "x"
+        print(f"  [{marker}] {BOLD}{g['name']:<30}{END} {DIM}pos={g['position']}  comps={g['componentCount']}{END}")
+        for c in g["components"]:
+            short = c["type"].split(".")[-1]
+            props_str = ", ".join(f"{k}={v}" for k, v in (c.get("properties") or {}).items() if v not in (None, "", "0"))
+            cmark = "·" if c["enabled"] else "x"
+            print(f"        {cmark} {short:<30} {DIM}{props_str[:80]}{END}")
+
+
+if __name__ == "__main__":
+    main()
