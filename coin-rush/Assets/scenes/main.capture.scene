@@ -580,7 +580,7 @@
       ]
     },
     {
-      "__guid": "fdb1010d-69e7-4eb8-9878-33201bca8a10",
+      "__guid": "2e4a2301-ed28-4637-a05a-5a91e805de79",
       "__version": 2,
       "Flags": 0,
       "Name": "_SkillCapture",
@@ -597,7 +597,7 @@
       "Components": [
         {
           "__type": "Local.SkillHelper.Capture",
-          "__guid": "cf377e59-5e61-4c08-98f8-268ab962cdad",
+          "__guid": "35244da1-11bb-4821-86b7-795734f949a7",
           "__enabled": true,
           "Flags": 0,
           "OnComponentDestroy": null,

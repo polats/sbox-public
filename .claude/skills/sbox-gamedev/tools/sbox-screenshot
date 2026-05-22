@@ -1,28 +1,32 @@
 #!/usr/bin/env python3
 """
-sbox-screenshot — capture a screenshot of a project's main scene from the
-editor's running game.
+sbox-screenshot — capture a screenshot or video of a project's scene from
+the editor.
 
-How it works:
-  1. Inject a `Capture` Component into the project (copies templates/Capture.cs
-     into <project>/Code/_skill_capture/).
-  2. Generate a sidecar scene `<scene>.capture.scene` = original scene + a
-     Capture GameObject. Prime it as the open scene.
-  3. Kill + relaunch editor on the project.
-  4. Send F5 (xdotool) to enter play mode → Capture.OnStart fires →
-     `screenshot_highres W H` runs → engine writes
-     `~/.steam/.../sbox/screenshots/sbox.<timestamp>.png` and logs
-     `Screenshot saved to: <path>`.
-  5. Parse log for the saved path, optionally move/rename to --out.
-  6. Send F5 again to leave play. Clean up sidecar scene (Capture.cs left
-     in place for re-use — harmless if not in any scene).
+Architecture (trigger-file pattern):
+  1. Ensure the project has an `Editor/` extension with `SkillTrigger.cs`
+     installed. If absent, copy from templates/Editor/. This is a one-time
+     install per project; the editor compiles it on first launch.
+  2. Ensure the editor is running on the project. If not, launch it.
+  3. Write a trigger file under `<project>/.sbox/skill-triggers/<ts>.txt`
+     with content like "screenshot 1280x720" or "video".
+  4. SkillTrigger polls that directory every editor frame (~4x/sec), reads
+     the trigger, runs `ConsoleSystem.Run("screenshot_highres W H")`,
+     deletes the trigger file.
+  5. Tool watches the editor log for "Screenshot saved to:" or
+     "Video recording finished:" line, resolves the Wine path to the real
+     PNG/MP4, copies into <project>/captures/.
+
+Why trigger files: zero xdotool/keyboard automation, works in edit mode
+(no F5/play required), ~1s response time once editor is warm. Video and
+play-mode-only captures still need the old sidecar Component path.
 
 Usage:
-  sbox-screenshot <project-dir>
-  sbox-screenshot <project-dir> --width 1920 --height 1080
-  sbox-screenshot <project-dir> --out /tmp/coin-rush.png
-  sbox-screenshot <project-dir> --scene scenes/main.scene
-  sbox-screenshot <project-dir> --keep   # don't delete the sidecar scene
+  sbox-screenshot <project>                          quick 1280x720 PNG → <project>/captures/
+  sbox-screenshot <project> --width 1920 --height 1080
+  sbox-screenshot <project> --out coin-rush/captures/snap.png
+  sbox-screenshot <project> --mode video --duration 5
+  sbox-screenshot <project> --no-relaunch            reuse editor that's already up
 """
 from __future__ import annotations
 import argparse, json, os, re, shutil, subprocess, sys, time, uuid
@@ -30,12 +34,77 @@ from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 SKILL_ROOT = SCRIPT_DIR.parent
-TEMPLATE = SKILL_ROOT / "templates" / "Capture.cs"
+TEMPLATE_CAPTURE = SKILL_ROOT / "templates" / "Capture.cs"
+TEMPLATE_EDITOR_DIR = SKILL_ROOT / "templates" / "Editor"
+TEMPLATE_TRIGGER = TEMPLATE_EDITOR_DIR / "SkillTrigger.cs"
+TEMPLATE_EDITOR_CSPROJ = TEMPLATE_EDITOR_DIR / "PROJECT.editor.csproj"
 LAUNCH = SCRIPT_DIR / "sbox-launch"
 SET_STARTUP = SCRIPT_DIR / "sbox-set-startup-scene"
 LOG = Path.home() / ".steam/root/steamapps/common/sbox/logs/sbox-dev.log"
 SCREENSHOTS_DIR = Path.home() / ".steam/root/steamapps/common/sbox/screenshots"
 EDITOR_WIN_TITLE = "s&box editor"
+
+
+def project_csproj_name(project: Path) -> str:
+    """Return the project's Code/<name>.csproj filename stem (with underscore)."""
+    for f in (project / "Code").glob("*.csproj"):
+        return f.stem
+    # Fall back to project dir name with - → _
+    return project.name.replace("-", "_")
+
+
+def ensure_editor_extension(project: Path) -> bool:
+    """Install Editor/SkillTrigger.cs + Editor/<name>.editor.csproj into the
+    project if not present. Returns True if anything was installed (caller
+    should plan for a recompile)."""
+    editor_dir = project / "Editor"
+    editor_dir.mkdir(parents=True, exist_ok=True)
+
+    name = project.name  # e.g. "coin-rush"
+    code_csproj = project_csproj_name(project)  # e.g. "coin_rush"
+    namespace = "".join(p.capitalize() for p in name.split("-"))  # "CoinRush"
+
+    trigger_dest = editor_dir / "SkillTrigger.cs"
+    csproj_dest = editor_dir / f"{name}.editor.csproj"
+
+    installed = False
+    if not trigger_dest.exists():
+        text = TEMPLATE_TRIGGER.read_text(encoding="utf-8")
+        text = text.replace("Local.ModelProbe.EditorTools", f"Local.{namespace}.EditorTools")
+        trigger_dest.write_text(text, encoding="utf-8")
+        installed = True
+
+    if not csproj_dest.exists():
+        text = TEMPLATE_EDITOR_CSPROJ.read_text(encoding="utf-8")
+        text = (text.replace("model-probe", name)
+                    .replace("model_probe", code_csproj)
+                    .replace("MODEL_PROBE", namespace.upper()))
+        csproj_dest.write_text(text, encoding="utf-8")
+        installed = True
+
+    return installed
+
+
+def write_trigger(project: Path, content: str) -> Path:
+    """Drop a trigger file into <project>/.sbox/skill-triggers/."""
+    d = project / ".sbox" / "skill-triggers"
+    d.mkdir(parents=True, exist_ok=True)
+    f = d / f"{time.strftime('%Y%m%d-%H%M%S')}-{os.getpid()}.txt"
+    f.write_text(content, encoding="utf-8")
+    return f
+
+
+def editor_running_on(project: Path) -> bool:
+    """Best-effort check: is the sbox-dev process running with this project?"""
+    try:
+        r = subprocess.run(["pgrep", "-af", "sbox-dev.exe"],
+                           capture_output=True, text=True, timeout=3)
+        for ln in r.stdout.splitlines():
+            if str(project.name) in ln or str(project).replace("/", "\\") in ln:
+                return True
+        return False
+    except Exception:
+        return False
 
 LIFECYCLE_NULLS = {
     "OnComponentDestroy": None, "OnComponentDisabled": None,
@@ -213,40 +282,53 @@ def main():
         ts = time.strftime("%Y%m%d-%H%M%S")
         args.out = str(captures / f"{project.name}-{ts}.{ext}")
 
-    install_capture_component(project)
-    scene = find_startup_scene(project, args.scene)
-    print(f"base scene: {scene}", file=sys.stderr)
-    sidecar = make_sidecar(scene, args.mode, args.width, args.height, args.duration)
-    print(f"sidecar: {sidecar}", file=sys.stderr)
+    # Install editor extension if missing (one-time per project)
+    installed_extension = ensure_editor_extension(project)
 
     started_at = time.time()
     start_byte = LOG.stat().st_size if LOG.exists() else 0
 
-    if args.no_relaunch:
-        print("--no-relaunch: reusing running editor", file=sys.stderr)
-    else:
-        # Prime sidecar as open scene + kill+relaunch
-        sidecar_rel = sidecar.relative_to(project / "Assets")
-        subprocess.run([str(LAUNCH), "--kill"], check=False)
-        time.sleep(1)
-        subprocess.run([str(SET_STARTUP), str(project), str(sidecar_rel)], check=True)
+    # Ensure editor is running on this project
+    if not editor_running_on(project) and not args.no_relaunch:
+        print(f"editor not running on {project.name}; launching...", file=sys.stderr)
         subprocess.run([str(LAUNCH), str(project)], check=False)
-        print(f"editor launching at {time.strftime('%H:%M:%S')}...", file=sys.stderr)
+        # Wait for the editor to come up enough to compile the trigger extension.
+        # If we just installed the extension, give it more time.
+        ready_wait = 90 if installed_extension else 30
+        time.sleep(ready_wait)
+    elif installed_extension:
+        # Editor already running but extension is new → user needs to restart
+        # Trigger via launch tool's kill+relaunch
+        print("just-installed editor extension needs a restart…", file=sys.stderr)
+        subprocess.run([str(LAUNCH), "--kill"], check=False)
+        time.sleep(2)
+        subprocess.run([str(LAUNCH), str(project)], check=False)
+        time.sleep(60)
+    else:
+        print("editor already running on project (trigger path is ~1s)", file=sys.stderr)
 
-    f5_sent = False
-    play_active_seen = False  # video: saw VIDEO_REQUEST_START
-    video_start_ts = None
+    # Build the trigger content
+    if args.mode == "screenshot":
+        trigger_content = f"screenshot {args.width}x{args.height}"
+    else:
+        trigger_content = "video"
+
+    # Fire the trigger
+    trigger_file = write_trigger(project, trigger_content)
+    print(f"wrote trigger: {trigger_file.name} → {trigger_content}", file=sys.stderr)
+
+    # For video: schedule a second "video" trigger to stop after the duration
+    video_stop_future = None
+    if args.mode == "video":
+        video_stop_future = time.time() + args.duration
+
+    video_started_seen = False
+    video_stop_fired = False
     deadline = time.time() + args.timeout
     result: Path | None = None
     while time.time() < deadline:
-        time.sleep(2)
-        if not f5_sent:
-            if send_f5_to_editor():
-                print(f"sent F5 at {time.strftime('%H:%M:%S')}", file=sys.stderr)
-                f5_sent = True
-                continue
+        time.sleep(1)
 
-        # Read the log tail to detect milestones
         with LOG.open("r", encoding="utf-8", errors="replace") as f:
             f.seek(start_byte)
             tail = f.read()
@@ -263,27 +345,27 @@ def main():
                 break
             continue
 
-        # video mode
-        if not play_active_seen:
-            if "VIDEO_REQUEST_START" in tail:
-                play_active_seen = True
-                video_start_ts = time.time()
-                wait = args.duration + 6  # duration + recorder flush
-                print(f"video started, waiting {wait:.0f}s for it to finish", file=sys.stderr)
+        # video mode: watch for engine's "Video recording started" then fire
+        # a stop trigger after `duration` seconds, then wait for finish line.
+        if not video_started_seen:
+            if VIDEO_START_RE.search(tail) or "Video recording started" in tail:
+                video_started_seen = True
+                video_stop_future = time.time() + args.duration
+                print(f"video started; will stop in {args.duration:.0f}s", file=sys.stderr)
             continue
 
-        # Capture the video path from start/finish log lines for later resolution
-        m = VIDEO_PATH_RE.search(tail) or VIDEO_START_RE.search(tail)
-        if m and "VIDEO_REQUEST_STOP" in tail:
-            time.sleep(3)  # let the encoder flush
+        if not video_stop_fired and time.time() >= video_stop_future:
+            write_trigger(project, "video")
+            video_stop_fired = True
+            print("wrote video-stop trigger", file=sys.stderr)
+            continue
+
+        m = VIDEO_PATH_RE.search(tail)
+        if m and video_stop_fired:
+            time.sleep(2)  # let encoder flush
             result = _resolve_screenshot_path(m.group(1))
             if result.exists():
                 break
-
-    # leave play mode
-    if f5_sent:
-        time.sleep(1)
-        send_f5_to_editor()
 
     if result is None or not result.exists():
         # Last-ditch: pick the newest .png/.mp4 in screenshots/ since we started
@@ -292,12 +374,6 @@ def main():
             cands = [p for p in SCREENSHOTS_DIR.glob(f"*{ext}") if p.stat().st_mtime > started_at - 1]
             if cands:
                 result = max(cands, key=lambda p: p.stat().st_mtime)
-
-    if args.no_keep:
-        try:
-            sidecar.unlink()
-        except FileNotFoundError:
-            pass
 
     if not result or not result.exists():
         print("no screenshot/video file found.", file=sys.stderr)
