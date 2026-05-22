@@ -1,0 +1,1538 @@
+{
+  "__guid": "aaaaaaaa-0000-0000-0000-000000000001",
+  "GameObjects": [
+    {
+      "__guid": "aaaaaaaa-0000-0000-0000-000000000421",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Sun",
+      "Position": "200,100,500",
+      "Rotation": "-0.3535534,0.3535534,0.1464466,0.8535534",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.DirectionalLight",
+          "__guid": "bbbbbbbb-0000-0000-0000-000000000420",
+          "__enabled": true,
+          "Flags": 0,
+          "FogMode": "Disabled",
+          "FogStrength": 1,
+          "LightColor": "1,0.95,0.85,1.4",
+          "ShadowBias": 0.0005,
+          "ShadowCascadeCount": 4,
+          "ShadowCascadeSplitRatio": 0.91,
+          "ShadowHardness": 0,
+          "Shadows": true,
+          "SkyColor": "0.45,0.50,0.60,1",
+          "Visualizer": {}
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "aaaaaaaa-0000-0000-0000-000000000423",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "light_lobby",
+      "Position": "-360,0,230",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.PointLight",
+          "__guid": "bbbbbbbb-0000-0000-0000-000000000422",
+          "__enabled": true,
+          "Flags": 0,
+          "Attenuation": 1,
+          "FogMode": "Disabled",
+          "FogStrength": 1,
+          "LightColor": "1,0.85,0.6,40",
+          "Radius": 600,
+          "ShadowMode": "On",
+          "ShadowHardness": 0
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "aaaaaaaa-0000-0000-0000-000000000425",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "light_corr",
+      "Position": "0,0,230",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.PointLight",
+          "__guid": "bbbbbbbb-0000-0000-0000-000000000424",
+          "__enabled": true,
+          "Flags": 0,
+          "Attenuation": 1,
+          "FogMode": "Disabled",
+          "FogStrength": 1,
+          "LightColor": "0.9,0.95,1.0,30",
+          "Radius": 300,
+          "ShadowMode": "On",
+          "ShadowHardness": 0
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "aaaaaaaa-0000-0000-0000-000000000427",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "light_roomB",
+      "Position": "360,0,230",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.PointLight",
+          "__guid": "bbbbbbbb-0000-0000-0000-000000000426",
+          "__enabled": true,
+          "Flags": 0,
+          "Attenuation": 1,
+          "FogMode": "Disabled",
+          "FogStrength": 1,
+          "LightColor": "0.7,1.0,0.8,40",
+          "Radius": 600,
+          "ShadowMode": "On",
+          "ShadowHardness": 0
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "aaaaaaaa-0000-0000-0000-000000000429",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "GameController",
+      "Position": "0,0,0",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Local.HammerLevel.GameController",
+          "__guid": "bbbbbbbb-0000-0000-0000-000000000428",
+          "__enabled": true,
+          "Flags": 0,
+          "ImpactSound": null
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "aaaaaaaa-0000-0000-0000-00000000042b",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "MapInstance (demo)",
+      "Position": "0,0,-2000",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.MapInstance",
+          "__guid": "bbbbbbbb-0000-0000-0000-00000000042a",
+          "__enabled": false,
+          "Flags": 0,
+          "MapName": "maps/templates/empty_box.vmap",
+          "UseMapFromLaunch": false,
+          "EnableCollision": true,
+          "OnMapLoaded": null,
+          "OnMapUnloaded": null,
+          "NoOrigin": false
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "aaaaaaaa-0000-0000-0000-00000000041f",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "World (BSP)",
+      "Position": "0,0,0",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [],
+      "Children": [
+        {
+          "__guid": "aaaaaaaa-0000-0000-0000-0000000003eb",
+          "__version": 2,
+          "Flags": 0,
+          "Name": "floor_lobby",
+          "Position": "-360,0,-8",
+          "Rotation": "0,0,0,1",
+          "Scale": "9.6,9.6,0.32",
+          "Tags": "brush",
+          "Enabled": true,
+          "NetworkMode": 2,
+          "NetworkFlags": 0,
+          "NetworkOrphaned": 0,
+          "NetworkTransmit": true,
+          "OwnerTransfer": 1,
+          "Components": [
+            {
+              "__type": "Sandbox.ModelRenderer",
+              "__guid": "bbbbbbbb-0000-0000-0000-0000000003e9",
+              "__enabled": true,
+              "Flags": 0,
+              "BodyGroups": 18446744073709551615,
+              "MaterialOverride": null,
+              "Model": "models/dev/box.vmdl",
+              "RenderOptions": {
+                "GameLayer": true,
+                "OverlayLayer": false,
+                "BloomLayer": false,
+                "AfterUILayer": false
+              },
+              "RenderType": "On",
+              "Tint": "0.7,0.7,0.75,1"
+            },
+            {
+              "__type": "Sandbox.BoxCollider",
+              "__guid": "bbbbbbbb-0000-0000-0000-0000000003ea",
+              "__enabled": true,
+              "Flags": 0,
+              "Center": "0,0,0",
+              "Scale": "50,50,50",
+              "Static": true,
+              "IsTrigger": false,
+              "Friction": null,
+              "Surface": null,
+              "SurfaceVelocity": "0,0,0"
+            }
+          ],
+          "Children": []
+        },
+        {
+          "__guid": "aaaaaaaa-0000-0000-0000-0000000003ee",
+          "__version": 2,
+          "Flags": 0,
+          "Name": "ceiling_lobby",
+          "Position": "-360,0,264",
+          "Rotation": "0,0,0,1",
+          "Scale": "9.6,9.6,0.32",
+          "Tags": "brush",
+          "Enabled": true,
+          "NetworkMode": 2,
+          "NetworkFlags": 0,
+          "NetworkOrphaned": 0,
+          "NetworkTransmit": true,
+          "OwnerTransfer": 1,
+          "Components": [
+            {
+              "__type": "Sandbox.ModelRenderer",
+              "__guid": "bbbbbbbb-0000-0000-0000-0000000003ec",
+              "__enabled": true,
+              "Flags": 0,
+              "BodyGroups": 18446744073709551615,
+              "MaterialOverride": null,
+              "Model": "models/dev/box.vmdl",
+              "RenderOptions": {
+                "GameLayer": true,
+                "OverlayLayer": false,
+                "BloomLayer": false,
+                "AfterUILayer": false
+              },
+              "RenderType": "On",
+              "Tint": "0.45,0.45,0.50,1"
+            },
+            {
+              "__type": "Sandbox.BoxCollider",
+              "__guid": "bbbbbbbb-0000-0000-0000-0000000003ed",
+              "__enabled": true,
+              "Flags": 0,
+              "Center": "0,0,0",
+              "Scale": "50,50,50",
+              "Static": true,
+              "IsTrigger": false,
+              "Friction": null,
+              "Surface": null,
+              "SurfaceVelocity": "0,0,0"
+            }
+          ],
+          "Children": []
+        },
+        {
+          "__guid": "aaaaaaaa-0000-0000-0000-0000000003f1",
+          "__version": 2,
+          "Flags": 0,
+          "Name": "wall_lobby_W",
+          "Position": "-600,0,128",
+          "Rotation": "0,0,0,1",
+          "Scale": "0.32,9.6,5.12",
+          "Tags": "brush",
+          "Enabled": true,
+          "NetworkMode": 2,
+          "NetworkFlags": 0,
+          "NetworkOrphaned": 0,
+          "NetworkTransmit": true,
+          "OwnerTransfer": 1,
+          "Components": [
+            {
+              "__type": "Sandbox.ModelRenderer",
+              "__guid": "bbbbbbbb-0000-0000-0000-0000000003ef",
+              "__enabled": true,
+              "Flags": 0,
+              "BodyGroups": 18446744073709551615,
+              "MaterialOverride": null,
+              "Model": "models/dev/box.vmdl",
+              "RenderOptions": {
+                "GameLayer": true,
+                "OverlayLayer": false,
+                "BloomLayer": false,
+                "AfterUILayer": false
+              },
+              "RenderType": "On",
+              "Tint": "0.55,0.40,0.35,1"
+            },
+            {
+              "__type": "Sandbox.BoxCollider",
+              "__guid": "bbbbbbbb-0000-0000-0000-0000000003f0",
+              "__enabled": true,
+              "Flags": 0,
+              "Center": "0,0,0",
+              "Scale": "50,50,50",
+              "Static": true,
+              "IsTrigger": false,
+              "Friction": null,
+              "Surface": null,
+              "SurfaceVelocity": "0,0,0"
+            }
+          ],
+          "Children": []
+        },
+        {
+          "__guid": "aaaaaaaa-0000-0000-0000-0000000003f4",
+          "__version": 2,
+          "Flags": 0,
+          "Name": "wall_lobby_N",
+          "Position": "-360,240,128",
+          "Rotation": "0,0,0,1",
+          "Scale": "9.6,0.32,5.12",
+          "Tags": "brush",
+          "Enabled": true,
+          "NetworkMode": 2,
+          "NetworkFlags": 0,
+          "NetworkOrphaned": 0,
+          "NetworkTransmit": true,
+          "OwnerTransfer": 1,
+          "Components": [
+            {
+              "__type": "Sandbox.ModelRenderer",
+              "__guid": "bbbbbbbb-0000-0000-0000-0000000003f2",
+              "__enabled": true,
+              "Flags": 0,
+              "BodyGroups": 18446744073709551615,
+              "MaterialOverride": null,
+              "Model": "models/dev/box.vmdl",
+              "RenderOptions": {
+                "GameLayer": true,
+                "OverlayLayer": false,
+                "BloomLayer": false,
+                "AfterUILayer": false
+              },
+              "RenderType": "On",
+              "Tint": "0.55,0.40,0.35,1"
+            },
+            {
+              "__type": "Sandbox.BoxCollider",
+              "__guid": "bbbbbbbb-0000-0000-0000-0000000003f3",
+              "__enabled": true,
+              "Flags": 0,
+              "Center": "0,0,0",
+              "Scale": "50,50,50",
+              "Static": true,
+              "IsTrigger": false,
+              "Friction": null,
+              "Surface": null,
+              "SurfaceVelocity": "0,0,0"
+            }
+          ],
+          "Children": []
+        },
+        {
+          "__guid": "aaaaaaaa-0000-0000-0000-0000000003f7",
+          "__version": 2,
+          "Flags": 0,
+          "Name": "wall_lobby_S",
+          "Position": "-360,-240,128",
+          "Rotation": "0,0,0,1",
+          "Scale": "9.6,0.32,5.12",
+          "Tags": "brush",
+          "Enabled": true,
+          "NetworkMode": 2,
+          "NetworkFlags": 0,
+          "NetworkOrphaned": 0,
+          "NetworkTransmit": true,
+          "OwnerTransfer": 1,
+          "Components": [
+            {
+              "__type": "Sandbox.ModelRenderer",
+              "__guid": "bbbbbbbb-0000-0000-0000-0000000003f5",
+              "__enabled": true,
+              "Flags": 0,
+              "BodyGroups": 18446744073709551615,
+              "MaterialOverride": null,
+              "Model": "models/dev/box.vmdl",
+              "RenderOptions": {
+                "GameLayer": true,
+                "OverlayLayer": false,
+                "BloomLayer": false,
+                "AfterUILayer": false
+              },
+              "RenderType": "On",
+              "Tint": "0.55,0.40,0.35,1"
+            },
+            {
+              "__type": "Sandbox.BoxCollider",
+              "__guid": "bbbbbbbb-0000-0000-0000-0000000003f6",
+              "__enabled": true,
+              "Flags": 0,
+              "Center": "0,0,0",
+              "Scale": "50,50,50",
+              "Static": true,
+              "IsTrigger": false,
+              "Friction": null,
+              "Surface": null,
+              "SurfaceVelocity": "0,0,0"
+            }
+          ],
+          "Children": []
+        },
+        {
+          "__guid": "aaaaaaaa-0000-0000-0000-0000000003fa",
+          "__version": 2,
+          "Flags": 0,
+          "Name": "wall_lobby_E_a",
+          "Position": "-120,140,128",
+          "Rotation": "0,0,0,1",
+          "Scale": "0.32,4.0,5.12",
+          "Tags": "brush",
+          "Enabled": true,
+          "NetworkMode": 2,
+          "NetworkFlags": 0,
+          "NetworkOrphaned": 0,
+          "NetworkTransmit": true,
+          "OwnerTransfer": 1,
+          "Components": [
+            {
+              "__type": "Sandbox.ModelRenderer",
+              "__guid": "bbbbbbbb-0000-0000-0000-0000000003f8",
+              "__enabled": true,
+              "Flags": 0,
+              "BodyGroups": 18446744073709551615,
+              "MaterialOverride": null,
+              "Model": "models/dev/box.vmdl",
+              "RenderOptions": {
+                "GameLayer": true,
+                "OverlayLayer": false,
+                "BloomLayer": false,
+                "AfterUILayer": false
+              },
+              "RenderType": "On",
+              "Tint": "0.55,0.40,0.35,1"
+            },
+            {
+              "__type": "Sandbox.BoxCollider",
+              "__guid": "bbbbbbbb-0000-0000-0000-0000000003f9",
+              "__enabled": true,
+              "Flags": 0,
+              "Center": "0,0,0",
+              "Scale": "50,50,50",
+              "Static": true,
+              "IsTrigger": false,
+              "Friction": null,
+              "Surface": null,
+              "SurfaceVelocity": "0,0,0"
+            }
+          ],
+          "Children": []
+        },
+        {
+          "__guid": "aaaaaaaa-0000-0000-0000-0000000003fd",
+          "__version": 2,
+          "Flags": 0,
+          "Name": "wall_lobby_E_b",
+          "Position": "-120,-140,128",
+          "Rotation": "0,0,0,1",
+          "Scale": "0.32,4.0,5.12",
+          "Tags": "brush",
+          "Enabled": true,
+          "NetworkMode": 2,
+          "NetworkFlags": 0,
+          "NetworkOrphaned": 0,
+          "NetworkTransmit": true,
+          "OwnerTransfer": 1,
+          "Components": [
+            {
+              "__type": "Sandbox.ModelRenderer",
+              "__guid": "bbbbbbbb-0000-0000-0000-0000000003fb",
+              "__enabled": true,
+              "Flags": 0,
+              "BodyGroups": 18446744073709551615,
+              "MaterialOverride": null,
+              "Model": "models/dev/box.vmdl",
+              "RenderOptions": {
+                "GameLayer": true,
+                "OverlayLayer": false,
+                "BloomLayer": false,
+                "AfterUILayer": false
+              },
+              "RenderType": "On",
+              "Tint": "0.55,0.40,0.35,1"
+            },
+            {
+              "__type": "Sandbox.BoxCollider",
+              "__guid": "bbbbbbbb-0000-0000-0000-0000000003fc",
+              "__enabled": true,
+              "Flags": 0,
+              "Center": "0,0,0",
+              "Scale": "50,50,50",
+              "Static": true,
+              "IsTrigger": false,
+              "Friction": null,
+              "Surface": null,
+              "SurfaceVelocity": "0,0,0"
+            }
+          ],
+          "Children": []
+        },
+        {
+          "__guid": "aaaaaaaa-0000-0000-0000-000000000400",
+          "__version": 2,
+          "Flags": 0,
+          "Name": "floor_corr",
+          "Position": "0,0,-8",
+          "Rotation": "0,0,0,1",
+          "Scale": "4.8,1.6,0.32",
+          "Tags": "brush",
+          "Enabled": true,
+          "NetworkMode": 2,
+          "NetworkFlags": 0,
+          "NetworkOrphaned": 0,
+          "NetworkTransmit": true,
+          "OwnerTransfer": 1,
+          "Components": [
+            {
+              "__type": "Sandbox.ModelRenderer",
+              "__guid": "bbbbbbbb-0000-0000-0000-0000000003fe",
+              "__enabled": true,
+              "Flags": 0,
+              "BodyGroups": 18446744073709551615,
+              "MaterialOverride": null,
+              "Model": "models/dev/box.vmdl",
+              "RenderOptions": {
+                "GameLayer": true,
+                "OverlayLayer": false,
+                "BloomLayer": false,
+                "AfterUILayer": false
+              },
+              "RenderType": "On",
+              "Tint": "0.7,0.7,0.75,1"
+            },
+            {
+              "__type": "Sandbox.BoxCollider",
+              "__guid": "bbbbbbbb-0000-0000-0000-0000000003ff",
+              "__enabled": true,
+              "Flags": 0,
+              "Center": "0,0,0",
+              "Scale": "50,50,50",
+              "Static": true,
+              "IsTrigger": false,
+              "Friction": null,
+              "Surface": null,
+              "SurfaceVelocity": "0,0,0"
+            }
+          ],
+          "Children": []
+        },
+        {
+          "__guid": "aaaaaaaa-0000-0000-0000-000000000403",
+          "__version": 2,
+          "Flags": 0,
+          "Name": "ceiling_corr",
+          "Position": "0,0,264",
+          "Rotation": "0,0,0,1",
+          "Scale": "4.8,1.6,0.32",
+          "Tags": "brush",
+          "Enabled": true,
+          "NetworkMode": 2,
+          "NetworkFlags": 0,
+          "NetworkOrphaned": 0,
+          "NetworkTransmit": true,
+          "OwnerTransfer": 1,
+          "Components": [
+            {
+              "__type": "Sandbox.ModelRenderer",
+              "__guid": "bbbbbbbb-0000-0000-0000-000000000401",
+              "__enabled": true,
+              "Flags": 0,
+              "BodyGroups": 18446744073709551615,
+              "MaterialOverride": null,
+              "Model": "models/dev/box.vmdl",
+              "RenderOptions": {
+                "GameLayer": true,
+                "OverlayLayer": false,
+                "BloomLayer": false,
+                "AfterUILayer": false
+              },
+              "RenderType": "On",
+              "Tint": "0.45,0.45,0.50,1"
+            },
+            {
+              "__type": "Sandbox.BoxCollider",
+              "__guid": "bbbbbbbb-0000-0000-0000-000000000402",
+              "__enabled": true,
+              "Flags": 0,
+              "Center": "0,0,0",
+              "Scale": "50,50,50",
+              "Static": true,
+              "IsTrigger": false,
+              "Friction": null,
+              "Surface": null,
+              "SurfaceVelocity": "0,0,0"
+            }
+          ],
+          "Children": []
+        },
+        {
+          "__guid": "aaaaaaaa-0000-0000-0000-000000000406",
+          "__version": 2,
+          "Flags": 0,
+          "Name": "wall_corr_N",
+          "Position": "0,40,128",
+          "Rotation": "0,0,0,1",
+          "Scale": "4.8,0.32,5.12",
+          "Tags": "brush",
+          "Enabled": true,
+          "NetworkMode": 2,
+          "NetworkFlags": 0,
+          "NetworkOrphaned": 0,
+          "NetworkTransmit": true,
+          "OwnerTransfer": 1,
+          "Components": [
+            {
+              "__type": "Sandbox.ModelRenderer",
+              "__guid": "bbbbbbbb-0000-0000-0000-000000000404",
+              "__enabled": true,
+              "Flags": 0,
+              "BodyGroups": 18446744073709551615,
+              "MaterialOverride": null,
+              "Model": "models/dev/box.vmdl",
+              "RenderOptions": {
+                "GameLayer": true,
+                "OverlayLayer": false,
+                "BloomLayer": false,
+                "AfterUILayer": false
+              },
+              "RenderType": "On",
+              "Tint": "0.55,0.40,0.35,1"
+            },
+            {
+              "__type": "Sandbox.BoxCollider",
+              "__guid": "bbbbbbbb-0000-0000-0000-000000000405",
+              "__enabled": true,
+              "Flags": 0,
+              "Center": "0,0,0",
+              "Scale": "50,50,50",
+              "Static": true,
+              "IsTrigger": false,
+              "Friction": null,
+              "Surface": null,
+              "SurfaceVelocity": "0,0,0"
+            }
+          ],
+          "Children": []
+        },
+        {
+          "__guid": "aaaaaaaa-0000-0000-0000-000000000409",
+          "__version": 2,
+          "Flags": 0,
+          "Name": "wall_corr_S",
+          "Position": "0,-40,128",
+          "Rotation": "0,0,0,1",
+          "Scale": "4.8,0.32,5.12",
+          "Tags": "brush",
+          "Enabled": true,
+          "NetworkMode": 2,
+          "NetworkFlags": 0,
+          "NetworkOrphaned": 0,
+          "NetworkTransmit": true,
+          "OwnerTransfer": 1,
+          "Components": [
+            {
+              "__type": "Sandbox.ModelRenderer",
+              "__guid": "bbbbbbbb-0000-0000-0000-000000000407",
+              "__enabled": true,
+              "Flags": 0,
+              "BodyGroups": 18446744073709551615,
+              "MaterialOverride": null,
+              "Model": "models/dev/box.vmdl",
+              "RenderOptions": {
+                "GameLayer": true,
+                "OverlayLayer": false,
+                "BloomLayer": false,
+                "AfterUILayer": false
+              },
+              "RenderType": "On",
+              "Tint": "0.55,0.40,0.35,1"
+            },
+            {
+              "__type": "Sandbox.BoxCollider",
+              "__guid": "bbbbbbbb-0000-0000-0000-000000000408",
+              "__enabled": true,
+              "Flags": 0,
+              "Center": "0,0,0",
+              "Scale": "50,50,50",
+              "Static": true,
+              "IsTrigger": false,
+              "Friction": null,
+              "Surface": null,
+              "SurfaceVelocity": "0,0,0"
+            }
+          ],
+          "Children": []
+        },
+        {
+          "__guid": "aaaaaaaa-0000-0000-0000-00000000040c",
+          "__version": 2,
+          "Flags": 0,
+          "Name": "floor_roomB",
+          "Position": "360,0,-8",
+          "Rotation": "0,0,0,1",
+          "Scale": "9.6,9.6,0.32",
+          "Tags": "brush",
+          "Enabled": true,
+          "NetworkMode": 2,
+          "NetworkFlags": 0,
+          "NetworkOrphaned": 0,
+          "NetworkTransmit": true,
+          "OwnerTransfer": 1,
+          "Components": [
+            {
+              "__type": "Sandbox.ModelRenderer",
+              "__guid": "bbbbbbbb-0000-0000-0000-00000000040a",
+              "__enabled": true,
+              "Flags": 0,
+              "BodyGroups": 18446744073709551615,
+              "MaterialOverride": null,
+              "Model": "models/dev/box.vmdl",
+              "RenderOptions": {
+                "GameLayer": true,
+                "OverlayLayer": false,
+                "BloomLayer": false,
+                "AfterUILayer": false
+              },
+              "RenderType": "On",
+              "Tint": "0.5,0.6,0.5,1"
+            },
+            {
+              "__type": "Sandbox.BoxCollider",
+              "__guid": "bbbbbbbb-0000-0000-0000-00000000040b",
+              "__enabled": true,
+              "Flags": 0,
+              "Center": "0,0,0",
+              "Scale": "50,50,50",
+              "Static": true,
+              "IsTrigger": false,
+              "Friction": null,
+              "Surface": null,
+              "SurfaceVelocity": "0,0,0"
+            }
+          ],
+          "Children": []
+        },
+        {
+          "__guid": "aaaaaaaa-0000-0000-0000-00000000040f",
+          "__version": 2,
+          "Flags": 0,
+          "Name": "ceiling_roomB",
+          "Position": "360,0,264",
+          "Rotation": "0,0,0,1",
+          "Scale": "9.6,9.6,0.32",
+          "Tags": "brush",
+          "Enabled": true,
+          "NetworkMode": 2,
+          "NetworkFlags": 0,
+          "NetworkOrphaned": 0,
+          "NetworkTransmit": true,
+          "OwnerTransfer": 1,
+          "Components": [
+            {
+              "__type": "Sandbox.ModelRenderer",
+              "__guid": "bbbbbbbb-0000-0000-0000-00000000040d",
+              "__enabled": true,
+              "Flags": 0,
+              "BodyGroups": 18446744073709551615,
+              "MaterialOverride": null,
+              "Model": "models/dev/box.vmdl",
+              "RenderOptions": {
+                "GameLayer": true,
+                "OverlayLayer": false,
+                "BloomLayer": false,
+                "AfterUILayer": false
+              },
+              "RenderType": "On",
+              "Tint": "0.45,0.50,0.45,1"
+            },
+            {
+              "__type": "Sandbox.BoxCollider",
+              "__guid": "bbbbbbbb-0000-0000-0000-00000000040e",
+              "__enabled": true,
+              "Flags": 0,
+              "Center": "0,0,0",
+              "Scale": "50,50,50",
+              "Static": true,
+              "IsTrigger": false,
+              "Friction": null,
+              "Surface": null,
+              "SurfaceVelocity": "0,0,0"
+            }
+          ],
+          "Children": []
+        },
+        {
+          "__guid": "aaaaaaaa-0000-0000-0000-000000000412",
+          "__version": 2,
+          "Flags": 0,
+          "Name": "wall_roomB_E",
+          "Position": "600,0,128",
+          "Rotation": "0,0,0,1",
+          "Scale": "0.32,9.6,5.12",
+          "Tags": "brush",
+          "Enabled": true,
+          "NetworkMode": 2,
+          "NetworkFlags": 0,
+          "NetworkOrphaned": 0,
+          "NetworkTransmit": true,
+          "OwnerTransfer": 1,
+          "Components": [
+            {
+              "__type": "Sandbox.ModelRenderer",
+              "__guid": "bbbbbbbb-0000-0000-0000-000000000410",
+              "__enabled": true,
+              "Flags": 0,
+              "BodyGroups": 18446744073709551615,
+              "MaterialOverride": null,
+              "Model": "models/dev/box.vmdl",
+              "RenderOptions": {
+                "GameLayer": true,
+                "OverlayLayer": false,
+                "BloomLayer": false,
+                "AfterUILayer": false
+              },
+              "RenderType": "On",
+              "Tint": "0.4,0.5,0.45,1"
+            },
+            {
+              "__type": "Sandbox.BoxCollider",
+              "__guid": "bbbbbbbb-0000-0000-0000-000000000411",
+              "__enabled": true,
+              "Flags": 0,
+              "Center": "0,0,0",
+              "Scale": "50,50,50",
+              "Static": true,
+              "IsTrigger": false,
+              "Friction": null,
+              "Surface": null,
+              "SurfaceVelocity": "0,0,0"
+            }
+          ],
+          "Children": []
+        },
+        {
+          "__guid": "aaaaaaaa-0000-0000-0000-000000000415",
+          "__version": 2,
+          "Flags": 0,
+          "Name": "wall_roomB_N",
+          "Position": "360,240,128",
+          "Rotation": "0,0,0,1",
+          "Scale": "9.6,0.32,5.12",
+          "Tags": "brush",
+          "Enabled": true,
+          "NetworkMode": 2,
+          "NetworkFlags": 0,
+          "NetworkOrphaned": 0,
+          "NetworkTransmit": true,
+          "OwnerTransfer": 1,
+          "Components": [
+            {
+              "__type": "Sandbox.ModelRenderer",
+              "__guid": "bbbbbbbb-0000-0000-0000-000000000413",
+              "__enabled": true,
+              "Flags": 0,
+              "BodyGroups": 18446744073709551615,
+              "MaterialOverride": null,
+              "Model": "models/dev/box.vmdl",
+              "RenderOptions": {
+                "GameLayer": true,
+                "OverlayLayer": false,
+                "BloomLayer": false,
+                "AfterUILayer": false
+              },
+              "RenderType": "On",
+              "Tint": "0.4,0.5,0.45,1"
+            },
+            {
+              "__type": "Sandbox.BoxCollider",
+              "__guid": "bbbbbbbb-0000-0000-0000-000000000414",
+              "__enabled": true,
+              "Flags": 0,
+              "Center": "0,0,0",
+              "Scale": "50,50,50",
+              "Static": true,
+              "IsTrigger": false,
+              "Friction": null,
+              "Surface": null,
+              "SurfaceVelocity": "0,0,0"
+            }
+          ],
+          "Children": []
+        },
+        {
+          "__guid": "aaaaaaaa-0000-0000-0000-000000000418",
+          "__version": 2,
+          "Flags": 0,
+          "Name": "wall_roomB_S",
+          "Position": "360,-240,128",
+          "Rotation": "0,0,0,1",
+          "Scale": "9.6,0.32,5.12",
+          "Tags": "brush",
+          "Enabled": true,
+          "NetworkMode": 2,
+          "NetworkFlags": 0,
+          "NetworkOrphaned": 0,
+          "NetworkTransmit": true,
+          "OwnerTransfer": 1,
+          "Components": [
+            {
+              "__type": "Sandbox.ModelRenderer",
+              "__guid": "bbbbbbbb-0000-0000-0000-000000000416",
+              "__enabled": true,
+              "Flags": 0,
+              "BodyGroups": 18446744073709551615,
+              "MaterialOverride": null,
+              "Model": "models/dev/box.vmdl",
+              "RenderOptions": {
+                "GameLayer": true,
+                "OverlayLayer": false,
+                "BloomLayer": false,
+                "AfterUILayer": false
+              },
+              "RenderType": "On",
+              "Tint": "0.4,0.5,0.45,1"
+            },
+            {
+              "__type": "Sandbox.BoxCollider",
+              "__guid": "bbbbbbbb-0000-0000-0000-000000000417",
+              "__enabled": true,
+              "Flags": 0,
+              "Center": "0,0,0",
+              "Scale": "50,50,50",
+              "Static": true,
+              "IsTrigger": false,
+              "Friction": null,
+              "Surface": null,
+              "SurfaceVelocity": "0,0,0"
+            }
+          ],
+          "Children": []
+        },
+        {
+          "__guid": "aaaaaaaa-0000-0000-0000-00000000041b",
+          "__version": 2,
+          "Flags": 0,
+          "Name": "wall_roomB_W_a",
+          "Position": "120,140,128",
+          "Rotation": "0,0,0,1",
+          "Scale": "0.32,4.0,5.12",
+          "Tags": "brush",
+          "Enabled": true,
+          "NetworkMode": 2,
+          "NetworkFlags": 0,
+          "NetworkOrphaned": 0,
+          "NetworkTransmit": true,
+          "OwnerTransfer": 1,
+          "Components": [
+            {
+              "__type": "Sandbox.ModelRenderer",
+              "__guid": "bbbbbbbb-0000-0000-0000-000000000419",
+              "__enabled": true,
+              "Flags": 0,
+              "BodyGroups": 18446744073709551615,
+              "MaterialOverride": null,
+              "Model": "models/dev/box.vmdl",
+              "RenderOptions": {
+                "GameLayer": true,
+                "OverlayLayer": false,
+                "BloomLayer": false,
+                "AfterUILayer": false
+              },
+              "RenderType": "On",
+              "Tint": "0.4,0.5,0.45,1"
+            },
+            {
+              "__type": "Sandbox.BoxCollider",
+              "__guid": "bbbbbbbb-0000-0000-0000-00000000041a",
+              "__enabled": true,
+              "Flags": 0,
+              "Center": "0,0,0",
+              "Scale": "50,50,50",
+              "Static": true,
+              "IsTrigger": false,
+              "Friction": null,
+              "Surface": null,
+              "SurfaceVelocity": "0,0,0"
+            }
+          ],
+          "Children": []
+        },
+        {
+          "__guid": "aaaaaaaa-0000-0000-0000-00000000041e",
+          "__version": 2,
+          "Flags": 0,
+          "Name": "wall_roomB_W_b",
+          "Position": "120,-140,128",
+          "Rotation": "0,0,0,1",
+          "Scale": "0.32,4.0,5.12",
+          "Tags": "brush",
+          "Enabled": true,
+          "NetworkMode": 2,
+          "NetworkFlags": 0,
+          "NetworkOrphaned": 0,
+          "NetworkTransmit": true,
+          "OwnerTransfer": 1,
+          "Components": [
+            {
+              "__type": "Sandbox.ModelRenderer",
+              "__guid": "bbbbbbbb-0000-0000-0000-00000000041c",
+              "__enabled": true,
+              "Flags": 0,
+              "BodyGroups": 18446744073709551615,
+              "MaterialOverride": null,
+              "Model": "models/dev/box.vmdl",
+              "RenderOptions": {
+                "GameLayer": true,
+                "OverlayLayer": false,
+                "BloomLayer": false,
+                "AfterUILayer": false
+              },
+              "RenderType": "On",
+              "Tint": "0.4,0.5,0.45,1"
+            },
+            {
+              "__type": "Sandbox.BoxCollider",
+              "__guid": "bbbbbbbb-0000-0000-0000-00000000041d",
+              "__enabled": true,
+              "Flags": 0,
+              "Center": "0,0,0",
+              "Scale": "50,50,50",
+              "Static": true,
+              "IsTrigger": false,
+              "Friction": null,
+              "Surface": null,
+              "SurfaceVelocity": "0,0,0"
+            }
+          ],
+          "Children": []
+        }
+      ]
+    },
+    {
+      "__guid": "aaaaaaaa-0000-0000-0000-000000000430",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Player",
+      "Position": "-400,0,40",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Local.HammerLevel.Player",
+          "__guid": "bbbbbbbb-0000-0000-0000-00000000042e",
+          "__enabled": true,
+          "Flags": 0,
+          "MouseSensitivity": 0.1,
+          "MaxTraceDistance": 12000,
+          "WalkSpeed": 180,
+          "AutoPlay": false,
+          "AutoFireInterval": 0.5
+        },
+        {
+          "__type": "Sandbox.CharacterController",
+          "__guid": "bbbbbbbb-0000-0000-0000-00000000042f",
+          "__enabled": true,
+          "Flags": 0,
+          "Radius": 16,
+          "Height": 64,
+          "StepHeight": 18,
+          "GroundAngle": 50,
+          "Acceleration": 12,
+          "Bounciness": 0.3,
+          "UseCollisionRules": false
+        }
+      ],
+      "Children": [
+        {
+          "__guid": "aaaaaaaa-0000-0000-0000-00000000042d",
+          "__version": 2,
+          "Flags": 0,
+          "Name": "Camera",
+          "Position": "0,0,64",
+          "Rotation": "0,0,0,1",
+          "Scale": "1,1,1",
+          "Tags": "",
+          "Enabled": true,
+          "NetworkMode": 2,
+          "NetworkFlags": 0,
+          "NetworkOrphaned": 0,
+          "NetworkTransmit": true,
+          "OwnerTransfer": 1,
+          "Components": [
+            {
+              "__type": "Sandbox.CameraComponent",
+              "__guid": "bbbbbbbb-0000-0000-0000-00000000042c",
+              "__enabled": true,
+              "Flags": 0,
+              "BackgroundColor": "0.10,0.12,0.16,1",
+              "ClearFlags": "All",
+              "EnablePostProcessing": false,
+              "FieldOfView": 80,
+              "FovAxis": "Horizontal",
+              "IsMainCamera": true,
+              "Orthographic": false,
+              "OrthographicHeight": 120,
+              "PostProcessAnchor": null,
+              "Priority": 1,
+              "RenderExcludeTags": "",
+              "RenderTags": "",
+              "RenderTexture": null,
+              "TargetEye": "None",
+              "Viewport": "0,0,1,1",
+              "ZFar": 20000,
+              "ZNear": 1
+            }
+          ],
+          "Children": []
+        }
+      ]
+    },
+    {
+      "__guid": "aaaaaaaa-0000-0000-0000-000000000434",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Target_Lobby_1",
+      "Position": "-300,120,0",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.ModelRenderer",
+          "__guid": "bbbbbbbb-0000-0000-0000-000000000431",
+          "__enabled": true,
+          "Flags": 0,
+          "BodyGroups": 18446744073709551615,
+          "MaterialOverride": null,
+          "Model": "models/citizen/citizen.vmdl",
+          "RenderOptions": {
+            "GameLayer": true,
+            "OverlayLayer": false,
+            "BloomLayer": false,
+            "AfterUILayer": false
+          },
+          "RenderType": "On",
+          "Tint": "1,1,1,1"
+        },
+        {
+          "__type": "Sandbox.CapsuleCollider",
+          "__guid": "bbbbbbbb-0000-0000-0000-000000000432",
+          "__enabled": true,
+          "Flags": 0,
+          "Start": "0,0,8",
+          "End": "0,0,64",
+          "Radius": 16,
+          "Static": false,
+          "IsTrigger": false,
+          "Friction": null,
+          "Surface": null,
+          "SurfaceVelocity": "0,0,0"
+        },
+        {
+          "__type": "Local.HammerLevel.Target",
+          "__guid": "bbbbbbbb-0000-0000-0000-000000000433",
+          "__enabled": true,
+          "Flags": 0,
+          "RespawnDelay": 5,
+          "HitImpulse": 250
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "aaaaaaaa-0000-0000-0000-000000000438",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Target_Lobby_2",
+      "Position": "-300,-120,0",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.ModelRenderer",
+          "__guid": "bbbbbbbb-0000-0000-0000-000000000435",
+          "__enabled": true,
+          "Flags": 0,
+          "BodyGroups": 18446744073709551615,
+          "MaterialOverride": null,
+          "Model": "models/citizen/citizen.vmdl",
+          "RenderOptions": {
+            "GameLayer": true,
+            "OverlayLayer": false,
+            "BloomLayer": false,
+            "AfterUILayer": false
+          },
+          "RenderType": "On",
+          "Tint": "1,1,1,1"
+        },
+        {
+          "__type": "Sandbox.CapsuleCollider",
+          "__guid": "bbbbbbbb-0000-0000-0000-000000000436",
+          "__enabled": true,
+          "Flags": 0,
+          "Start": "0,0,8",
+          "End": "0,0,64",
+          "Radius": 16,
+          "Static": false,
+          "IsTrigger": false,
+          "Friction": null,
+          "Surface": null,
+          "SurfaceVelocity": "0,0,0"
+        },
+        {
+          "__type": "Local.HammerLevel.Target",
+          "__guid": "bbbbbbbb-0000-0000-0000-000000000437",
+          "__enabled": true,
+          "Flags": 0,
+          "RespawnDelay": 5,
+          "HitImpulse": 250
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "aaaaaaaa-0000-0000-0000-00000000043c",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Target_RoomB_1",
+      "Position": "360,140,0",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.ModelRenderer",
+          "__guid": "bbbbbbbb-0000-0000-0000-000000000439",
+          "__enabled": true,
+          "Flags": 0,
+          "BodyGroups": 18446744073709551615,
+          "MaterialOverride": null,
+          "Model": "models/citizen/citizen.vmdl",
+          "RenderOptions": {
+            "GameLayer": true,
+            "OverlayLayer": false,
+            "BloomLayer": false,
+            "AfterUILayer": false
+          },
+          "RenderType": "On",
+          "Tint": "1,1,1,1"
+        },
+        {
+          "__type": "Sandbox.CapsuleCollider",
+          "__guid": "bbbbbbbb-0000-0000-0000-00000000043a",
+          "__enabled": true,
+          "Flags": 0,
+          "Start": "0,0,8",
+          "End": "0,0,64",
+          "Radius": 16,
+          "Static": false,
+          "IsTrigger": false,
+          "Friction": null,
+          "Surface": null,
+          "SurfaceVelocity": "0,0,0"
+        },
+        {
+          "__type": "Local.HammerLevel.Target",
+          "__guid": "bbbbbbbb-0000-0000-0000-00000000043b",
+          "__enabled": true,
+          "Flags": 0,
+          "RespawnDelay": 5,
+          "HitImpulse": 250
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "aaaaaaaa-0000-0000-0000-000000000440",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Target_RoomB_2",
+      "Position": "480,0,0",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.ModelRenderer",
+          "__guid": "bbbbbbbb-0000-0000-0000-00000000043d",
+          "__enabled": true,
+          "Flags": 0,
+          "BodyGroups": 18446744073709551615,
+          "MaterialOverride": null,
+          "Model": "models/citizen/citizen.vmdl",
+          "RenderOptions": {
+            "GameLayer": true,
+            "OverlayLayer": false,
+            "BloomLayer": false,
+            "AfterUILayer": false
+          },
+          "RenderType": "On",
+          "Tint": "1,1,1,1"
+        },
+        {
+          "__type": "Sandbox.CapsuleCollider",
+          "__guid": "bbbbbbbb-0000-0000-0000-00000000043e",
+          "__enabled": true,
+          "Flags": 0,
+          "Start": "0,0,8",
+          "End": "0,0,64",
+          "Radius": 16,
+          "Static": false,
+          "IsTrigger": false,
+          "Friction": null,
+          "Surface": null,
+          "SurfaceVelocity": "0,0,0"
+        },
+        {
+          "__type": "Local.HammerLevel.Target",
+          "__guid": "bbbbbbbb-0000-0000-0000-00000000043f",
+          "__enabled": true,
+          "Flags": 0,
+          "RespawnDelay": 5,
+          "HitImpulse": 250
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "aaaaaaaa-0000-0000-0000-000000000444",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Target_RoomB_3",
+      "Position": "360,-140,0",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.ModelRenderer",
+          "__guid": "bbbbbbbb-0000-0000-0000-000000000441",
+          "__enabled": true,
+          "Flags": 0,
+          "BodyGroups": 18446744073709551615,
+          "MaterialOverride": null,
+          "Model": "models/citizen/citizen.vmdl",
+          "RenderOptions": {
+            "GameLayer": true,
+            "OverlayLayer": false,
+            "BloomLayer": false,
+            "AfterUILayer": false
+          },
+          "RenderType": "On",
+          "Tint": "1,1,1,1"
+        },
+        {
+          "__type": "Sandbox.CapsuleCollider",
+          "__guid": "bbbbbbbb-0000-0000-0000-000000000442",
+          "__enabled": true,
+          "Flags": 0,
+          "Start": "0,0,8",
+          "End": "0,0,64",
+          "Radius": 16,
+          "Static": false,
+          "IsTrigger": false,
+          "Friction": null,
+          "Surface": null,
+          "SurfaceVelocity": "0,0,0"
+        },
+        {
+          "__type": "Local.HammerLevel.Target",
+          "__guid": "bbbbbbbb-0000-0000-0000-000000000443",
+          "__enabled": true,
+          "Flags": 0,
+          "RespawnDelay": 5,
+          "HitImpulse": 250
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "aaaaaaaa-0000-0000-0000-000000000448",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Hud",
+      "Position": "0,0,0",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.ScreenPanel",
+          "__guid": "bbbbbbbb-0000-0000-0000-000000000447",
+          "__enabled": true,
+          "Flags": 0,
+          "AutoScreenScale": true,
+          "Opacity": 1,
+          "Scale": 1,
+          "ScaleStrategy": "ConsistentHeight",
+          "TargetCamera": null,
+          "ZIndex": 100
+        }
+      ],
+      "Children": [
+        {
+          "__guid": "aaaaaaaa-0000-0000-0000-000000000446",
+          "__version": 2,
+          "Flags": 0,
+          "Name": "HudPanel",
+          "Position": "0,0,0",
+          "Rotation": "0,0,0,1",
+          "Scale": "1,1,1",
+          "Tags": "",
+          "Enabled": true,
+          "NetworkMode": 2,
+          "NetworkFlags": 0,
+          "NetworkOrphaned": 0,
+          "NetworkTransmit": true,
+          "OwnerTransfer": 1,
+          "Components": [
+            {
+              "__type": "Local.HammerLevel.Hud",
+              "__guid": "bbbbbbbb-0000-0000-0000-000000000445",
+              "__enabled": true,
+              "Flags": 0
+            }
+          ],
+          "Children": []
+        }
+      ]
+    }
+  ],
+  "SceneProperties": {
+    "NetworkInterpolation": true,
+    "TimeScale": 1,
+    "WantsSystemScene": false,
+    "Metadata": {}
+  },
+  "ResourceVersion": 3,
+  "Title": "Hammer Level",
+  "Description": "Hammer-style indoor level (BSP brushes via BoxColliders + dev/box).",
+  "__references": [],
+  "__version": 3
+}

@@ -1,0 +1,60 @@
+@namespace Local.HammerLevel
+@using System
+@using System.Linq
+@using Sandbox
+@using Sandbox.UI
+@inherits PanelComponent
+
+<root>
+	<div class="title">HAMMER MAP DEMO</div>
+
+	@if ( Player is not null )
+	{
+		<div class="crosshair">
+			<div class="cross-v"></div>
+			<div class="cross-h"></div>
+			<div class="cross-dot"></div>
+		</div>
+
+		<div class="weapon-card">
+			<div class="icon">sports_handball</div>
+			<div class="info">
+				<div class="name">PISTOL</div>
+				<div class="ammo">
+					<span class="num">@CurrentAmmo</span>
+					<span class="slash">/</span>
+					<span class="max">@MaxAmmo</span>
+				</div>
+			</div>
+		</div>
+
+		@if ( IsReloading )
+		{
+			<div class="reloading">RELOADING</div>
+		}
+
+		<div class="score">
+			<div class="lbl">TARGETS HIT</div>
+			<div class="val">@Score</div>
+		</div>
+
+		<div class="hint">
+			<div class="row"><span class="key">WASD</span><span class="lbl">Move</span></div>
+			<div class="row"><span class="key">LMB</span><span class="lbl">Fire</span></div>
+			<div class="row"><span class="key">R</span><span class="lbl">Reload</span></div>
+		</div>
+	}
+</root>
+
+@code
+{
+	public Player Player => Game.ActiveScene?.GetAllComponents<Player>().FirstOrDefault();
+	public GameController Controller => Game.ActiveScene?.GetAllComponents<GameController>().FirstOrDefault();
+
+	private int CurrentAmmo => Player?.Pistol?.Ammo ?? 0;
+	private int MaxAmmo => Player?.Pistol?.MaxAmmo ?? 0;
+	private bool IsReloading => Player?.Pistol?.IsReloading ?? false;
+	private int Score => Controller?.Score ?? 0;
+
+	protected override int BuildHash() => HashCode.Combine( CurrentAmmo, MaxAmmo, IsReloading, Score );
+}

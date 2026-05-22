@@ -1,0 +1,125 @@
+// =============================================================================
+//  HAND-AUTHORED HAMMER MAP — CONCEPTUAL/SCHEMATIC REPRESENTATION
+// =============================================================================
+//
+//  This file documents the BSP-style level we WOULD have authored into a real
+//  binary .vmap, had the format been amenable to hand-authoring.
+//
+//  WHY THIS ISN'T A REAL .vmap:
+//  ----------------------------
+//  Every .vmap shipped with s&box (53+ files under
+//  ~/.steam/root/steamapps/common/sbox/) opens with the header:
+//      <!-- dmx encoding binary 9 format vmap 29 -->
+//
+//  i.e. they are *binary* DMX containers, not text. The format embeds:
+//    - A JPEG asset_preview_thumbnail (raw bytes) in the file header
+//    - A typed object graph with internal pointers and a string pool
+//    - References to Hammer-internal class IDs (CMapWorld, CMapMesh,
+//      CMapEntity, CMapGroup, etc.) defined natively in the engine
+//    - Mesh data for each brush as a half-edge structure (CDmePolygonMesh),
+//      not a list of brush planes like classic Source 1 .vmf
+//
+//  The parser is in NativeEngine (C++ DLL) — the C# side
+//  (engine/Sandbox.Engine/Scene/Components/Map/MapInstance.cs) only consumes
+//  the *compiled* output via NativeEngine.SceneMap, after the Hammer asset
+//  compiler turns .vmap -> .vmap_c + .vpk. There is no text-encoded keyvalues2
+//  variant shipping today (grep'd: 0 matches for "dmx encoding keyvalues").
+//
+//  TRIED:
+//    1. Search for any text-encoded shipped .vmap -> none
+//    2. Search engine source for a .vmap text writer -> none in C# layer
+//    3. Search for a .vmap_c that ships precompiled -> none in install
+//    4. Considered copy+modify of empty_box.vmap -> would require byte-level
+//       DMX surgery (string-pool offsets, mesh half-edge re-stitching) which
+//       is well beyond hand-authoring
+//
+//  FALL-BACK USED:
+//    We construct the same indoor topology — lobby + 2 rooms + corridor — in
+//    the .scene file using BoxCollider + ModelRenderer pairs (each "brush" is
+//    one GameObject with a static collider and a stretched dev/box renderer).
+//    The MapLoader.CreateStaticModel() path in MapInstance.cs does exactly
+//    this for func_brush entities, so it's an honest semantic equivalent —
+//    just expressed as scene JSON rather than DMX brushes.
+//
+//  ALSO INCLUDED:
+//    A MapInstance Component is left in the scene pointing at the shipped
+//    "maps/templates/empty_box.vmap" so the Component itself is exercised.
+//    (Set Enabled=false by default since the compiled .vpk may not be present
+//    in the Linux Steam install — but the Component is wired correctly.)
+//
+//  Schema notes ARE useful — if you have the editor, File > Save As text DMX
+//  isn't an option but you CAN inspect via tools/MapEditor source under
+//  engine/Sandbox.Tools/MapEditor/MapDoc/Nodes/*. Each *.def in
+//  engine/Definitions/hammer/MapDoc/Nodes/ describes a node class. See
+//  MapInstance.def, MapMesh.def, MapEntity.def for the canonical schema.
+//
+// =============================================================================
+//  Hand-authored level (60'x80' interior, units in inches/Source units):
+// =============================================================================
+//
+//  LOBBY (Room A)             CORRIDOR              ROOM B
+//  +------------------+    +-----+-----+    +------------------+
+//  |                  |    |           |    |                  |
+//  |   spawn @ -300   |======>          >====|   targets x3     |
+//  |                  |    |           |    |                  |
+//  |   targets x2     |    +-----+-----+    |                  |
+//  +------------------+                     +------------------+
+//
+//  Brush list (each becomes a BoxCollider + ModelRenderer in the .scene):
+//
+//    floor_lobby      pos = (-360,    0,   -8)   size = (480, 480,  16)
+//    ceiling_lobby    pos = (-360,    0,  264)   size = (480, 480,  16)
+//    wall_lobby_W     pos = (-600,    0,  128)   size = ( 16, 480, 256)
+//    wall_lobby_N     pos = (-360,  240,  128)   size = (480,  16, 256)
+//    wall_lobby_S     pos = (-360, -240,  128)   size = (480,  16, 256)
+//    wall_lobby_E_a   pos = (-120,  140,  128)   size = ( 16, 200, 256)  // door cutout
+//    wall_lobby_E_b   pos = (-120, -140,  128)   size = ( 16, 200, 256)
+//
+//    floor_corr       pos = (   0,    0,   -8)   size = (240,  80,  16)
+//    ceiling_corr     pos = (   0,    0,  264)   size = (240,  80,  16)
+//    wall_corr_N      pos = (   0,   40,  128)   size = (240,  16, 256)
+//    wall_corr_S      pos = (   0,  -40,  128)   size = (240, -16, 256)
+//
+//    floor_roomB      pos = ( 360,    0,   -8)   size = (480, 480,  16)
+//    ceiling_roomB    pos = ( 360,    0,  264)   size = (480, 480,  16)
+//    wall_roomB_E     pos = ( 600,    0,  128)   size = ( 16, 480, 256)
+//    wall_roomB_N     pos = ( 360,  240,  128)   size = (480,  16, 256)
+//    wall_roomB_S     pos = ( 360, -240,  128)   size = (480,  16, 256)
+//    wall_roomB_W_a   pos = ( 120,  140,  128)   size = ( 16, 200, 256)
+//    wall_roomB_W_b   pos = ( 120, -140,  128)   size = ( 16, 200, 256)
+//
+//  Lights:
+//    sun (DirectionalLight)         angles = (-40, 30, 0)
+//    point_lobby (PointLight)       pos = (-360,    0, 200)  radius=500
+//    point_corr  (PointLight)       pos = (   0,    0, 200)  radius=200
+//    point_roomB (PointLight)       pos = ( 360,    0, 200)  radius=500
+//
+//  Entities (in the BSP world this would all be CMapEntity nodes):
+//    info_player_start                 origin "-500 0 16"
+//    target_dummy (citizen)  x2        in lobby
+//    target_dummy (citizen)  x3        in roomB
+//
+// =============================================================================
+//  Equivalent native DMX object graph (excerpt — pseudocode):
+// =============================================================================
+//
+//  CMapRootElement m_World
+//    m_Children:
+//      CMapWorld "world"
+//        m_Children:
+//          CMapMesh "floor_lobby"     m_DataMesh = CDmePolygonMesh(...box...)
+//          CMapMesh "ceiling_lobby"   ...
+//          ... (one per brush above)
+//          CMapEntity "info_player_start"  m_vecOrigin = (-500,0,16)
+//          CMapEntity "light_environment"  ...
+//
+//  Each CMapMesh's CDmePolygonMesh stores:
+//      m_VerticesData (DmeFaceVertexData with Vector3[] for "position:0")
+//      m_EdgeData     (half-edge twin/next/prev indices into a giant array)
+//      m_FacesData    (per-face material name, lightmap scale, smoothing)
+//      m_FaceVertexData (texcoords)
+//
+//  Stitching this for 18 boxes by hand without tooling is what makes the
+//  hand-authoring intractable, NOT the box geometry itself.
+//
+// =============================================================================

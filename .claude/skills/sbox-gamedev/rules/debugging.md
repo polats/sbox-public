@@ -101,6 +101,52 @@ This streams new error entries as they happen with category coloring, so you
 see at a glance whether your latest edit broke compilation, references a
 missing asset, or triggered a different class of failure.
 
+## `sbox-recompile` returns "RanToCompletion" even when the compile fails
+
+The tool kicks off `Sandbox.Project.CompileAsync()` and waits on the
+returned `Task` — but **the Task completes successfully whether the
+compile succeeded OR failed**. The Task just represents "the compile
+pipeline ran"; the result (a `CompilerOutput`) is what carries success
+or errors.
+
+You'll see:
+```
+$ sbox-recompile
+recompile status=RanToCompletion in 0.2s
+```
+
+…and assume everything's good. But if the source had a CS-error, the
+old assembly stays loaded. New code changes don't take effect.
+Symptom: editing a `.cs` file changes nothing visible at runtime; old
+behavior persists; AutoPlay loop looks unchanged.
+
+**Always verify a recompile by greppinging the log:**
+
+```bash
+.claude/skills/sbox-gamedev/tools/sbox-logs --category compile --tail 5
+```
+
+If the latest line is `Compile of 'local.<project>' OK`, you're good.
+If it's `… Failed`, fix the error and re-compile. Don't trust the
+recompile tool's own "status=RanToCompletion" as proof of success.
+
+## `.vmap` files are binary-only — no hand-authoring path
+
+Hammer maps (`.vmap`) ship as binary DMX (`encoding binary 9 format
+vmap 29`) and the runtime loads via `NativeEngine.SceneMap` after the
+asset compiler produces `.vpk`/`.world_c`. No text DMX variant ships;
+the schemas in `engine/Definitions/hammer/MapDoc/Nodes/*.def` are
+read-only. Hand-authoring a `.vmap` requires byte-level surgery
+(string pools, internal pointers, half-edge mesh data via
+`CDmePolygonMesh`) and is intractable for autonomous workflows.
+
+**Pragmatic alternative**: build the same "indoor level" using scene
+JSON GameObjects with `BoxCollider` + `ModelRenderer` (stretched
+`box.vmdl`) per brush. Semantically equivalent to what
+`MapLoader.CreateStaticModel()` does for `func_brush` entities
+internally, just expressed as a `.scene` file. See
+`examples/hammer-level/` for the worked pattern.
+
 ## `sbox-eval` blocks the engine main thread
 
 Anything you run via `sbox-eval` executes synchronously on the editor's
