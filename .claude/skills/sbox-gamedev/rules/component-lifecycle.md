@@ -147,3 +147,22 @@ public sealed class Pickup : Component, Component.ITriggerListener
   file the editor recompiles and rebinds. If a field disappears, its value is lost.
 - **`Game.ActiveScene` ≠ `Scene` of an editor scene.** In the editor's preview
   panes the active scene flips. Prefer `this.Scene` in component code.
+
+## API gotchas found in the wild
+
+- **`OnTriggerEntered` does not exist.** The interface method is
+  `OnTriggerEnter(Collider other)` — past-tense `…ed` looks right and the
+  compiler doesn't catch it because `ITriggerListener` is implemented
+  explicitly. If your trigger never fires, check the method name first.
+- **`Rotation.Inverse` is a property, not a method.** Write
+  `rot.Inverse * v`, not `Rotation.Inverse(rot) * v`.
+- **`Collision.Other` is a `CollisionSource` struct, not nullable.** Access
+  its `.GameObject` / `.Component` directly (those may be null and *are*
+  `?.`-able). Don't write `collision.Other?.Whatever`.
+- **`CharacterController` is not a `Collider`.** It has its own collision
+  system. `ITriggerListener.OnTriggerEnter` will never fire for the
+  CharacterController GameObject. Use a per-frame distance check or attach
+  a separate `BoxCollider { IsTrigger = true }`.
+- **`Collider.Elasticity` and `Collider.Friction` are `float?`, not `Curve`.**
+  Code that assumes they're a Curve fails to compile with a non-obvious
+  message. See `rules/physics.md`.

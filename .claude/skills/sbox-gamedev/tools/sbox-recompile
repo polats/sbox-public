@@ -1,0 +1,96 @@
+#!/usr/bin/env python3
+"""
+sbox-recompile — trigger an in-editor recompile WITHOUT killing the editor.
+
+The editor's file watcher (.NET FileSystemWatcher under Wine) often misses
+edits made from outside, so changes to .cs files don't auto-recompile.
+This tool calls `Sandbox.Project.CompileAsync()` (internal static) via the
+running editor's reflection, forcing it to re-read source files from disk
+and emit a fresh assembly.
+
+When restart is still necessary (skip this tool, use sbox-launch instead):
+  - You ADDED, RENAMED, or DELETED a .cs / .razor / .scene file
+    (Wine's watcher reliably misses creates)
+  - You changed project structure (csproj refs, new directory)
+  - You first-installed Editor/SkillTrigger.cs
+
+When this tool is enough (editor stays warm, recompile in ~1-3s):
+  - You edited an existing .cs file's contents
+  - You changed a property default value
+  - You renamed a method body / changed signatures
+
+Usage:
+  sbox-recompile                 trigger for whichever project the editor's on
+  sbox-recompile --project PATH  ...for a specific project (must already be open)
+"""
+from __future__ import annotations
+import argparse, json, os, re, subprocess, sys, time
+from pathlib import Path
+
+SCRIPT_DIR = Path(__file__).resolve().parent
+
+
+def detect_running_project() -> Path | None:
+    try:
+        r = subprocess.run(["pgrep", "-af", "sbox-dev.exe"], capture_output=True, text=True, timeout=3)
+    except Exception:
+        return None
+    for ln in r.stdout.splitlines():
+        m = re.search(r"-project\s+Z:\\([^ ]+)\.sbproj", ln)
+        if m:
+            p = Path("/" + m.group(1).replace("\\", "/") + ".sbproj")
+            if p.exists():
+                return p.parent
+    return None
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--project", help="target project (else detect from running editor)")
+    ap.add_argument("--timeout", type=int, default=60)
+    args = ap.parse_args()
+
+    target = Path(args.project).resolve() if args.project else detect_running_project()
+    if target is None or not target.is_dir():
+        raise SystemExit("no editor running on a discoverable project")
+
+    triggers = target / ".sbox" / "skill-triggers"
+    triggers.mkdir(parents=True, exist_ok=True)
+    trig_id = f"{time.strftime('%Y%m%d-%H%M%S')}-{os.getpid()}-recompile"
+    trigger_file = triggers / (trig_id + ".txt")
+
+    # The recompile is via reflection (CompileAsync is internal). Roslyn
+    # auto-imports `Sandbox` and `Editor` so the types are in scope.
+    code = (
+        "eval\n"
+        'var m = typeof(Sandbox.Project).GetMethods('
+        'System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic'
+        ').First(x => x.Name == "CompileAsync");\n'
+        'var task = (System.Threading.Tasks.Task)m.Invoke(null, null);\n'
+        'task.Wait();\n'
+        'return $"status={task.Status}";\n'
+    )
+    trigger_file.write_text(code, encoding="utf-8")
+    print(f"wrote trigger: {trigger_file.name}", file=sys.stderr)
+
+    result_file = target / ".sbox" / "skill-results" / (trig_id + ".json")
+    started = time.time()
+    deadline = started + args.timeout
+    while time.time() < deadline:
+        if result_file.exists():
+            try:
+                r = json.loads(result_file.read_text(encoding="utf-8"))
+                if r.get("ok"):
+                    elapsed = time.time() - started
+                    print(f"recompile {r['data']['result']} in {elapsed:.1f}s")
+                    return
+                raise SystemExit(f"error: {r.get('error')}")
+            except json.JSONDecodeError:
+                time.sleep(0.1)
+                continue
+        time.sleep(0.2)
+    raise SystemExit(f"no result after {args.timeout}s — editor may have hung")
+
+
+if __name__ == "__main__":
+    main()

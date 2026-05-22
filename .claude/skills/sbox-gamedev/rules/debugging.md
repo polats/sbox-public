@@ -1,5 +1,27 @@
 # Debugging the s&box Editor
 
+## When to relaunch vs. when to recompile (don't burn cycles)
+
+Editor cold-start is **30-45s**. In-editor recompile via
+`sbox-recompile` is **~0.2s**. Use the right tool for what you changed.
+
+| What you changed | Right tool | Why |
+|---|---|---|
+| Existing `.cs` file's contents | `sbox-recompile` | Forces `Sandbox.Project.CompileAsync()`; editor stays warm. |
+| Existing `.razor` / `.razor.scss` content | `sbox-recompile` | Same. |
+| **Added** a new `.cs` / `.razor` / `.scene` file | `sbox-launch --kill && sbox-launch <p> --wait-ready` | Wine's file watcher misses creates. |
+| Renamed / deleted a source file | `sbox-launch --kill …` | Same. |
+| Changed `*.csproj` references / project structure | `sbox-launch --kill …` | Project system re-reads on launch only. |
+| First-time `Editor/SkillTrigger.cs` install | `sbox-launch --kill …` | Editor needs to compile the new editor-side assembly. |
+| Just want to query state (`sbox-scene`, `sbox-eval`) | nothing — neither | Editor stays as it is. |
+| Triggering existing functionality (`sbox-screenshot`, `sbox-do`) | nothing | Triggers are real-time. |
+
+If `sbox-recompile` "succeeds" but your change didn't take effect, fall
+back to `sbox-launch --kill …` — Wine probably didn't see the edit. This
+is rare but worth the manual escalation when it happens.
+
+
+
 The editor runs through Proton; standard Linux debugging tools see the host
 process but not Wine internals. The most useful information lives in two logs.
 

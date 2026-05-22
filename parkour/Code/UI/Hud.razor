@@ -1,0 +1,51 @@
+@namespace Local.Parkour
+@using System
+@using System.Linq
+@using Sandbox
+@using Sandbox.UI
+@inherits PanelComponent
+
+<root>
+	@if ( P is null )
+	{
+		<div class="loading">Loading...</div>
+	}
+	else
+	{
+		<div class="topleft">
+			<div class="timer">
+				<div class="icon">timer</div>
+				<div class="num">@FormatTime(P.CourseTime)</div>
+			</div>
+		</div>
+
+		@if ( P.ReachedGoal )
+		{
+			<div class="center win">
+				<div class="title">Reached the goal!</div>
+				<div class="subtitle">@FormatTime(P.CourseTime)</div>
+			</div>
+		}
+
+		<div class="bottom">
+			<div class="hint">WASD to move · Space to jump · Mouse to aim</div>
+		</div>
+	}
+</root>
+
+@code
+{
+	public Player P => Game.ActiveScene?.GetAllComponents<Player>().FirstOrDefault();
+
+	private string FormatTime( float t )
+	{
+		var m = (int)(t / 60f);
+		var s = t - m * 60f;
+		return $"{m:00}:{s:00.00}";
+	}
+
+	protected override int BuildHash() => HashCode.Combine(
+		(int)((P?.CourseTime ?? 0f) * 100f),
+		P?.ReachedGoal,
+		P?.Message );
+}
