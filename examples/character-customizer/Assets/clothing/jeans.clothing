@@ -1,0 +1,21 @@
+{
+  "HasHumanSkin": false,
+  "Title": "Jeans",
+  "Subtitle": "Classic blues",
+  "Category": "Jeans",
+  "ConditionalModels": {},
+  "Tags": "pants",
+  "Model": "models/citizen_clothes/trousers/jeans/models/jeans.vmdl",
+  "HumanAltModel": null,
+  "HumanAltFemaleModel": null,
+  "SkinMaterial": null,
+  "EyesMaterial": null,
+  "MaterialGroup": null,
+  "SlotsUnder": "Groin, LeftThigh, RightThigh, LeftKnee, RightKnee, LeftShin, RightShin",
+  "SlotsOver": 0,
+  "HideBody": "Legs",
+  "AllowTintSelect": false,
+  "TintDefault": 0.5,
+  "__references": [],
+  "__version": 0
+}

@@ -1,0 +1,21 @@
+{
+  "HasHumanSkin": false,
+  "Title": "Hoodie",
+  "Subtitle": "Cozy days",
+  "Category": "Hoodie",
+  "ConditionalModels": {},
+  "Tags": "jacket",
+  "Model": "models/citizen_clothes/jacket/hoodie/models/hoodie.vmdl",
+  "HumanAltModel": null,
+  "HumanAltFemaleModel": null,
+  "SkinMaterial": null,
+  "EyesMaterial": null,
+  "MaterialGroup": null,
+  "SlotsUnder": "Chest",
+  "SlotsOver": "LeftArm, RightArm",
+  "HideBody": "Chest",
+  "AllowTintSelect": false,
+  "TintDefault": 0.5,
+  "__references": [],
+  "__version": 0
+}

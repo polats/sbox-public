@@ -78,6 +78,32 @@ if [[ -z "$SBPROJ" ]]; then
 fi
 echo "project: $SBPROJ"
 
+# Auto-install Editor/SkillTrigger.cs if missing. Without it, every
+# sbox-eval / sbox-scene / sbox-screenshot / sbox-recompile call hangs
+# silently because the editor has no extension polling the trigger
+# files. This is the most common newbie failure mode for a fresh project.
+if [[ ! -f "$PROJECT/Editor/SkillTrigger.cs" ]]; then
+  TEMPLATE_TRIGGER="$SCRIPT_DIR/../templates/Editor/SkillTrigger.cs"
+  TEMPLATE_CSPROJ="$SCRIPT_DIR/../templates/Editor/PROJECT.editor.csproj"
+  if [[ -f "$TEMPLATE_TRIGGER" ]]; then
+    PROJECT_NAME="$(basename "$PROJECT")"
+    # snake_case ident for csproj filename + assembly name; PascalCase for the namespace
+    IDENT_SNAKE="$(echo "$PROJECT_NAME" | tr '-' '_')"
+    NS_PASCAL="$(echo "$PROJECT_NAME" | awk -F- '{for(i=1;i<=NF;i++) printf "%s", toupper(substr($i,1,1)) substr($i,2)}')"
+    mkdir -p "$PROJECT/Editor"
+    sed "s|Local\\.ModelProbe\\.EditorTools|Local.${NS_PASCAL}.EditorTools|g" \
+        "$TEMPLATE_TRIGGER" > "$PROJECT/Editor/SkillTrigger.cs"
+    # Only generate the editor csproj if there isn't one already (the agent may have written one)
+    if ! ls "$PROJECT"/Editor/*.editor.csproj &>/dev/null 2>&1; then
+      sed -e "s|model-probe|$PROJECT_NAME|g" \
+          -e "s|model_probe|$IDENT_SNAKE|g" \
+          -e "s|MODEL_PROBE|${NS_PASCAL^^}|g" \
+          "$TEMPLATE_CSPROJ" > "$PROJECT/Editor/${IDENT_SNAKE}.editor.csproj"
+    fi
+    echo "auto-installed Editor/SkillTrigger.cs (project was missing it)"
+  fi
+fi
+
 if [[ ! -x "$EDITOR_EXE" && ! -f "$EDITOR_EXE" ]]; then
   echo "error: editor binary missing at $EDITOR_EXE" >&2
   echo "       run sbox-doctor to verify the install" >&2

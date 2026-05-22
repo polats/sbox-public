@@ -1,0 +1,21 @@
+{
+  "HasHumanSkin": false,
+  "Title": "Trackie Bottoms",
+  "Subtitle": "Sporty",
+  "Category": "Trousers",
+  "ConditionalModels": {},
+  "Tags": "pants",
+  "Model": "models/citizen_clothes/trousers/trackiebottoms/models/trackie_bottoms.vmdl",
+  "HumanAltModel": null,
+  "HumanAltFemaleModel": null,
+  "SkinMaterial": null,
+  "EyesMaterial": null,
+  "MaterialGroup": null,
+  "SlotsUnder": "Groin, LeftThigh, RightThigh, LeftKnee, RightKnee, LeftShin, RightShin",
+  "SlotsOver": 0,
+  "HideBody": "Legs",
+  "AllowTintSelect": false,
+  "TintDefault": 0.5,
+  "__references": [],
+  "__version": 0
+}

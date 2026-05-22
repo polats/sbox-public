@@ -1,0 +1,80 @@
+@namespace Local.CharacterCustomizer
+@using System
+@using System.Linq
+@using Sandbox
+@using Sandbox.UI
+@inherits PanelComponent
+
+<root>
+	@if ( Mgr is null )
+	{
+		<div class="loading">Loading customizer…</div>
+	}
+	else
+	{
+		<div class="topbar">
+			<div class="title">Outfit: <span class="name">@Mgr.CurrentOutfitName</span></div>
+			<div class="hint">1-5 presets · click slot cards to cycle</div>
+		</div>
+
+		<div class="slots">
+			@foreach ( var slot in Mgr.SlotOrder )
+			{
+				var localSlot = slot;
+				var idx = Mgr.SlotIndex[localSlot];
+				var list = Mgr.BySlot[localSlot];
+				var title = idx < 0 ? "(none)" : (list[idx].Title ?? "—");
+				<div class="slot">
+					<div class="slot-name">@CapName(localSlot)</div>
+					<div class="slot-value">@title</div>
+					<div class="slot-buttons">
+						<button class="btn" onclick=@(() => Mgr.CycleSlot(localSlot, -1))>◀</button>
+						<button class="btn" onclick=@(() => Mgr.SetSlot(localSlot, -1))>✕</button>
+						<button class="btn" onclick=@(() => Mgr.CycleSlot(localSlot, 1))>▶</button>
+					</div>
+				</div>
+			}
+		</div>
+
+		<div class="bottom">
+			<div class="presets">
+				@for ( int i = 0; i < 5; i++ )
+				{
+					var pi = i;
+					var name = PresetName( pi );
+					var active = name == Mgr.CurrentOutfitName ? "active" : "";
+					<button class="preset @active" onclick=@(() => Mgr.ApplyPreset(pi))>
+						<span class="key">@(pi + 1)</span>
+						<span class="label">@name</span>
+					</button>
+				}
+			</div>
+			<div class="toggles">
+				<button class="toggle @(Mgr.HideHead ? "on" : "")" onclick=@(() => Mgr.ToggleHideHead())>Hide Head</button>
+				<button class="toggle @(Mgr.HideChest ? "on" : "")" onclick=@(() => Mgr.ToggleHideChest())>Hide Chest</button>
+			</div>
+		</div>
+	}
+</root>
+
+@code
+{
+	public CustomizerManager Mgr => Game.ActiveScene?.GetAllComponents<CustomizerManager>().FirstOrDefault();
+
+	private static string CapName( string s ) => string.IsNullOrEmpty( s ) ? s : char.ToUpper( s[0] ) + s.Substring( 1 );
+
+	private static string PresetName( int i ) => i switch
+	{
+		0 => "Default",
+		1 => "Casual",
+		2 => "Formal",
+		3 => "Athletic",
+		4 => "Random",
+		_ => "?"
+	};
+
+	protected override int BuildHash() => HashCode.Combine(
+		Mgr?.CurrentOutfitName,
+		Mgr?.HideHead, Mgr?.HideChest,
+		Mgr is null ? 0 : string.Join( ",", Mgr.SlotOrder.Select( s => Mgr.SlotIndex[s] ) ).GetHashCode() );
+}
