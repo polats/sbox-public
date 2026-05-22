@@ -1,0 +1,46 @@
+@namespace Local.TagAi
+@using System
+@using System.Linq
+@using Sandbox
+@using Sandbox.UI
+@inherits PanelComponent
+
+<root>
+	@if ( GM is null )
+	{
+		<div class="loading">Loading…</div>
+	}
+	else
+	{
+		<div class="topbar">
+			<div class="title">Tag with AI</div>
+			<div class="hint">WASD to move · Shift to sprint · Tag every citizen to win</div>
+		</div>
+
+		<div class="status @StatusClass">
+			@if ( GM.Won )
+			{
+				<div class="win">You Win!</div>
+				<div class="sub">All @GM.Total citizens frozen.</div>
+			}
+			else
+			{
+				<div class="counter">Frozen: <span class="num">@GM.Frozen</span> / @GM.Total</div>
+				<div class="sub">@GM.Status</div>
+			}
+		</div>
+	}
+</root>
+
+@code
+{
+	public GameManager GM => Game.ActiveScene?.GetAllComponents<GameManager>().FirstOrDefault();
+
+	private string StatusClass => GM?.Won == true ? "won" : "";
+
+	protected override int BuildHash() => HashCode.Combine(
+		GM?.Frozen,
+		GM?.Total,
+		GM?.Won,
+		GM?.Status );
+}
