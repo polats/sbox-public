@@ -1,0 +1,372 @@
+{
+  "__guid": "c1c1c1c1-0000-0000-0000-000000000001",
+  "GameObjects": [
+    {
+      "__guid": "c1c1c1c1-0000-0000-0000-000000001001",
+      "__version": 2, "Flags": 0,
+      "Name": "Camera",
+      "Position": "-260,-340,90",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "", "Enabled": true,
+      "NetworkMode": 2, "NetworkFlags": 0, "NetworkOrphaned": 0,
+      "NetworkTransmit": true, "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.CameraComponent",
+          "__guid": "c1c1c1c1-0000-0000-0000-00000000c001",
+          "__enabled": true, "Flags": 0,
+          "BackgroundColor": "0.03,0.04,0.06,1",
+          "ClearFlags": "All",
+          "FieldOfView": 70, "FovAxis": "Horizontal",
+          "IsMainCamera": true,
+          "Orthographic": false, "OrthographicHeight": 1200,
+          "Priority": 1,
+          "RenderExcludeTags": "", "RenderTags": "",
+          "TargetEye": "None", "Viewport": "0,0,1,1",
+          "ZFar": 10000, "ZNear": 1,
+          "OnComponentDestroy": null, "OnComponentDisabled": null,
+          "OnComponentEnabled": null, "OnComponentFixedUpdate": null,
+          "OnComponentStart": null, "OnComponentUpdate": null
+        },
+        {
+          "__type": "Sandbox.MovieMaker.MoviePlayer",
+          "__guid": "c1c1c1c1-0000-0000-0000-00000000c002",
+          "__enabled": true, "Flags": 0,
+          "IsLooping": false,
+          "IsPlaying": false,
+          "PositionSeconds": 0,
+          "CreateTargets": false,
+          "TimeScale": 1,
+          "OnComponentDestroy": null, "OnComponentDisabled": null,
+          "OnComponentEnabled": null, "OnComponentFixedUpdate": null,
+          "OnComponentStart": null, "OnComponentUpdate": null
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "c1c1c1c1-0000-0000-0000-000000001002",
+      "__version": 2, "Flags": 0,
+      "Name": "Sun",
+      "Position": "0,0,500",
+      "Rotation": "0,0.2588,0,0.9659",
+      "Scale": "1,1,1",
+      "Tags": "", "Enabled": true,
+      "NetworkMode": 2, "NetworkFlags": 0, "NetworkOrphaned": 0,
+      "NetworkTransmit": true, "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.DirectionalLight",
+          "__guid": "c1c1c1c1-0000-0000-0000-00000000c003",
+          "__enabled": true, "Flags": 0,
+          "FogMode": "Enabled", "FogStrength": 1,
+          "LightColor": "1,0.9,0.7,1", "SkyColor": "0.06,0.06,0.10,1",
+          "ShadowBias": 0.0005, "ShadowCascadeCount": 4,
+          "ShadowCascadeSplitRatio": 0.91, "ShadowHardness": 0,
+          "Shadows": true,
+          "Visualizer": {},
+          "OnComponentDestroy": null, "OnComponentDisabled": null,
+          "OnComponentEnabled": null, "OnComponentFixedUpdate": null,
+          "OnComponentStart": null, "OnComponentUpdate": null
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "c1c1c1c1-0000-0000-0000-000000001010",
+      "__version": 2, "Flags": 0,
+      "Name": "Stage",
+      "Position": "0,0,0",
+      "Rotation": "0,0,0,1",
+      "Scale": "20,8,0.4",
+      "Tags": "", "Enabled": true,
+      "NetworkMode": 2, "NetworkFlags": 0, "NetworkOrphaned": 0,
+      "NetworkTransmit": true, "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.ModelRenderer",
+          "__guid": "c1c1c1c1-0000-0000-0000-00000000c010",
+          "__enabled": true, "Flags": 0,
+          "BodyGroups": 18446744073709551615,
+          "CreateAttachments": false,
+          "LodOverride": null, "MaterialGroup": null,
+          "MaterialOverride": null, "Materials": null,
+          "Model": "models/dev/box.vmdl",
+          "RenderOptions": {"GameLayer": true, "OverlayLayer": false, "BloomLayer": false, "AfterUILayer": false},
+          "RenderType": "On",
+          "Tint": "0.15,0.13,0.10,1",
+          "OnComponentDestroy": null, "OnComponentDisabled": null,
+          "OnComponentEnabled": null, "OnComponentFixedUpdate": null,
+          "OnComponentStart": null, "OnComponentUpdate": null
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "c1c1c1c1-0000-0000-0000-000000001020",
+      "__version": 2, "Flags": 0,
+      "Name": "Citizen",
+      "Position": "-200,0,25",
+      "Rotation": "0,0,0.7071,0.7071",
+      "Scale": "1,1,1",
+      "Tags": "", "Enabled": true,
+      "NetworkMode": 2, "NetworkFlags": 0, "NetworkOrphaned": 0,
+      "NetworkTransmit": true, "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.SkinnedModelRenderer",
+          "__guid": "c1c1c1c1-0000-0000-0000-00000000c020",
+          "__enabled": true, "Flags": 0,
+          "BodyGroups": 18446744073709551615,
+          "CreateAttachments": false,
+          "LodOverride": null, "MaterialGroup": null,
+          "MaterialOverride": null, "Materials": null,
+          "Model": "models/citizen_human/citizen_human_male.vmdl",
+          "RenderOptions": {"GameLayer": true, "OverlayLayer": false, "BloomLayer": false, "AfterUILayer": false},
+          "RenderType": "On",
+          "Tint": "1,1,1,1",
+          "OnComponentDestroy": null, "OnComponentDisabled": null,
+          "OnComponentEnabled": null, "OnComponentFixedUpdate": null,
+          "OnComponentStart": null, "OnComponentUpdate": null
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "c1c1c1c1-0000-0000-0000-000000001021",
+      "__version": 2, "Flags": 0,
+      "Name": "Barrel",
+      "Position": "0,0,25",
+      "Rotation": "0,0,0,1",
+      "Scale": "1.4,1.4,1.4",
+      "Tags": "", "Enabled": true,
+      "NetworkMode": 2, "NetworkFlags": 0, "NetworkOrphaned": 0,
+      "NetworkTransmit": true, "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.ModelRenderer",
+          "__guid": "c1c1c1c1-0000-0000-0000-00000000c021",
+          "__enabled": true, "Flags": 0,
+          "BodyGroups": 18446744073709551615,
+          "CreateAttachments": false,
+          "LodOverride": null, "MaterialGroup": null,
+          "MaterialOverride": null, "Materials": null,
+          "Model": "models/citizen_props/trashcan01.vmdl",
+          "RenderOptions": {"GameLayer": true, "OverlayLayer": false, "BloomLayer": false, "AfterUILayer": false},
+          "RenderType": "On",
+          "Tint": "0.85,0.55,0.30,1",
+          "OnComponentDestroy": null, "OnComponentDisabled": null,
+          "OnComponentEnabled": null, "OnComponentFixedUpdate": null,
+          "OnComponentStart": null, "OnComponentUpdate": null
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "c1c1c1c1-0000-0000-0000-000000001022",
+      "__version": 2, "Flags": 0,
+      "Name": "Sign",
+      "Position": "200,0,25",
+      "Rotation": "0,0,0,1",
+      "Scale": "2,2,2",
+      "Tags": "", "Enabled": true,
+      "NetworkMode": 2, "NetworkFlags": 0, "NetworkOrphaned": 0,
+      "NetworkTransmit": true, "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.ModelRenderer",
+          "__guid": "c1c1c1c1-0000-0000-0000-00000000c022",
+          "__enabled": true, "Flags": 0,
+          "BodyGroups": 18446744073709551615,
+          "CreateAttachments": false,
+          "LodOverride": null, "MaterialGroup": null,
+          "MaterialOverride": null, "Materials": null,
+          "Model": "models/citizen_props/roadcone01.vmdl",
+          "RenderOptions": {"GameLayer": true, "OverlayLayer": false, "BloomLayer": false, "AfterUILayer": false},
+          "RenderType": "On",
+          "Tint": "1,0.5,0.1,1",
+          "OnComponentDestroy": null, "OnComponentDisabled": null,
+          "OnComponentEnabled": null, "OnComponentFixedUpdate": null,
+          "OnComponentStart": null, "OnComponentUpdate": null
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "c1c1c1c1-0000-0000-0000-000000001030",
+      "__version": 2, "Flags": 0,
+      "Name": "Spot_Citizen",
+      "Position": "-200,-40,260",
+      "Rotation": "0,0.7071,0,0.7071",
+      "Scale": "1,1,1",
+      "Tags": "", "Enabled": true,
+      "NetworkMode": 2, "NetworkFlags": 0, "NetworkOrphaned": 0,
+      "NetworkTransmit": true, "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.SpotLight",
+          "__guid": "c1c1c1c1-0000-0000-0000-00000000c030",
+          "__enabled": true, "Flags": 0,
+          "LightColor": "1,0.85,0.6,1",
+          "Radius": 800,
+          "ConeInner": 25, "ConeOuter": 45,
+          "Attenuation": 1,
+          "Shadows": false,
+          "OnComponentDestroy": null, "OnComponentDisabled": null,
+          "OnComponentEnabled": null, "OnComponentFixedUpdate": null,
+          "OnComponentStart": null, "OnComponentUpdate": null
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "c1c1c1c1-0000-0000-0000-000000001031",
+      "__version": 2, "Flags": 0,
+      "Name": "Spot_Barrel",
+      "Position": "0,-40,260",
+      "Rotation": "0,0.7071,0,0.7071",
+      "Scale": "1,1,1",
+      "Tags": "", "Enabled": true,
+      "NetworkMode": 2, "NetworkFlags": 0, "NetworkOrphaned": 0,
+      "NetworkTransmit": true, "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.SpotLight",
+          "__guid": "c1c1c1c1-0000-0000-0000-00000000c031",
+          "__enabled": true, "Flags": 0,
+          "LightColor": "1,0.6,0.3,1",
+          "Radius": 800,
+          "ConeInner": 25, "ConeOuter": 45,
+          "Attenuation": 1,
+          "Shadows": false,
+          "OnComponentDestroy": null, "OnComponentDisabled": null,
+          "OnComponentEnabled": null, "OnComponentFixedUpdate": null,
+          "OnComponentStart": null, "OnComponentUpdate": null
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "c1c1c1c1-0000-0000-0000-000000001032",
+      "__version": 2, "Flags": 0,
+      "Name": "Spot_Sign",
+      "Position": "200,-40,260",
+      "Rotation": "0,0.7071,0,0.7071",
+      "Scale": "1,1,1",
+      "Tags": "", "Enabled": true,
+      "NetworkMode": 2, "NetworkFlags": 0, "NetworkOrphaned": 0,
+      "NetworkTransmit": true, "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.SpotLight",
+          "__guid": "c1c1c1c1-0000-0000-0000-00000000c032",
+          "__enabled": true, "Flags": 0,
+          "LightColor": "0.7,0.85,1,1",
+          "Radius": 800,
+          "ConeInner": 25, "ConeOuter": 45,
+          "Attenuation": 1,
+          "Shadows": false,
+          "OnComponentDestroy": null, "OnComponentDisabled": null,
+          "OnComponentEnabled": null, "OnComponentFixedUpdate": null,
+          "OnComponentStart": null, "OnComponentUpdate": null
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "c1c1c1c1-0000-0000-0000-000000001040",
+      "__version": 2, "Flags": 0,
+      "Name": "GameManager",
+      "Position": "0,0,0",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "", "Enabled": true,
+      "NetworkMode": 2, "NetworkFlags": 0, "NetworkOrphaned": 0,
+      "NetworkTransmit": true, "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Local.CinematicIntro.IntroManager",
+          "__guid": "c1c1c1c1-0000-0000-0000-00000000c040",
+          "__enabled": true, "Flags": 0,
+          "AutoPlay": false,
+          "Duration": 12,
+          "CameraObject": {
+            "_type": "gameobject",
+            "go": "c1c1c1c1-0000-0000-0000-000000001001"
+          },
+          "Player": {
+            "_type": "component",
+            "component_id": "c1c1c1c1-0000-0000-0000-00000000c002",
+            "go": "c1c1c1c1-0000-0000-0000-000000001001",
+            "component_type": "MoviePlayer"
+          },
+          "OnComponentDestroy": null, "OnComponentDisabled": null,
+          "OnComponentEnabled": null, "OnComponentFixedUpdate": null,
+          "OnComponentStart": null, "OnComponentUpdate": null
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "c1c1c1c1-0000-0000-0000-000000001050",
+      "__version": 2, "Flags": 0,
+      "Name": "HUD",
+      "Position": "0,0,0",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "", "Enabled": true,
+      "NetworkMode": 2, "NetworkFlags": 0, "NetworkOrphaned": 0,
+      "NetworkTransmit": true, "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.ScreenPanel",
+          "__guid": "c1c1c1c1-0000-0000-0000-00000000c050",
+          "__enabled": true, "Flags": 0,
+          "AutoScreenScale": true,
+          "Opacity": 1, "Scale": 1,
+          "ScaleStrategy": "ConsistentHeight",
+          "TargetCamera": null, "ZIndex": 100,
+          "OnComponentDestroy": null, "OnComponentDisabled": null,
+          "OnComponentEnabled": null, "OnComponentFixedUpdate": null,
+          "OnComponentStart": null, "OnComponentUpdate": null
+        }
+      ],
+      "Children": [
+        {
+          "__guid": "c1c1c1c1-0000-0000-0000-000000001051",
+          "__version": 2, "Flags": 0,
+          "Name": "IntroHud",
+          "Position": "0,0,0",
+          "Rotation": "0,0,0,1",
+          "Scale": "1,1,1",
+          "Tags": "", "Enabled": true,
+          "NetworkMode": 2, "NetworkFlags": 0, "NetworkOrphaned": 0,
+          "NetworkTransmit": true, "OwnerTransfer": 1,
+          "Components": [
+            {
+              "__type": "Local.CinematicIntro.IntroHud",
+              "__guid": "c1c1c1c1-0000-0000-0000-00000000c051",
+              "__enabled": true, "Flags": 0,
+              "OnComponentDestroy": null, "OnComponentDisabled": null,
+              "OnComponentEnabled": null, "OnComponentFixedUpdate": null,
+              "OnComponentStart": null, "OnComponentUpdate": null
+            }
+          ],
+          "Children": []
+        }
+      ]
+    }
+  ],
+  "SceneProperties": {
+    "NetworkInterpolation": true,
+    "TimeScale": 1,
+    "WantsSystemScene": false,
+    "Metadata": {}
+  },
+  "ResourceVersion": 3,
+  "Title": "Main",
+  "Description": null,
+  "__references": [],
+  "__version": 3
+}

@@ -1,0 +1,31 @@
+@namespace Local.CinematicIntro
+@using System
+@using System.Collections.Generic
+@using System.Linq
+@using Sandbox
+@using Sandbox.UI
+@inherits PanelComponent
+
+<root>
+	<div class="title">@Loc.T("intro.title")</div>
+
+	<div class="buttons">
+		<div class="btn primary">@Loc.T("intro.start")</div>
+		<div class="btn">@Loc.T("intro.settings")</div>
+		<div class="btn">@Loc.T("intro.quit")</div>
+	</div>
+
+	<div class="lang-chip @(IsEs ? "es" : "en")">
+		@LangShort
+	</div>
+
+	<div class="hint">[L] @Loc.T("intro.language", new Dictionary<string, object>{ ["Lang"] = Loc.T("intro.lang_name") })</div>
+</root>
+
+@code
+{
+	private string LangShort => Loc.Current == "es" ? "ES" : "EN";
+	private bool IsEs => Loc.Current == "es";
+
+	protected override int BuildHash() => HashCode.Combine( Loc.Current );
+}
