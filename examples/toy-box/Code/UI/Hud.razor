@@ -1,0 +1,39 @@
+@namespace Local.ToyBox
+@using System
+@using System.Linq
+@using Sandbox
+@using Sandbox.UI
+@inherits PanelComponent
+
+<root>
+	<div class="title">Sandbox Toy Box</div>
+
+	<div class="status">
+		@if ( P is not null )
+		{
+			<div class="line"><span class="label">Now:</span> @P.CurrentSegmentLabel</div>
+			<div class="line"><span class="label">In water:</span> @(P.InWater ? "yes" : "no")</div>
+		}
+	</div>
+
+	<div class="legend">
+		<div class="entry"><span class="dot dotpush"></span>TriggerPush — shoves bodies + CC's</div>
+		<div class="entry"><span class="dot dotmover"></span>FuncMover — sliding platform</div>
+		<div class="entry"><span class="dot dotwater"></span>WaterVolume — buoyancy &amp; slow-mo</div>
+		<div class="entry"><span class="dot dottp"></span>TriggerTeleport — red → blue pad</div>
+		<div class="entry"><span class="dot dotball"></span>BalloonEntity ×3 — drift up &amp; sway</div>
+		<div class="entry"><span class="dot dothover"></span>HoverballEntity — vel-controller hover</div>
+		<div class="entry"><span class="dot dotpiston"></span>HydraulicEntity — animated piston</div>
+		<div class="entry"><span class="dot dotthrust"></span>ThrusterEntity — pulses up on timer</div>
+	</div>
+</root>
+
+@code
+{
+	public Player P => Game.ActiveScene?.GetAllComponents<Player>().FirstOrDefault();
+
+	protected override int BuildHash() => HashCode.Combine(
+		P?.CurrentSegmentLabel,
+		P?.InWater,
+		(int)((P?.Elapsed ?? 0f) * 10f) );
+}
