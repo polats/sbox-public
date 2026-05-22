@@ -1,0 +1,35 @@
+@namespace Local.MaterialShowcase
+@using System
+@using System.Linq
+@using Sandbox
+@using Sandbox.UI
+@inherits PanelComponent
+
+<root>
+	<div class="topbar">
+		<div class="title">Material Showcase</div>
+		<div class="hint">hover a pedestal · press <span class="key">1</span> to toggle bloom</div>
+	</div>
+
+	@if ( GM?.HoverPedestal is { } p )
+	{
+		<div class="info">
+			<div class="name">@p.DisplayName</div>
+			<div class="approach">@p.ApproachLabel</div>
+			<div class="desc">@p.Description</div>
+		</div>
+	}
+
+	<div class="status">
+		Bloom: <span class="@(GM?.BloomEnabled == true ? "on" : "off")">@(GM?.BloomEnabled == true ? "ON" : "OFF")</span>
+	</div>
+</root>
+
+@code
+{
+	public GameManager GM => Game.ActiveScene?.GetAllComponents<GameManager>().FirstOrDefault();
+
+	protected override int BuildHash() => HashCode.Combine(
+		GM?.HoverPedestal?.DisplayName,
+		GM?.BloomEnabled );
+}
