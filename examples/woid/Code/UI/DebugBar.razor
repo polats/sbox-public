@@ -1,0 +1,55 @@
+@namespace Woid
+@using System
+@using System.Linq
+@using Sandbox
+@using Sandbox.UI
+@inherits PanelComponent
+
+<root>
+	<div class="bar">
+		<button class="btn @(IsPaused ? "active" : "")" onclick=@TogglePause>
+			@(IsPaused ? "▶ RESUME" : "⏸ PAUSE")
+		</button>
+		<button class="btn" onclick=@ToggleFly>
+			@(FlyEnabled ? "🎥 LOCKED VIEW" : "🎥 FLY CAM")
+		</button>
+		<div class="hint">Click chair / bed / mug to direct the nearest character.</div>
+	</div>
+</root>
+
+@code
+{
+	public bool IsPaused { get; private set; }
+	public bool FlyEnabled { get; private set; }
+
+	void TogglePause()
+	{
+		var client = Scene.GetAllComponents<WoidClient>().FirstOrDefault();
+		if ( client.IsValid() )
+		{
+			client.TogglePaused();
+			IsPaused = client.Paused;
+		}
+	}
+
+	void ToggleFly()
+	{
+		var fly = Scene.GetAllComponents<FlyCamera>().FirstOrDefault();
+		if ( fly.IsValid() )
+		{
+			fly.Enabled = !fly.Enabled;
+			FlyEnabled = fly.Enabled;
+		}
+	}
+
+	protected override void OnUpdate()
+	{
+		// Keep in sync if something else flips the values.
+		var client = Scene.GetAllComponents<WoidClient>().FirstOrDefault();
+		if ( client.IsValid() ) IsPaused = client.Paused;
+		var fly = Scene.GetAllComponents<FlyCamera>().FirstOrDefault();
+		if ( fly.IsValid() ) FlyEnabled = fly.Enabled;
+	}
+
+	protected override int BuildHash() => HashCode.Combine( IsPaused, FlyEnabled );
+}

@@ -34,6 +34,11 @@ public sealed class WoidClient : Component
 	public string LastStatusState { get; private set; } = "unknown";
 	public string LastError { get; private set; }
 
+	/// <summary>When true, no automatic ticks fire. Force-tick still works.</summary>
+	public bool Paused { get; set; }
+
+	public void TogglePaused() { Paused = !Paused; Log.Info( $"[WoidClient] paused = {Paused}" ); }
+
 	/// <summary>Force this character's next tick to fire immediately on the next OnUpdate.</summary>
 	public void RequestTick( string characterId )
 	{
@@ -62,6 +67,8 @@ public sealed class WoidClient : Component
 			if ( !_registered.Contains( c.CharacterId ) ) continue;
 			if ( _inFlight.Contains( c.CharacterId ) ) continue;
 			var next = _nextTickAt.GetValueOrDefault( c.CharacterId, 0f );
+			// next == 0 means a force-tick was requested explicitly; honor it even while paused.
+			if ( Paused && next > 0 ) continue;
 			if ( Time.Now < next ) continue;
 			_nextTickAt[c.CharacterId] = Time.Now + TickIntervalSec;
 			_ = TickOneAsync( c );

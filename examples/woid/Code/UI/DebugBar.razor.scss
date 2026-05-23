@@ -1,0 +1,47 @@
+DebugBar {
+	width: 100%;
+	height: 100%;
+	pointer-events: none;
+	font-family: "Segoe UI", "Roboto", sans-serif;
+	color: white;
+
+	.bar {
+		position: absolute;
+		top: 36px;
+		left: 50%;
+		transform: translateX(-50%);
+		flex-direction: row;
+		align-items: center;
+		gap: 12px;
+		background-color: rgba(8, 12, 20, 0.85);
+		border: 2px solid rgba(120, 170, 230, 0.40);
+		border-radius: 14px;
+		padding: 10px 14px;
+		pointer-events: auto;
+	}
+
+	.btn {
+		font-size: 18px;
+		font-weight: 700;
+		letter-spacing: 1px;
+		color: #cfe8ff;
+		background-color: rgba(132, 212, 255, 0.18);
+		border: 1px solid rgba(132, 212, 255, 0.50);
+		border-radius: 8px;
+		padding: 10px 16px;
+		cursor: pointer;
+	}
+	.btn:hover { background-color: rgba(132, 212, 255, 0.34); }
+	.btn.active {
+		color: #ffd279;
+		background-color: rgba(255, 210, 121, 0.18);
+		border-color: rgba(255, 210, 121, 0.55);
+	}
+
+	.hint {
+		font-size: 14px;
+		color: #a8b3c4;
+		font-style: italic;
+		margin-left: 8px;
+	}
+}

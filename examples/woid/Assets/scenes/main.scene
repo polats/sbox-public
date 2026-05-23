@@ -35,6 +35,14 @@
           "Viewport": "0,0,1,1",
           "ZFar": 10000,
           "ZNear": 1
+        },
+        {
+          "__type": "Woid.FlyCamera",
+          "__guid": "20000000-0000-0000-0000-00000000c00b",
+          "__enabled": false,
+          "MoveSpeed": 300,
+          "SprintMultiplier": 3,
+          "MouseSensitivity": 0.15
         }
       ],
       "Children": []
@@ -162,6 +170,17 @@
           "__type": "Woid.NavMeshBaker",
           "__guid": "20000000-0000-0000-0000-000000000205",
           "__enabled": true
+        },
+        {
+          "__type": "Woid.ClickInteract",
+          "__guid": "20000000-0000-0000-0000-000000000206",
+          "__enabled": true,
+          "Characters": {
+            "_type": "component",
+            "component_id": "20000000-0000-0000-0000-000000000201",
+            "go": "10000000-0000-0000-0000-000000000200",
+            "component_type": "CharacterRegistry"
+          }
         },
         {
           "__type": "Woid.WoidClient",
@@ -394,6 +413,11 @@
           "BaseUrl": "http://127.0.0.1:8080",
           "PollSec": 1.5,
           "Anchor": "right"
+        },
+        {
+          "__type": "Woid.DebugBar",
+          "__guid": "20000000-0000-0000-0000-000000000505",
+          "__enabled": true
         }
       ],
       "Children": []
