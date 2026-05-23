@@ -18,7 +18,18 @@ public sealed class ClickInteract : Component
 	protected override void OnUpdate()
 	{
 		if ( !Input.Pressed( "Attack1" ) ) return; // left mouse
+		if ( IsMouseOverUi() ) return; // UI takes precedence
 		HandleClick();
+	}
+
+	bool IsMouseOverUi()
+	{
+		// If any PanelComponent's root panel is hovered, the click belongs to UI.
+		foreach ( var pc in Scene.GetAllComponents<PanelComponent>() )
+		{
+			if ( pc.Panel?.HasHovered == true ) return true;
+		}
+		return false;
 	}
 
 	void HandleClick()
