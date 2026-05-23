@@ -58,7 +58,7 @@ public sealed class Chair : Component
 		}
 
 		Occupant = c.CharacterId;
-		c.SetSitting( true );
+		c.SetSitting( true, this );
 		return true;
 	}
 
@@ -89,6 +89,6 @@ public sealed class Chair : Component
 		}
 
 		Occupant = null;
-		c.SetSitting( false );
+		c.SetSitting( false, null );
 	}
 }

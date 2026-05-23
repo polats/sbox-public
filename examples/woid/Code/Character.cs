@@ -43,6 +43,7 @@ public sealed class Character : Component
 	NavMeshAgent _agent;
 	CitizenAnimationHelper _anim;
 	bool _sitting;
+	Chair _currentChair;
 	GameObject _lookTarget;
 	float _lookExpiresAt;
 	Chair _pendingSitChair;
@@ -97,12 +98,40 @@ public sealed class Character : Component
 		}
 	}
 
-	/// <summary>Tell the NavMeshAgent to walk here. No-op if sitting or no agent.</summary>
+	/// <summary>Walk to worldPos via NavMeshAgent. Auto-stands if currently sat.</summary>
 	public void WalkTo( Vector3 worldPos )
 	{
-		if ( _sitting ) return;
-		if ( !_agent.IsValid() ) { GameObject.WorldPosition = worldPos; return; }
-		_agent.MoveTo( worldPos );
+		// Auto-stand: any walk implicitly cancels a sit. Without this the
+		// character is stuck on the chair until the LLM picks "stand_up".
+		// Find the chair via _currentChair if we have it, else walk up the
+		// parent chain for any Chair component (handles stale state).
+		if ( _sitting )
+		{
+			var chair = _currentChair.IsValid()
+				? _currentChair
+				: GameObject.Parent?.Components?.Get<Chair>( includeDisabled: true );
+			if ( chair.IsValid() ) chair.Stand( this );
+			else
+			{
+				// Defensive: no chair to ask, just unparent + clear flags.
+				GameObject.SetParent( null, true );
+				_sitting = false;
+				_currentChair = null;
+				if ( Model.IsValid() ) { Model.Set( "sit", 0 ); Model.Set( "b_sit", false ); }
+				if ( _agent.IsValid() ) { _agent.UpdatePosition = true; _agent.UpdateRotation = true; }
+			}
+		}
+
+		if ( !_agent.IsValid() )
+		{
+			Log.Warning( $"[Character {CharacterId}] no NavMeshAgent component — character won't move" );
+			return;
+		}
+		// Snap the target to the navmesh so we never silently fail when the
+		// LLM picks an off-mesh point (e.g. through a chair's center).
+		var nm = Scene.NavMesh;
+		var snapped = nm?.GetClosestPoint( worldPos, 200f ) ?? worldPos;
+		_agent.MoveTo( snapped );
 	}
 
 	/// <summary>
@@ -167,6 +196,10 @@ public sealed class Character : Component
 	}
 
 	/// <summary>Set by Chair.Sit/Stand so other systems (animation, walk) honor sit state.</summary>
-	public void SetSitting( bool sitting ) => _sitting = sitting;
+	public void SetSitting( bool sitting, Chair chair = null )
+	{
+		_sitting = sitting;
+		_currentChair = sitting ? chair : null;
+	}
 	public bool IsSitting => _sitting;
 }
