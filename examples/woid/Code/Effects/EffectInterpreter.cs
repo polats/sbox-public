@@ -29,6 +29,8 @@ public sealed class EffectInterpreter : Component
 			case AdvanceSim a:     Apply( a );  break;
 			case SpeechBubble sb:  Apply( sb ); break;
 			case Perceive p:       Apply( p );  break;
+			case SitOnChair soc:   Apply( soc ); break;
+			case StandUp su:       Apply( su ); break;
 			default:
 				Log.Info( $"[EffectInterpreter] unhandled effect type: {e?.GetType().Name}" );
 				break;
@@ -88,5 +90,26 @@ public sealed class EffectInterpreter : Component
 		// going BACK to woid via /perception/event. WoidClient handles them.
 		// Logging only here.
 		Log.Info( $"[perceive] target={e.Target} event={e.Event}" );
+	}
+
+	void Apply( SitOnChair e )
+	{
+		var c = Characters?.Get( e.Actor );
+		if ( c == null ) { Log.Warning( $"[sit_on_chair] unknown actor: {e.Actor}" ); return; }
+		var obj = Objects?.Get( e.ObjectId );
+		if ( obj == null ) { Log.Warning( $"[sit_on_chair] unknown object: {e.ObjectId}" ); return; }
+		var chair = obj.Components.Get<Chair>();
+		if ( chair == null ) { Log.Warning( $"[sit_on_chair] object {e.ObjectId} has no Chair component" ); return; }
+		c.WalkToAndSit( chair );
+	}
+
+	void Apply( StandUp e )
+	{
+		var c = Characters?.Get( e.Actor );
+		if ( c == null ) { Log.Warning( $"[stand_up] unknown actor: {e.Actor}" ); return; }
+		var obj = Objects?.Get( e.ObjectId );
+		var chair = obj?.Components.Get<Chair>();
+		if ( chair != null ) chair.Stand( c );
+		else Log.Warning( $"[stand_up] no chair for object {e.ObjectId}" );
 	}
 }

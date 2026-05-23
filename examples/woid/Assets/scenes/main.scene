@@ -150,6 +150,11 @@
           }
         },
         {
+          "__type": "Woid.NavMeshBaker",
+          "__guid": "20000000-0000-0000-0000-000000000205",
+          "__enabled": true
+        },
+        {
           "__type": "Woid.WoidClient",
           "__guid": "20000000-0000-0000-0000-000000000204",
           "__enabled": true,
@@ -209,6 +214,31 @@
           "Tint": "1,1,1,1"
         },
         {
+          "__type": "Sandbox.NavMeshAgent",
+          "__guid": "20000000-0000-0000-0000-000000000303",
+          "__enabled": true,
+          "MaxSpeed": 110,
+          "Radius": 16,
+          "Height": 64,
+          "Acceleration": 600,
+          "Separation": 0.5,
+          "UpdatePosition": true,
+          "UpdateRotation": true,
+          "AllowDefaultArea": true,
+          "AutoTraverseLinks": true
+        },
+        {
+          "__type": "Sandbox.Citizen.CitizenAnimationHelper",
+          "__guid": "20000000-0000-0000-0000-000000000304",
+          "__enabled": true,
+          "Target": {
+            "_type": "component",
+            "component_id": "20000000-0000-0000-0000-000000000301",
+            "go": "10000000-0000-0000-0000-000000000300",
+            "component_type": "SkinnedModelRenderer"
+          }
+        },
+        {
           "__type": "Woid.Character",
           "__guid": "20000000-0000-0000-0000-000000000302",
           "__enabled": true,
@@ -260,6 +290,31 @@
           },
           "RenderType": "On",
           "Tint": "1,1,1,1"
+        },
+        {
+          "__type": "Sandbox.NavMeshAgent",
+          "__guid": "20000000-0000-0000-0000-000000000603",
+          "__enabled": true,
+          "MaxSpeed": 110,
+          "Radius": 16,
+          "Height": 64,
+          "Acceleration": 600,
+          "Separation": 0.5,
+          "UpdatePosition": true,
+          "UpdateRotation": true,
+          "AllowDefaultArea": true,
+          "AutoTraverseLinks": true
+        },
+        {
+          "__type": "Sandbox.Citizen.CitizenAnimationHelper",
+          "__guid": "20000000-0000-0000-0000-000000000604",
+          "__enabled": true,
+          "Target": {
+            "_type": "component",
+            "component_id": "20000000-0000-0000-0000-000000000601",
+            "go": "10000000-0000-0000-0000-000000000600",
+            "component_type": "SkinnedModelRenderer"
+          }
         },
         {
           "__type": "Woid.Character",
@@ -341,7 +396,7 @@
       "Name": "Chair",
       "Position": "250,0,0",
       "Rotation": "0,0,0,1",
-      "Scale": "0.4,0.4,0.4",
+      "Scale": "0.6,0.6,0.6",
       "Tags": "",
       "Enabled": true,
       "NetworkMode": 2,
@@ -371,16 +426,70 @@
           "__enabled": true,
           "ObjectId": "chair_1",
           "Type": "chair"
+        },
+        {
+          "__type": "Woid.Chair",
+          "__guid": "20000000-0000-0000-0000-000000000403",
+          "__enabled": true,
+          "SitPose": 1,
+          "SitHeight": 0,
+          "SeatPosition": {
+            "_type": "gameobject",
+            "go": "10000000-0000-0000-0000-000000000410"
+          },
+          "ExitPosition": {
+            "_type": "gameobject",
+            "go": "10000000-0000-0000-0000-000000000411"
+          }
         }
       ],
-      "Children": []
+      "Children": [
+        {
+          "__guid": "10000000-0000-0000-0000-000000000410",
+          "__version": 2,
+          "Flags": 0,
+          "Name": "SeatPosition",
+          "Position": "0,0,28",
+          "Rotation": "0,0,0,1",
+          "Scale": "1,1,1",
+          "Enabled": true,
+          "Components": [],
+          "Children": []
+        },
+        {
+          "__guid": "10000000-0000-0000-0000-000000000411",
+          "__version": 2,
+          "Flags": 0,
+          "Name": "ExitPosition",
+          "Position": "0,-60,0",
+          "Rotation": "0,0,0,1",
+          "Scale": "1,1,1",
+          "Enabled": true,
+          "Components": [],
+          "Children": []
+        }
+      ]
     }
   ],
   "SceneProperties": {
     "NetworkInterpolation": true,
     "TimeScale": 1,
     "WantsSystemScene": false,
-    "Metadata": {}
+    "Metadata": {},
+    "NavMesh": {
+      "Enabled": true,
+      "IncludeStaticBodies": true,
+      "IncludeKeyframedBodies": true,
+      "EditorAutoUpdate": false,
+      "AgentHeight": 64,
+      "AgentRadius": 16,
+      "AgentStepSize": 18,
+      "AgentMaxSlope": 40,
+      "ExcludedBodies": "",
+      "IncludedBodies": "",
+      "DeferGeneration": false,
+      "CustomBounds": false
+    }
   },
   "ResourceVersion": 3,
   "Title": "Woid",

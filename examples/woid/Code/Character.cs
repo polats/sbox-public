@@ -1,16 +1,18 @@
 using System;
 using System.Collections.Generic;
 using Sandbox;
+using Sandbox.Citizen;
 
 namespace Woid;
 
 /// <summary>
-/// A character in the world. Cache of woid-side state (needs, moodlets) plus
-/// the visible bits (position, animation). Updated by EffectInterpreter.
+/// A character in the world. Movement via NavMeshAgent, anim drive via
+/// CitizenAnimationHelper. Look-at handled here (we drive helper.LookAt
+/// directly when the character is mid-conversation).
 ///
-/// Movement: SetPos effect sets _targetPos; OnUpdate walks toward it and
-/// drives the citizen animgraph params (pattern from
-/// examples/npc-patrol/Code/Npcs/Layers/AnimationLayer.cs).
+/// The persona/needs/speech fields are still authoritative for the
+/// brain-server-sbox contract. The render/movement plumbing is the
+/// canonical Facepunch pattern (see examples/npc-patrol).
 /// </summary>
 public sealed class Character : Component
 {
@@ -28,20 +30,23 @@ public sealed class Character : Component
 	[Property, Range( 0, 100 )] public float InitialSocial { get; set; } = 60f;
 	[Property, Range( 0, 100 )] public float InitialHunger { get; set; } = 80f;
 
-	[Property] public float WalkSpeed { get; set; } = 120f;
-	[Property] public float TurnSpeed { get; set; } = 6f;
-	[Property] public float StopDistance { get; set; } = 6f;
+	/// <summary>How long to keep looking at a speech target after the line lands.</summary>
+	[Property] public float LookHoldSec { get; set; } = 5f;
 
 	public Dictionary<string, float> Needs { get; } = new();
 
-	public string CurrentAnim { get; private set; } = "idle";
+	public string CurrentAnim => _sitting ? "sit" : (_agent.IsValid() && _agent.IsNavigating ? "walk" : "idle");
 
 	public string LastSpeech { get; private set; } = "";
 	public string LastSpeechTo { get; private set; } = "";
 
-	Vector3 _targetPos;
-	bool _hasTarget;
+	NavMeshAgent _agent;
+	CitizenAnimationHelper _anim;
 	bool _sitting;
+	GameObject _lookTarget;
+	float _lookExpiresAt;
+	Chair _pendingSitChair;
+	float _pendingSitTimeoutAt;
 
 	protected override void OnStart()
 	{
@@ -49,97 +54,77 @@ public sealed class Character : Component
 		Needs["energy"] = InitialEnergy;
 		Needs["social"] = InitialSocial;
 		Needs["hunger"] = InitialHunger;
-		if ( Model == null ) Model = Components.GetInDescendantsOrSelf<SkinnedModelRenderer>();
-		_targetPos = GameObject.WorldPosition;
 
-		// Idle pose: ground the citizen so it leaves T-pose immediately.
-		if ( Model != null )
-		{
-			Model.Set( "b_grounded", true );
-			Model.Set( "move_speed", 0f );
-		}
+		_agent = Components.Get<NavMeshAgent>();
+		_anim  = Components.Get<CitizenAnimationHelper>();
+		if ( Model == null ) Model = Components.GetInDescendantsOrSelf<SkinnedModelRenderer>();
+
+		if ( _anim.IsValid() && _anim.Target == null && Model.IsValid() ) _anim.Target = Model;
 	}
 
 	protected override void OnUpdate()
 	{
-		var cur = GameObject.WorldPosition;
-		var velocity = Vector3.Zero;
-
-		if ( _hasTarget )
+		// Drive the animgraph from NavMeshAgent velocity each frame.
+		if ( _anim.IsValid() && _agent.IsValid() )
 		{
-			var delta = _targetPos - cur;
-			var dist = delta.Length;
+			_anim.WithVelocity( _agent.Velocity );
+			_anim.WithWishVelocity( _agent.Velocity );
+		}
 
-			if ( dist > StopDistance )
+		// Pending-sit: walk-to-chair, snap-sit on arrival or after timeout.
+		if ( _pendingSitChair.IsValid() && !_sitting )
+		{
+			var seat = _pendingSitChair.SeatPosition?.WorldPosition ?? _pendingSitChair.WorldPosition;
+			var dist = WorldPosition.Distance( seat );
+			var arrived = dist < 28f;
+			var timedOut = Time.Now > _pendingSitTimeoutAt;
+			if ( arrived || timedOut )
 			{
-				var dir = delta.Normal;
-				var step = WalkSpeed * Time.Delta;
-				if ( step > dist ) step = dist;
-				var newPos = cur + dir * step;
-				GameObject.WorldPosition = newPos;
-				velocity = dir * WalkSpeed;
-
-				// Face direction of travel
-				if ( dir.WithZ( 0 ).Length > 0.01f )
-				{
-					var targetRot = Rotation.LookAt( dir.WithZ( 0 ).Normal, Vector3.Up );
-					GameObject.WorldRotation = Rotation.Lerp( GameObject.WorldRotation, targetRot, TurnSpeed * Time.Delta );
-				}
-			}
-			else
-			{
-				GameObject.WorldPosition = _targetPos;
-				_hasTarget = false;
-				velocity = Vector3.Zero;
+				_pendingSitChair.Sit( this );
+				_pendingSitChair = null;
 			}
 		}
 
-		ApplyAnim( velocity );
-	}
-
-	void ApplyAnim( Vector3 velocity )
-	{
-		if ( Model == null ) return;
-
-		// Common citizen animgraph params. Pattern from npc-patrol's AnimationLayer.
-		var reference = GameObject.WorldRotation;
-		var forward = reference.Forward.Dot( velocity );
-		var sideward = reference.Right.Dot( velocity );
-
-		Model.Set( "b_grounded", true );
-		Model.Set( "move_speed", velocity.WithZ( 0 ).Length );
-		Model.Set( "move_groundspeed", velocity.WithZ( 0 ).Length );
-		Model.Set( "move_x", forward );
-		Model.Set( "move_y", sideward );
-		Model.Set( "move_z", velocity.z );
-		Model.Set( "speed_move", 1f );
-
-		// Sit pose if currently sitting
-		if ( _sitting )
+		// Auto-clear stale look targets.
+		if ( _lookTarget.IsValid() && Time.Now > _lookExpiresAt )
 		{
-			Model.Set( "sit", 1 );
-			Model.Set( "b_sit", true );
+			_lookTarget = null;
+			if ( _anim.IsValid() ) _anim.LookAt = null;
 		}
-		else
+		else if ( _lookTarget.IsValid() && _anim.IsValid() )
 		{
-			Model.Set( "sit", 0 );
-			Model.Set( "b_sit", false );
+			_anim.LookAt = _lookTarget;
 		}
 	}
 
-	/// <summary>Set by SetPos effect. Character walks here over time.</summary>
+	/// <summary>Tell the NavMeshAgent to walk here. No-op if sitting or no agent.</summary>
 	public void WalkTo( Vector3 worldPos )
 	{
-		_targetPos = worldPos;
-		_hasTarget = true;
-		// Don't keep the sit pose while walking somewhere new.
-		if ( (worldPos - GameObject.WorldPosition).Length > StopDistance ) _sitting = false;
+		if ( _sitting ) return;
+		if ( !_agent.IsValid() ) { GameObject.WorldPosition = worldPos; return; }
+		_agent.MoveTo( worldPos );
+	}
+
+	/// <summary>
+	/// Walk toward the chair's SeatPosition, then sit when within range.
+	/// Auto-sits after 8s even if NavMesh couldn't reach (so the character
+	/// doesn't get stuck "trying to sit").
+	/// </summary>
+	public void WalkToAndSit( Chair chair )
+	{
+		if ( chair == null || _sitting ) return;
+		var seat = chair.SeatPosition?.WorldPosition ?? chair.WorldPosition;
+		WalkTo( seat );
+		_pendingSitChair = chair;
+		_pendingSitTimeoutAt = Time.Now + 8f;
 	}
 
 	public void PlayAnimation( string name, bool loop )
 	{
-		CurrentAnim = name;
-		_sitting = name == "sit";
+		// With CitizenAnimationHelper driving the graph, most "play X" is
+		// implicit (sit pose, holdtype etc set via Chair / verb effects).
+		// Keep this method as a no-op breadcrumb for now; verb-specific anim
+		// triggers can be added per-case (b_attack, b_jump, etc).
 		Log.Info( $"[Character {CharacterId}] anim → {name} (loop={loop})" );
 	}
 
@@ -163,4 +148,25 @@ public sealed class Character : Component
 		LastSpeechTo = to ?? "";
 		Log.Info( $"[Character {CharacterId}] says{(string.IsNullOrEmpty(to) ? "" : $" to {to}")}: \"{text}\"" );
 	}
+
+	/// <summary>Look at this GameObject for LookHoldSec (default 5s). Pass null to clear.</summary>
+	public void LookAt( GameObject target )
+	{
+		_lookTarget = target;
+		_lookExpiresAt = Time.Now + LookHoldSec;
+		if ( _anim.IsValid() )
+		{
+			_anim.LookAt = target;
+			if ( target != null )
+			{
+				_anim.EyesWeight = 1.0f;
+				_anim.HeadWeight = 1.0f;
+				_anim.BodyWeight = 0.3f;
+			}
+		}
+	}
+
+	/// <summary>Set by Chair.Sit/Stand so other systems (animation, walk) honor sit state.</summary>
+	public void SetSitting( bool sitting ) => _sitting = sitting;
+	public bool IsSitting => _sitting;
 }

@@ -167,15 +167,13 @@ public sealed class WoidClient : Component
 		{
 			case "sit":
 				var objId = args.GetProperty( "object_id" ).GetString();
-				var obj = Objects.Get( objId );
-				if ( obj == null )
+				if ( Objects.Get( objId ) == null )
 				{
 					Log.Warning( $"[SynthesizeEffects] sit: unknown object {objId}" );
 					break;
 				}
-				var pos = obj.GameObject.WorldPosition;
-				list.Add( new SetPos { Kind = "set_pos", Actor = actor, X = pos.x, Y = pos.y, Z = pos.z } );
-				list.Add( new PlayAnim { Kind = "play_anim", Actor = actor, Name = "sit", Loop = true } );
+				// Composite effect: walks via NavMesh, snaps to seat on arrival.
+				list.Add( new SitOnChair { Kind = "sit_on_chair", Actor = actor, ObjectId = objId } );
 				list.Add( new Occupy { Kind = "occupy", Actor = actor, ObjectId = objId, Release = false } );
 				list.Add( new Need { Kind = "need", Actor = actor, Axis = "energy", Op = "+", Amount = 5 } );
 				break;
@@ -186,10 +184,16 @@ public sealed class WoidClient : Component
 				list.Add( new SpeechBubble { Kind = "speech_bubble", Actor = actor, Text = text, To = to, DurationMs = 5000 } );
 				list.Add( new Need { Kind = "need", Actor = actor, Axis = "social", Op = "+", Amount = 8 } );
 
-				// Push the speech back into brain-server's perception bus so the
-				// listener's next observation includes it. Fire-and-forget; if
-				// brain-server hiccups, the next tick still runs with the older
-				// world.nearby_characters.last_said data we already provide.
+				// Look-at: speaker → listener and listener → speaker.
+				var speaker = Characters.Get( actor );
+				var listener = !string.IsNullOrEmpty( to ) ? Characters.Get( to ) : null;
+				if ( speaker.IsValid() && listener.IsValid() )
+				{
+					speaker.LookAt( listener.GameObject );
+					listener.LookAt( speaker.GameObject );
+				}
+
+				// Push the speech back into brain-server's perception bus.
 				_ = PushPerceptionAsync( target: !string.IsNullOrEmpty( to ) ? to : "*all*", evt: new {
 					kind = "speech", from_id = actor, text, to,
 					ts = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),

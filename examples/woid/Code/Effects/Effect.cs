@@ -29,6 +29,8 @@ public abstract class Effect
 			"advance_sim"    => Deser<AdvanceSim>( json ),
 			"speech_bubble"  => Deser<SpeechBubble>( json ),
 			"perceive"       => Deser<Perceive>( json ),
+			"sit_on_chair"   => Deser<SitOnChair>( json ),
+			"stand_up"       => Deser<StandUp>( json ),
 			_                => null, // unknown kind → drop, see CONTRACT.md
 		};
 	}
@@ -107,3 +109,20 @@ public sealed class Perceive : Effect
 	[JsonPropertyName( "target" )] public string         Target { get; init; }
 	[JsonPropertyName( "event" )]  public JsonElement    Event  { get; init; }
 }
+
+/// <summary>
+/// Sit-on-chair: actor walks to the chair via NavMesh, then snap-sits
+/// once within seat distance. Composite over set_pos+play_anim+occupy.
+/// </summary>
+public sealed class SitOnChair : Effect
+{
+	[JsonPropertyName( "actor" )]     public string Actor    { get; init; }
+	[JsonPropertyName( "object_id" )] public string ObjectId { get; init; }
+}
+
+public sealed class StandUp : Effect
+{
+	[JsonPropertyName( "actor" )]     public string Actor    { get; init; }
+	[JsonPropertyName( "object_id" )] public string ObjectId { get; init; }
+}
+
