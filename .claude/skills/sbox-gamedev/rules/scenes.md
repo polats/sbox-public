@@ -418,3 +418,25 @@ The shorter `{"_guid": "...", "_type": "component"}` form looks plausible (sbox 
 For `[Property] public GameObject X` (object reference, not component), the shape is different again: `{"_type": "gameobject", "go": "<guid>"}` — single field.
 
 This is the most common reason a hand-authored scene "compiles fine, runs fine, but the property is null". Always check the reference shape first.
+
+## Non-uniform-scale roots stretch parented characters
+
+`GameObject.SetParent(parent, false)` inherits the parent's WorldScale. If
+the parent root has non-uniform scale (e.g. a bed shaped via `Scale:
+"2.5,1,0.5"`), any character parented to it (BaseChair-style sit pattern)
+gets stretched in the same proportions.
+
+**Pattern to follow** whenever a prop's root will host attachment points
+(SeatPosition, RestPosition, UsePosition):
+- Keep prop root at `Scale: "1,1,1"`.
+- Put the scaled visual on a child GameObject (`PropVisual`) with the
+  ModelRenderer + the non-uniform Scale.
+- Put attachment points (RestPosition etc) as siblings of the visual,
+  not children of it.
+
+The attachment points then inherit only the root's identity scale, so
+SetParent + LocalTransform.Zero gives an un-stretched character.
+
+Same applies to BoxColliders for navmesh — when the root is unscaled,
+the collider's `Scale` field is the actual world-unit size of the
+collision box, not a multiplier. Match it to the visual's world bounds.
