@@ -510,7 +510,7 @@
       "Name": "Bed",
       "Position": "-200,200,0",
       "Rotation": "0,0,0.7071,0.7071",
-      "Scale": "2.5,1,0.5",
+      "Scale": "1,1,1",
       "Tags": "",
       "Enabled": true,
       "NetworkMode": 2,
@@ -520,23 +520,12 @@
       "OwnerTransfer": 1,
       "Components": [
         {
-          "__type": "Sandbox.ModelRenderer",
-          "__guid": "20000000-0000-0000-0000-000000000701",
-          "__enabled": true,
-          "BodyGroups": 18446744073709551615,
-          "CreateAttachments": false,
-          "Model": "models/citizen_props/crate01.vmdl",
-          "RenderOptions": { "GameLayer": true },
-          "RenderType": "On",
-          "Tint": "0.6,0.7,0.9,1"
-        },
-        {
           "__type": "Sandbox.BoxCollider",
           "__guid": "20000000-0000-0000-0000-000000000702",
           "__enabled": true,
           "IsTrigger": false,
-          "Scale": "37,36,39",
-          "Center": "0,0,0",
+          "Scale": "92,36,19",
+          "Center": "0,0,9",
           "Static": true
         },
         {
@@ -565,10 +554,33 @@
       ],
       "Children": [
         {
+          "__guid": "10000000-0000-0000-0000-000000000712",
+          "__version": 2,
+          "Name": "BedVisual",
+          "Position": "0,0,0",
+          "Rotation": "0,0,0,1",
+          "Scale": "2.5,1,0.5",
+          "Enabled": true,
+          "Components": [
+            {
+              "__type": "Sandbox.ModelRenderer",
+              "__guid": "20000000-0000-0000-0000-000000000701",
+              "__enabled": true,
+              "BodyGroups": 18446744073709551615,
+              "CreateAttachments": false,
+              "Model": "models/citizen_props/crate01.vmdl",
+              "RenderOptions": { "GameLayer": true },
+              "RenderType": "On",
+              "Tint": "0.6,0.7,0.9,1"
+            }
+          ],
+          "Children": []
+        },
+        {
           "__guid": "10000000-0000-0000-0000-000000000710",
           "__version": 2,
           "Name": "RestPosition",
-          "Position": "0,0,21",
+          "Position": "0,0,10",
           "Rotation": "0,0,0,1",
           "Scale": "1,1,1",
           "Enabled": true,
@@ -579,7 +591,7 @@
           "__guid": "10000000-0000-0000-0000-000000000711",
           "__version": 2,
           "Name": "ExitPosition",
-          "Position": "0,80,0",
+          "Position": "0,40,0",
           "Rotation": "0,0,0,1",
           "Scale": "1,1,1",
           "Enabled": true,
