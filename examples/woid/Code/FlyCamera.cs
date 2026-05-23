@@ -34,14 +34,9 @@ public sealed class FlyCamera : Component
 
 	protected override void OnUpdate()
 	{
-		// Tab disables FlyCam so the user can recover (cursor reappears,
-		// can click the toggle button again). ESC is reserved for the
-		// editor / game menu.
-		if ( Input.Pressed( "Score" ) )
-		{
-			Enabled = false;
-			return;
-		}
+		// Tab toggle is now handled in DebugBar.OnUpdate so the same key
+		// can both enable and disable from a single place. FlyCam itself
+		// no longer self-disables.
 
 		// Look
 		_angles.pitch += Mouse.Delta.y * MouseSensitivity;

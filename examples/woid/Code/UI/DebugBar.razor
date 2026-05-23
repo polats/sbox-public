@@ -12,7 +12,7 @@
 	<div class="btn" onclick=@ToggleFly>
 		@(FlyEnabled ? "🎥 LOCKED VIEW" : "🎥 FLY CAM")
 	</div>
-	<div class="hint">Click chair / bed / mug to direct the nearest character. Tab exits fly cam.</div>
+	<div class="hint">Click chair / bed / mug to direct the nearest character. Tab toggles fly cam.</div>
 </root>
 
 @code
@@ -54,6 +54,9 @@
 
 	protected override void OnUpdate()
 	{
+		// Tab toggles FlyCam (enables AND disables from one key).
+		if ( Input.Pressed( "Score" ) ) ToggleFly();
+
 		var client = Scene.GetAllComponents<WoidClient>().FirstOrDefault();
 		if ( client.IsValid() ) IsPaused = client.Paused;
 		foreach ( var go in Scene.GetAllObjects( true ) )
