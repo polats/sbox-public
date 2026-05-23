@@ -60,8 +60,8 @@
 			</div>
 
 			<div class="buttons">
-				<button @onclick="@OnForceTick" class="btn @(IsThinking ? "disabled" : "")">Force tick</button>
-				<button @onclick="@OnTickAll"  class="btn-secondary @(IsThinking ? "disabled" : "")">Tick all</button>
+				<div onclick=@OnForceTick class="btn @(IsThinking ? "disabled" : "")">Force tick</div>
+				<div onclick=@OnTickAll   class="btn-secondary @(IsThinking ? "disabled" : "")">Tick all</div>
 			</div>
 		}
 	</div>

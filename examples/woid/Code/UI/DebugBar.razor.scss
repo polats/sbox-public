@@ -30,6 +30,7 @@ DebugBar {
 		border-radius: 8px;
 		padding: 10px 16px;
 		cursor: pointer;
+		pointer-events: auto;
 	}
 	.btn:hover { background-color: rgba(132, 212, 255, 0.34); }
 	.btn.active {
