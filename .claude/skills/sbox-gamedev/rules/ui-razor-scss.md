@@ -195,3 +195,16 @@ Reference implementations live under `sandbox/Code/UI/`:
 - **World-space Razor**: `Sandbox.WorldPanel` Component exists and is the right path for over-head nameplates, floating HUD, etc. Attach `WorldPanel { PanelSize=600x200, LookAtCamera=true }` to a child GameObject above the actor; the child `PanelComponent` Razor renders in world space, billboards to camera automatically. Cleaner than per-frame screen-space projection.
 - **Avoid CRLF line endings on Linux.** The editor on Windows writes CRLF; if
   you open and save the file on Linux it switches to LF and `git diff` floods.
+
+## `@onclick` vs `onclick`: button events need the leading @
+
+In sbox razor, `<button onclick=@MyMethod>` does NOT wire the handler — it sets `onclick` as a literal HTML string attribute. The button renders fine but clicks do nothing. Correct syntax matches Blazor:
+
+```razor
+<button @onclick="@MyMethod">Click</button>
+<button @onclick="@(() => DoThing(arg))">Lambda</button>
+```
+
+Source pattern: `sandbox/Code/UI/ContextMenu/Inspector.razor` and other editor UIs all use `@onclick="@(...)"`. Same applies to `@oninput`, `@onkeydown`, etc — every event handler attribute needs the `@` prefix.
+
+Symptom: button looks right (correct text, hover styles work) but clicks do nothing. No log line, no exception. Easy to miss because the attribute is syntactically valid HTML.

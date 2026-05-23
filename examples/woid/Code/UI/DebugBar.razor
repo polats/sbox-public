@@ -7,10 +7,10 @@
 
 <root>
 	<div class="bar">
-		<button class="btn @(IsPaused ? "active" : "")" onclick=@TogglePause>
+		<button class="btn @(IsPaused ? "active" : "")" @onclick="@TogglePause">
 			@(IsPaused ? "▶ RESUME" : "⏸ PAUSE")
 		</button>
-		<button class="btn" onclick=@ToggleFly>
+		<button class="btn" @onclick="@ToggleFly">
 			@(FlyEnabled ? "🎥 LOCKED VIEW" : "🎥 FLY CAM")
 		</button>
 		<div class="hint">Click chair / bed / mug to direct the nearest character.</div>
