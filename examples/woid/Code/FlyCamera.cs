@@ -34,6 +34,14 @@ public sealed class FlyCamera : Component
 
 	protected override void OnUpdate()
 	{
+		// Escape disables FlyCam so the user can recover (cursor reappears,
+		// can click the toggle button again).
+		if ( Input.Pressed( "Menu" ) || Input.Pressed( "Score" ) )
+		{
+			Enabled = false;
+			return;
+		}
+
 		// Look
 		_angles.pitch += Mouse.Delta.y * MouseSensitivity;
 		_angles.yaw   -= Mouse.Delta.x * MouseSensitivity;

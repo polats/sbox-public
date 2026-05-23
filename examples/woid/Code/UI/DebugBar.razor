@@ -6,15 +6,13 @@
 @inherits PanelComponent
 
 <root>
-	<div class="bar">
-		<div class="btn @(IsPaused ? "active" : "")" onclick=@TogglePause>
-			@(IsPaused ? "▶ RESUME" : "⏸ PAUSE")
-		</div>
-		<div class="btn" onclick=@ToggleFly>
-			@(FlyEnabled ? "🎥 LOCKED VIEW" : "🎥 FLY CAM")
-		</div>
-		<div class="hint">Click chair / bed / mug to direct the nearest character.</div>
+	<div class="btn @(IsPaused ? "active" : "")" onclick=@TogglePause>
+		@(IsPaused ? "▶ RESUME" : "⏸ PAUSE")
 	</div>
+	<div class="btn" onclick=@ToggleFly>
+		@(FlyEnabled ? "🎥 LOCKED VIEW" : "🎥 FLY CAM")
+	</div>
+	<div class="hint">Click chair / bed / mug to direct the nearest character. ESC exits fly cam.</div>
 </root>
 
 @code
@@ -36,8 +34,6 @@
 	void ToggleFly()
 	{
 		Log.Info( "[DebugBar] ToggleFly clicked" );
-		// FlyCamera starts disabled in scene; Scene.GetAllComponents<T>() only
-		// returns enabled ones, so walk the GO tree to find it.
 		FlyCamera fly = null;
 		foreach ( var go in Scene.GetAllObjects( true ) )
 		{
@@ -58,10 +54,8 @@
 
 	protected override void OnUpdate()
 	{
-		// Keep in sync if something else flips the values.
 		var client = Scene.GetAllComponents<WoidClient>().FirstOrDefault();
 		if ( client.IsValid() ) IsPaused = client.Paused;
-		// FlyCamera may be disabled; same dance.
 		foreach ( var go in Scene.GetAllObjects( true ) )
 		{
 			var fly = go.Components.Get<FlyCamera>( includeDisabled: true );

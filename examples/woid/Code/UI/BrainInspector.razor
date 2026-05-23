@@ -8,63 +8,61 @@
 @using Sandbox.UI
 @inherits PanelComponent
 
-<root>
-	<div class="panel @PanelClass">
-		<div class="header">
-			<div class="badge">BRAIN INSPECTOR</div>
-			<div class="meta">@Model · @Provider</div>
+<root class="@PanelClass">
+	<div class="header">
+		<div class="badge">BRAIN INSPECTOR</div>
+		<div class="meta">@Model · @Provider</div>
+	</div>
+
+	@if (string.IsNullOrEmpty(PersonaName))
+	{
+		<div class="empty">waiting for brain-server…</div>
+	}
+	else
+	{
+		<div class="persona">
+			<div class="name-row">
+				<div class="name">@PersonaName</div>
+				@if (IsThinking)
+				{
+					<div class="thinking">
+						<div class="dot" />
+						<div class="label">THINKING…</div>
+					</div>
+				}
+			</div>
+			<div class="vibe">@Vibe</div>
 		</div>
 
-		@if (string.IsNullOrEmpty(PersonaName))
+		<div class="section-label">REASONING</div>
+		<div class="reasoning">@Reasoning</div>
+
+		<div class="section-label">LAST ACTION</div>
+		<div class="action">@LastAction</div>
+
+		@if (!string.IsNullOrEmpty(MoodBand))
 		{
-			<div class="empty">waiting for brain-server…</div>
-		}
-		else
-		{
-			<div class="persona">
-				<div class="name-row">
-					<div class="name">@PersonaName</div>
-					@if (IsThinking)
-					{
-						<div class="thinking">
-							<div class="dot" />
-							<div class="label">THINKING…</div>
-						</div>
-					}
-				</div>
-				<div class="vibe">@Vibe</div>
-			</div>
-
-			<div class="section-label">REASONING</div>
-			<div class="reasoning">@Reasoning</div>
-
-			<div class="section-label">LAST ACTION</div>
-			<div class="action">@LastAction</div>
-
-			@if (!string.IsNullOrEmpty(MoodBand))
-			{
-				<div class="section-label">MOOD: @MoodBand &nbsp;·&nbsp; @MoodletCount MOODLET@(MoodletCount == 1 ? "" : "S")</div>
-				<div class="moodlets">
-					@foreach (var m in MoodletTopTags)
-					{
-						<div class="moodlet">@m</div>
-					}
-				</div>
-			}
-
-			<div class="footer">
-				<div class="stat">@LastMs ms</div>
-				<div class="stat">@InTokens in</div>
-				<div class="stat">@OutTokens out</div>
-				<div class="stat">tick @Tick</div>
-			</div>
-
-			<div class="buttons">
-				<div onclick=@OnForceTick class="btn @(IsThinking ? "disabled" : "")">Force tick</div>
-				<div onclick=@OnTickAll   class="btn-secondary @(IsThinking ? "disabled" : "")">Tick all</div>
+			<div class="section-label">MOOD: @MoodBand &nbsp;·&nbsp; @MoodletCount MOODLET@(MoodletCount == 1 ? "" : "S")</div>
+			<div class="moodlets">
+				@foreach (var m in MoodletTopTags)
+				{
+					<div class="moodlet">@m</div>
+				}
 			</div>
 		}
-	</div>
+
+		<div class="footer">
+			<div class="stat">@LastMs ms</div>
+			<div class="stat">@InTokens in</div>
+			<div class="stat">@OutTokens out</div>
+			<div class="stat">tick @Tick</div>
+		</div>
+
+		<div class="buttons">
+			<div onclick=@OnForceTick class="btn @(IsThinking ? "disabled" : "")">Force tick</div>
+			<div onclick=@OnTickAll   class="btn-secondary @(IsThinking ? "disabled" : "")">Tick all</div>
+		</div>
+	}
 </root>
 
 @code

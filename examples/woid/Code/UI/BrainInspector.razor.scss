@@ -5,25 +5,21 @@
 }
 
 BrainInspector {
-	width: 100%;
-	height: 100%;
+	position: absolute;
+	top: 36px;
+	width: 640px;
+	background-color: rgba(8, 12, 20, 0.88);
+	border: 2px solid rgba(120, 170, 230, 0.40);
+	border-radius: 16px;
+	padding: 22px 26px;
+	flex-direction: column;
+	gap: 12px;
 	pointer-events: all;
 	font-family: "Segoe UI", "Roboto", sans-serif;
 	color: white;
 
-	.panel {
-		position: absolute;
-		width: 640px;
-		background-color: rgba(8, 12, 20, 0.88);
-		border: 2px solid rgba(120, 170, 230, 0.40);
-		border-radius: 16px;
-		padding: 22px 26px;
-		flex-direction: column;
-		gap: 12px;
-		pointer-events: auto;
-	}
-	.panel.pos-right { top: 36px; right: 36px; }
-	.panel.pos-left  { top: 36px; left: 36px; }
+	&.pos-right { right: 36px; }
+	&.pos-left  { left: 36px; }
 
 	.header {
 		flex-direction: row;
@@ -178,7 +174,7 @@ BrainInspector {
 		border-radius: 8px;
 		text-align: center;
 		cursor: pointer;
-		pointer-events: auto;
+		pointer-events: all;
 	}
 
 	.btn {
