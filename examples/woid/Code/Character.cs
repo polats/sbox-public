@@ -44,10 +44,17 @@ public sealed class Character : Component
 	CitizenAnimationHelper _anim;
 	bool _sitting;
 	Chair _currentChair;
+	Bed _currentBed;
+	HoldableProp _holding;
 	GameObject _lookTarget;
 	float _lookExpiresAt;
 	Chair _pendingSitChair;
+	Bed _pendingSleepBed;
 	float _pendingSitTimeoutAt;
+	float _b_attack_clear_at;
+	float _faceExpireAt;
+	string _activeFaceParam;
+	float _b_attack_next_pulse_at;
 
 	protected override void OnStart()
 	{
@@ -61,6 +68,10 @@ public sealed class Character : Component
 		if ( Model == null ) Model = Components.GetInDescendantsOrSelf<SkinnedModelRenderer>();
 
 		if ( _anim.IsValid() && _anim.Target == null && Model.IsValid() ) _anim.Target = Model;
+
+		// Required for GetBoneObject() to return non-null — needed for hand-bone
+		// parenting (HoldableProp.Hold uses hold_R / hold_L).
+		if ( Model.IsValid() ) Model.CreateBoneObjects = true;
 	}
 
 	protected override void OnUpdate()
@@ -85,6 +96,51 @@ public sealed class Character : Component
 				_pendingSitChair = null;
 			}
 		}
+		// Pending-sleep: walk-to-bed, snap-sleep
+		if ( _pendingSleepBed.IsValid() && !_sitting )
+		{
+			var rest = _pendingSleepBed.RestPosition?.WorldPosition ?? _pendingSleepBed.WorldPosition;
+			var dist = WorldPosition.Distance( rest );
+			if ( dist < 40f || Time.Now > _pendingSitTimeoutAt )
+			{
+				_pendingSleepBed.Sleep( this );
+				_pendingSleepBed = null;
+			}
+		}
+
+		// Edge-triggered animgraph bools need clearing on the next frame.
+		if ( _b_attack_clear_at > 0 && Time.Now > _b_attack_clear_at && _anim.IsValid() )
+		{
+			Model?.Set( "b_attack", false );
+			_b_attack_clear_at = 0;
+		}
+
+		// Face emotion expire
+		if ( _faceExpireAt > 0 && Time.Now > _faceExpireAt && _activeFaceParam != null && Model.IsValid() )
+		{
+			Model.Set( _activeFaceParam, 0f );
+			_activeFaceParam = null;
+			_faceExpireAt = 0;
+		}
+
+		// While holding, periodically pulse b_attack so we "use" the item (sip mug, etc).
+		if ( _holding.IsValid() && _b_attack_next_pulse_at > 0 && Time.Now > _b_attack_next_pulse_at && Model.IsValid() )
+		{
+			Model.Set( "b_attack", true );
+			_b_attack_clear_at = Time.Now + 0.05f;
+			_b_attack_next_pulse_at = Time.Now + 3.5f;
+		}
+
+		// Pending-pickup: walk-to-prop, hold on arrival
+		if ( _pendingHoldProp.IsValid() && _holding == null )
+		{
+			var dist = WorldPosition.Distance( _pendingHoldProp.WorldPosition );
+			if ( dist < 40f || Time.Now > _pendingSitTimeoutAt )
+			{
+				_pendingHoldProp.Hold( this );
+				_pendingHoldProp = null;
+			}
+		}
 
 		// Auto-clear stale look targets.
 		if ( _lookTarget.IsValid() && Time.Now > _lookExpiresAt )
@@ -101,24 +157,24 @@ public sealed class Character : Component
 	/// <summary>Walk to worldPos via NavMeshAgent. Auto-stands if currently sat.</summary>
 	public void WalkTo( Vector3 worldPos )
 	{
-		// Auto-stand: any walk implicitly cancels a sit. Without this the
-		// character is stuck on the chair until the LLM picks "stand_up".
-		// Find the chair via _currentChair if we have it, else walk up the
-		// parent chain for any Chair component (handles stale state).
+		// Auto-stand from chair OR wake from bed.
 		if ( _sitting )
 		{
-			var chair = _currentChair.IsValid()
-				? _currentChair
-				: GameObject.Parent?.Components?.Get<Chair>( includeDisabled: true );
-			if ( chair.IsValid() ) chair.Stand( this );
+			if ( _currentBed.IsValid() ) { _currentBed.Wake( this ); }
 			else
 			{
-				// Defensive: no chair to ask, just unparent + clear flags.
-				GameObject.SetParent( null, true );
-				_sitting = false;
-				_currentChair = null;
-				if ( Model.IsValid() ) { Model.Set( "sit", 0 ); Model.Set( "b_sit", false ); }
-				if ( _agent.IsValid() ) { _agent.UpdatePosition = true; _agent.UpdateRotation = true; }
+				var chair = _currentChair.IsValid()
+					? _currentChair
+					: GameObject.Parent?.Components?.Get<Chair>( includeDisabled: true );
+				if ( chair.IsValid() ) chair.Stand( this );
+				else
+				{
+					GameObject.SetParent( null, true );
+					_sitting = false;
+					_currentChair = null;
+					if ( Model.IsValid() ) { Model.Set( "sit", 0 ); Model.Set( "b_sit", false ); }
+					if ( _agent.IsValid() ) { _agent.UpdatePosition = true; _agent.UpdateRotation = true; }
+				}
 			}
 		}
 
@@ -148,6 +204,26 @@ public sealed class Character : Component
 		_pendingSitTimeoutAt = Time.Now + 8f;
 	}
 
+	public void WalkToAndSleep( Bed bed )
+	{
+		if ( bed == null || _sitting ) return;
+		var rest = bed.RestPosition?.WorldPosition ?? bed.WorldPosition;
+		WalkTo( rest );
+		_pendingSleepBed = bed;
+		_pendingSitTimeoutAt = Time.Now + 8f;
+	}
+
+	/// <summary>Walk to a holdable, pick it up. Returns true if pickup will happen on arrival.</summary>
+	public bool WalkToAndHold( HoldableProp prop )
+	{
+		if ( prop == null ) return false;
+		WalkTo( prop.WorldPosition );
+		_pendingHoldProp = prop;
+		_pendingSitTimeoutAt = Time.Now + 8f;
+		return true;
+	}
+	HoldableProp _pendingHoldProp;
+
 	public void PlayAnimation( string name, bool loop )
 	{
 		// With CitizenAnimationHelper driving the graph, most "play X" is
@@ -176,6 +252,18 @@ public sealed class Character : Component
 		LastSpeech = text ?? "";
 		LastSpeechTo = to ?? "";
 		Log.Info( $"[Character {CharacterId}] says{(string.IsNullOrEmpty(to) ? "" : $" to {to}")}: \"{text}\"" );
+
+		// Crude sentiment to face emotion. The LLM's vocabulary is consistent
+		// enough that lexical hints work; this is placeholder for proper NLP.
+		var lower = (text ?? "").ToLowerInvariant();
+		if ( lower.Contains( "lovely" ) || lower.Contains( "delight" ) || lower.Contains( "beautiful" ) || lower.Contains( "wonderful" ) || lower.Contains( "magic" ) )
+			ShowFaceEmotion( "smile", 0.8f, 4f );
+		else if ( lower.Contains( "!" ) || lower.Contains( "oh," ) || lower.Contains( "ah," ) || lower.Contains( "ah!" ) )
+			ShowFaceEmotion( "surprise", 0.6f, 3f );
+		else if ( lower.Contains( "sad" ) || lower.Contains( "alas" ) || lower.Contains( "sigh" ) )
+			ShowFaceEmotion( "sad", 0.6f, 3f );
+		else if ( lower.Contains( "secret" ) || lower.Contains( "whisper" ) )
+			ShowFaceEmotion( "thrill", 0.5f, 3f );
 	}
 
 	/// <summary>Look at this GameObject for LookHoldSec (default 5s). Pass null to clear.</summary>
@@ -202,4 +290,29 @@ public sealed class Character : Component
 		_currentChair = sitting ? chair : null;
 	}
 	public bool IsSitting => _sitting;
+
+	/// <summary>Set by Bed.Sleep/Wake.</summary>
+	public void SetOccupiedBed( Bed bed )
+	{
+		_currentBed = bed;
+		_sitting = bed != null;
+	}
+
+	/// <summary>Set by HoldableProp.Hold/Drop.</summary>
+	public void SetHolding( HoldableProp prop )
+	{
+		_holding = prop;
+		_b_attack_next_pulse_at = prop != null ? Time.Now + 2.5f : 0;
+	}
+
+	/// <summary>Briefly show a face emotion (smile/sad/surprise/thrill/angry).</summary>
+	public void ShowFaceEmotion( string param, float strength = 0.8f, float durationSec = 3f )
+	{
+		if ( Model == null ) return;
+		// Clear previous one immediately if different
+		if ( _activeFaceParam != null && _activeFaceParam != param ) Model.Set( _activeFaceParam, 0f );
+		Model.Set( param, strength );
+		_activeFaceParam = param;
+		_faceExpireAt = Time.Now + durationSec;
+	}
 }

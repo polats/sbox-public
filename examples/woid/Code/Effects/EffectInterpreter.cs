@@ -31,6 +31,8 @@ public sealed class EffectInterpreter : Component
 			case Perceive p:       Apply( p );  break;
 			case SitOnChair soc:   Apply( soc ); break;
 			case StandUp su:       Apply( su ); break;
+			case SleepInBed sib:   Apply( sib ); break;
+			case DrinkHoldable dh: Apply( dh ); break;
 			default:
 				Log.Info( $"[EffectInterpreter] unhandled effect type: {e?.GetType().Name}" );
 				break;
@@ -111,5 +113,27 @@ public sealed class EffectInterpreter : Component
 		var chair = obj?.Components.Get<Chair>();
 		if ( chair != null ) chair.Stand( c );
 		else Log.Warning( $"[stand_up] no chair for object {e.ObjectId}" );
+	}
+
+	void Apply( SleepInBed e )
+	{
+		var c = Characters?.Get( e.Actor );
+		if ( c == null ) { Log.Warning( $"[sleep_in_bed] unknown actor: {e.Actor}" ); return; }
+		var obj = Objects?.Get( e.ObjectId );
+		if ( obj == null ) { Log.Warning( $"[sleep_in_bed] unknown object: {e.ObjectId}" ); return; }
+		var bed = obj.Components.Get<Bed>();
+		if ( bed == null ) { Log.Warning( $"[sleep_in_bed] object {e.ObjectId} has no Bed component" ); return; }
+		c.WalkToAndSleep( bed );
+	}
+
+	void Apply( DrinkHoldable e )
+	{
+		var c = Characters?.Get( e.Actor );
+		if ( c == null ) { Log.Warning( $"[drink_holdable] unknown actor: {e.Actor}" ); return; }
+		var obj = Objects?.Get( e.ObjectId );
+		if ( obj == null ) { Log.Warning( $"[drink_holdable] unknown object: {e.ObjectId}" ); return; }
+		var prop = obj.Components.Get<HoldableProp>();
+		if ( prop == null ) { Log.Warning( $"[drink_holdable] object {e.ObjectId} has no HoldableProp" ); return; }
+		c.WalkToAndHold( prop );
 	}
 }

@@ -172,10 +172,24 @@ public sealed class WoidClient : Component
 					Log.Warning( $"[SynthesizeEffects] sit: unknown object {objId}" );
 					break;
 				}
-				// Composite effect: walks via NavMesh, snaps to seat on arrival.
 				list.Add( new SitOnChair { Kind = "sit_on_chair", Actor = actor, ObjectId = objId } );
 				list.Add( new Occupy { Kind = "occupy", Actor = actor, ObjectId = objId, Release = false } );
 				list.Add( new Need { Kind = "need", Actor = actor, Axis = "energy", Op = "+", Amount = 5 } );
+				break;
+
+			case "sleep":
+				var bedId = args.GetProperty( "object_id" ).GetString();
+				if ( Objects.Get( bedId ) == null ) { Log.Warning( $"[SynthesizeEffects] sleep: unknown object {bedId}" ); break; }
+				list.Add( new SleepInBed { Kind = "sleep_in_bed", Actor = actor, ObjectId = bedId } );
+				list.Add( new Occupy { Kind = "occupy", Actor = actor, ObjectId = bedId, Release = false } );
+				list.Add( new Need { Kind = "need", Actor = actor, Axis = "energy", Op = "=", Amount = 100 } );
+				break;
+
+			case "drink":
+				var mugId = args.GetProperty( "object_id" ).GetString();
+				if ( Objects.Get( mugId ) == null ) { Log.Warning( $"[SynthesizeEffects] drink: unknown object {mugId}" ); break; }
+				list.Add( new DrinkHoldable { Kind = "drink_holdable", Actor = actor, ObjectId = mugId } );
+				list.Add( new Need { Kind = "need", Actor = actor, Axis = "hunger", Op = "+", Amount = 10 } );
 				break;
 
 			case "say":

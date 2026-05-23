@@ -404,8 +404,8 @@
       "Flags": 0,
       "Name": "Chair",
       "Position": "250,0,0",
-      "Rotation": "0,0,0,1",
-      "Scale": "0.6,0.6,0.6",
+      "Rotation": "0,0,1,0",
+      "Scale": "1,1,1",
       "Tags": "",
       "Enabled": true,
       "NetworkMode": 2,
@@ -420,14 +420,14 @@
           "__enabled": true,
           "BodyGroups": 18446744073709551615,
           "CreateAttachments": false,
-          "Model": "models/dev/box.vmdl",
+          "Model": "models/citizen_props/chair01.vmdl",
           "RenderOptions": {
             "GameLayer": true,
             "OverlayLayer": false,
             "AfterUILayer": false
           },
           "RenderType": "On",
-          "Tint": "0.4,0.25,0.15,1"
+          "Tint": "1,1,1,1"
         },
         {
           "__type": "Woid.WoidObject",
@@ -458,8 +458,8 @@
           "__version": 2,
           "Flags": 0,
           "Name": "SeatPosition",
-          "Position": "0,0,28",
-          "Rotation": "0,0,0,1",
+          "Position": "0,0,17",
+          "Rotation": "0,0,1,0",
           "Scale": "1,1,1",
           "Enabled": true,
           "Components": [],
@@ -478,6 +478,171 @@
           "Children": []
         }
       ]
+    },
+    {
+      "__guid": "10000000-0000-0000-0000-000000000700",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Bed",
+      "Position": "-200,200,0",
+      "Rotation": "0,0,0.7071,0.7071",
+      "Scale": "2.5,1,0.5",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.ModelRenderer",
+          "__guid": "20000000-0000-0000-0000-000000000701",
+          "__enabled": true,
+          "BodyGroups": 18446744073709551615,
+          "CreateAttachments": false,
+          "Model": "models/citizen_props/crate01.vmdl",
+          "RenderOptions": { "GameLayer": true },
+          "RenderType": "On",
+          "Tint": "0.6,0.7,0.9,1"
+        },
+        {
+          "__type": "Sandbox.BoxCollider",
+          "__guid": "20000000-0000-0000-0000-000000000702",
+          "__enabled": true,
+          "IsTrigger": false,
+          "Scale": "37,36,39",
+          "Center": "0,0,0",
+          "Static": true
+        },
+        {
+          "__type": "Woid.WoidObject",
+          "__guid": "20000000-0000-0000-0000-000000000703",
+          "__enabled": true,
+          "ObjectId": "bed_1",
+          "Type": "bed"
+        },
+        {
+          "__type": "Woid.Bed",
+          "__guid": "20000000-0000-0000-0000-000000000704",
+          "__enabled": true,
+          "SitPose": 2,
+          "SitPoseFloat": 2,
+          "SitHeight": 0,
+          "RestPosition": {
+            "_type": "gameobject",
+            "go": "10000000-0000-0000-0000-000000000710"
+          },
+          "ExitPosition": {
+            "_type": "gameobject",
+            "go": "10000000-0000-0000-0000-000000000711"
+          }
+        }
+      ],
+      "Children": [
+        {
+          "__guid": "10000000-0000-0000-0000-000000000710",
+          "__version": 2,
+          "Name": "RestPosition",
+          "Position": "0,0,21",
+          "Rotation": "0,0,0,1",
+          "Scale": "1,1,1",
+          "Enabled": true,
+          "Components": [],
+          "Children": []
+        },
+        {
+          "__guid": "10000000-0000-0000-0000-000000000711",
+          "__version": 2,
+          "Name": "ExitPosition",
+          "Position": "0,80,0",
+          "Rotation": "0,0,0,1",
+          "Scale": "1,1,1",
+          "Enabled": true,
+          "Components": [],
+          "Children": []
+        }
+      ]
+    },
+    {
+      "__guid": "10000000-0000-0000-0000-000000000800",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Table",
+      "Position": "200,-200,0",
+      "Rotation": "0,0,0,1",
+      "Scale": "1.2,1.2,0.6",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.ModelRenderer",
+          "__guid": "20000000-0000-0000-0000-000000000801",
+          "__enabled": true,
+          "Model": "models/citizen_props/crate01.vmdl",
+          "RenderOptions": { "GameLayer": true },
+          "RenderType": "On",
+          "Tint": "0.7,0.5,0.3,1"
+        },
+        {
+          "__type": "Sandbox.BoxCollider",
+          "__guid": "20000000-0000-0000-0000-000000000802",
+          "__enabled": true,
+          "IsTrigger": false,
+          "Scale": "37,36,39",
+          "Center": "0,0,0",
+          "Static": true
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "10000000-0000-0000-0000-000000000900",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Mug",
+      "Position": "200,-200,30",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.ModelRenderer",
+          "__guid": "20000000-0000-0000-0000-000000000901",
+          "__enabled": true,
+          "Model": "models/citizen_props/coffeemug01.vmdl",
+          "RenderOptions": { "GameLayer": true },
+          "RenderType": "On",
+          "Tint": "1,1,1,1"
+        },
+        {
+          "__type": "Woid.WoidObject",
+          "__guid": "20000000-0000-0000-0000-000000000902",
+          "__enabled": true,
+          "ObjectId": "mug_1",
+          "Type": "mug"
+        },
+        {
+          "__type": "Woid.HoldableProp",
+          "__guid": "20000000-0000-0000-0000-000000000903",
+          "__enabled": true,
+          "Handedness": 1,
+          "HoldtypePose": 2.0,
+          "HoldtypePoseHand": 0.005
+        }
+      ],
+      "Children": []
     }
   ],
   "SceneProperties": {

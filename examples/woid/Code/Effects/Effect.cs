@@ -31,6 +31,8 @@ public abstract class Effect
 			"perceive"       => Deser<Perceive>( json ),
 			"sit_on_chair"   => Deser<SitOnChair>( json ),
 			"stand_up"       => Deser<StandUp>( json ),
+			"sleep_in_bed"   => Deser<SleepInBed>( json ),
+			"drink_holdable" => Deser<DrinkHoldable>( json ),
 			_                => null, // unknown kind → drop, see CONTRACT.md
 		};
 	}
@@ -124,5 +126,21 @@ public sealed class StandUp : Effect
 {
 	[JsonPropertyName( "actor" )]     public string Actor    { get; init; }
 	[JsonPropertyName( "object_id" )] public string ObjectId { get; init; }
+}
+
+public sealed class SleepInBed : Effect
+{
+	[JsonPropertyName( "actor" )]     public string Actor    { get; init; }
+	[JsonPropertyName( "object_id" )] public string ObjectId { get; init; }
+}
+
+/// <summary>
+/// Pick up a HoldableProp object and "use" it (b_attack pulses while held).
+/// Drop after duration_ms; durationMs 0 = hold indefinitely until next walk.
+/// </summary>
+public sealed class DrinkHoldable : Effect
+{
+	[JsonPropertyName( "actor" )]       public string Actor      { get; init; }
+	[JsonPropertyName( "object_id" )]   public string ObjectId   { get; init; }
 }
 
