@@ -101,12 +101,14 @@
 
 	void OnForceTick()
 	{
+		Log.Info( $"[BrainInspector {CharacterId}] OnForceTick clicked" );
 		var client = Scene.GetAllComponents<WoidClient>().FirstOrDefault();
 		client?.RequestTick( CharacterId );
 	}
 
 	void OnTickAll()
 	{
+		Log.Info( $"[BrainInspector {CharacterId}] OnTickAll clicked" );
 		var client = Scene.GetAllComponents<WoidClient>().FirstOrDefault();
 		client?.RequestTickAll();
 	}

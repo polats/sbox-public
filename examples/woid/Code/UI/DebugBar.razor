@@ -36,11 +36,23 @@
 	void ToggleFly()
 	{
 		Log.Info( "[DebugBar] ToggleFly clicked" );
-		var fly = Scene.GetAllComponents<FlyCamera>().FirstOrDefault();
+		// FlyCamera starts disabled in scene; Scene.GetAllComponents<T>() only
+		// returns enabled ones, so walk the GO tree to find it.
+		FlyCamera fly = null;
+		foreach ( var go in Scene.GetAllObjects( true ) )
+		{
+			fly = go.Components.Get<FlyCamera>( includeDisabled: true );
+			if ( fly != null ) break;
+		}
 		if ( fly.IsValid() )
 		{
 			fly.Enabled = !fly.Enabled;
 			FlyEnabled = fly.Enabled;
+			Log.Info( $"[DebugBar] FlyCamera.Enabled = {fly.Enabled}" );
+		}
+		else
+		{
+			Log.Warning( "[DebugBar] no FlyCamera component found in scene" );
 		}
 	}
 
@@ -49,8 +61,12 @@
 		// Keep in sync if something else flips the values.
 		var client = Scene.GetAllComponents<WoidClient>().FirstOrDefault();
 		if ( client.IsValid() ) IsPaused = client.Paused;
-		var fly = Scene.GetAllComponents<FlyCamera>().FirstOrDefault();
-		if ( fly.IsValid() ) FlyEnabled = fly.Enabled;
+		// FlyCamera may be disabled; same dance.
+		foreach ( var go in Scene.GetAllObjects( true ) )
+		{
+			var fly = go.Components.Get<FlyCamera>( includeDisabled: true );
+			if ( fly != null ) { FlyEnabled = fly.Enabled; break; }
+		}
 	}
 
 	protected override int BuildHash() => HashCode.Combine( IsPaused, FlyEnabled );
