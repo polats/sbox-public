@@ -440,3 +440,34 @@ SetParent + LocalTransform.Zero gives an un-stretched character.
 Same applies to BoxColliders for navmesh — when the root is unscaled,
 the collider's `Scale` field is the actual world-unit size of the
 collision box, not a multiplier. Match it to the visual's world bounds.
+
+## Model imports: probe size, don't eyeball
+
+Source 2 world units = 1 inch. The stock citizen is ~72u tall (~6 ft).
+Imported `.vmdl`s land at their FBX-authored size with no auto-fit — many
+stock assets are wildly out of scale for human characters (the
+`coffeemug01.vmdl` ships at 10.6u tall ≈ a half-foot stein).
+
+**Never pick a `Scale` by eyeballing the viewport.** Use the probe tool:
+
+```
+.claude/skills/sbox-gamedev/tools/sbox-model-info <path.vmdl> [<path2>...]
+```
+
+It opens the editor's probe scene, measures the model's render bounds,
+and prints `size x×y×z (inches)` plus a suggested human-relative scale.
+Compute the right scale from the printed dimensions and the prop's
+intended real-world size, then commit a single accurate number.
+
+Reference sizes (inches): coffee mug ≈ 4 tall, dinner plate ≈ 10 wide,
+chair seat ≈ 18 high, table ≈ 30 high, doorway ≈ 80 tall, citizen ≈ 72
+tall.
+
+**Holdable props are especially prone to this:** the citizen
+`hold_R`/`hold_L` bones are sized for citizen hands, so an oversized prop
+becomes a stein-sized weapon once bone-parented. Probe + scale before
+hooking it up; don't trust the standalone placement.
+
+Past incidents: the mug shipped at Scale 1 (10.6u tall, fixed to 0.4
+after probing); the bed needed structural decomposition for unrelated
+parent-scale reasons (see rule above). Probe-first prevents both.

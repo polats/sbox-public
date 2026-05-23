@@ -74,6 +74,39 @@ smr.Set( "b_grounded", controller.IsOnGround );
 
 Mirror those into `wish_*` if you want crisper anticipation animations.
 
+## Citizen face emotions: one enum, not per-emotion floats
+
+The citizen animgraph exposes face emotion as a **single enum** param,
+not as a bag of per-expression floats. Setting `Model.Set("smile", 0.8f)`
+silently no-ops because no such param exists.
+
+```csharp
+// correct — enum is set by INT INDEX, not name:
+Model.Set( "face_override", 1 );  // 1 = smile
+// clear:
+Model.Set( "face_override", 0 );  // 0 = NO_OVERRIDE
+```
+
+**`SkinnedModelRenderer.Set` has no string overload.** The overloads are
+`Vector3 / int / float / bool / Rotation` (see
+`engine/Sandbox.Engine/Scene/Components/Render/SkinnedModelRenderer.Parameters.cs`).
+The commented-out `Set(string, Enum)` was disabled too. For enum
+`CEnumAnimParameter`s, look up the index in the `.vanmgrph` (values listed
+in declaration order, starting at 0) and pass it as an int.
+
+`face_override` indices (from `citizen.vanmgrph`): `0 NO_OVERRIDE,
+1 smile, 2 frown, 3 surprise, 4 sad, 5 angry, 6 eyes_closed`. Same
+ordering on the sausage `citizen.vmdl` and human `citizen_human_*.vmdl`.
+
+The graph is on/off — there's no strength axis. If you need partial
+smiles or composite expressions, you'd drive the underlying FACS morphs
+via `SkinnedModelRenderer.Morphs.Set("lip_corner_puller_l", v)` etc.
+(see the `FacePoseEditor` in sandbox/Code/UI/FacePoser for the full
+morph list). For agent dialogue sentiment, `face_override` is enough.
+
+To discover similar enum params in any model, grep its `.vanmgrph` for
+`CEnumAnimParameter` — the value list is right under each one.
+
 ## The jump trigger pattern
 
 `b_jump` is edge-triggered. The animgraph fires the jump animation on the

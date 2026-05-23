@@ -2,7 +2,7 @@
   "profiles": {
     "Editor": {
       "commandName": "Executable",
-      "executablePath": "S:/common/sbox/sbox-dev.exe",
+      "executablePath": "../../../../../../.local/share/Steam/steamapps/common/sbox/sbox-dev.exe",
       "commandLineArgs": "-project \u0022Z:\\home\\paul\\projects\\sbox-public\\examples\\open-world-walk\\open_world_walk.sbproj\u0022"
     }
   }

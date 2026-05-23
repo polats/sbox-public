@@ -29,27 +29,30 @@ public sealed class WoidClient : Component
 	readonly Dictionary<string, float> _nextTickAt = new();
 	readonly HashSet<string> _inFlight = new();
 	readonly HashSet<string> _registered = new();
+	readonly HashSet<string> _forceTick = new();
 	readonly Queue<string> _toSpawn = new();
 
 	public string LastStatusState { get; private set; } = "unknown";
 	public string LastError { get; private set; }
 
-	/// <summary>When true, no automatic ticks fire. Force-tick still works.</summary>
-	public bool Paused { get; set; }
+	/// <summary>When true, no automatic ticks fire. Force-tick still works.
+	/// Defaults to true so dev sessions start in a controlled state — the
+	/// DebugBar PAUSE button toggles it off when you're ready to let agents run.</summary>
+	[Property] public bool Paused { get; set; } = true;
 
 	public void TogglePaused() { Paused = !Paused; Log.Info( $"[WoidClient] paused = {Paused}" ); }
 
 	/// <summary>Force this character's next tick to fire immediately on the next OnUpdate.</summary>
 	public void RequestTick( string characterId )
 	{
-		_nextTickAt[characterId] = 0f;
+		_forceTick.Add( characterId );
 		Log.Info( $"[WoidClient] force-tick requested for {characterId}" );
 	}
 
 	/// <summary>Force-tick every registered character.</summary>
 	public void RequestTickAll()
 	{
-		foreach ( var id in _registered ) _nextTickAt[id] = 0f;
+		foreach ( var id in _registered ) _forceTick.Add( id );
 		Log.Info( $"[WoidClient] force-tick requested for ALL ({_registered.Count})" );
 	}
 
@@ -66,10 +69,13 @@ public sealed class WoidClient : Component
 		{
 			if ( !_registered.Contains( c.CharacterId ) ) continue;
 			if ( _inFlight.Contains( c.CharacterId ) ) continue;
-			var next = _nextTickAt.GetValueOrDefault( c.CharacterId, 0f );
-			// next == 0 means a force-tick was requested explicitly; honor it even while paused.
-			if ( Paused && next > 0 ) continue;
-			if ( Time.Now < next ) continue;
+			var forced = _forceTick.Remove( c.CharacterId );
+			if ( !forced )
+			{
+				if ( Paused ) continue;
+				var next = _nextTickAt.GetValueOrDefault( c.CharacterId, 0f );
+				if ( Time.Now < next ) continue;
+			}
 			_nextTickAt[c.CharacterId] = Time.Now + TickIntervalSec;
 			_ = TickOneAsync( c );
 		}

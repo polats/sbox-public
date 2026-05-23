@@ -3,7 +3,7 @@
     "Editor": {
       "commandName": "Executable",
       "executablePath": "S:/common/sbox/sbox-dev.exe",
-      "commandLineArgs": "-project \u0022Z:\\home\\paul\\projects\\sbox-public\\games\\coin-rush\\coin-rush.sbproj\u0022"
+      "commandLineArgs": "-project \u0022Z:\\home\\paul\\projects\\sbox-public\\examples\\coin-rush\\coin-rush.sbproj\u0022"
     }
   }
 }

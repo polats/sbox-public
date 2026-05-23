@@ -83,6 +83,9 @@ public sealed class Character : Component
 			_anim.WithWishVelocity( _agent.Velocity );
 		}
 
+		// Per-interaction state machines (stretch/dance/greet pulses).
+		TickInteractions();
+
 		// Pending-sit: walk-to-chair, snap-sit on arrival or after timeout.
 		if ( _pendingSitChair.IsValid() && !_sitting )
 		{
@@ -115,10 +118,10 @@ public sealed class Character : Component
 			_b_attack_clear_at = 0;
 		}
 
-		// Face emotion expire
+		// Face emotion expire — clear the face_override enum back to NO_OVERRIDE (0).
 		if ( _faceExpireAt > 0 && Time.Now > _faceExpireAt && _activeFaceParam != null && Model.IsValid() )
 		{
-			Model.Set( _activeFaceParam, 0f );
+			Model.Set( "face_override", 0 );
 			_activeFaceParam = null;
 			_faceExpireAt = 0;
 		}
@@ -263,7 +266,7 @@ public sealed class Character : Component
 		else if ( lower.Contains( "sad" ) || lower.Contains( "alas" ) || lower.Contains( "sigh" ) )
 			ShowFaceEmotion( "sad", 0.6f, 3f );
 		else if ( lower.Contains( "secret" ) || lower.Contains( "whisper" ) )
-			ShowFaceEmotion( "thrill", 0.5f, 3f );
+			ShowFaceEmotion( "smile", 0.4f, 3f );
 	}
 
 	/// <summary>Look at this GameObject for LookHoldSec (default 5s). Pass null to clear.</summary>
@@ -305,14 +308,129 @@ public sealed class Character : Component
 		_b_attack_next_pulse_at = prop != null ? Time.Now + 2.5f : 0;
 	}
 
-	/// <summary>Briefly show a face emotion (smile/sad/surprise/thrill/angry).</summary>
-	public void ShowFaceEmotion( string param, float strength = 0.8f, float durationSec = 3f )
+	/// <summary>Briefly show a citizen face emotion. The citizen animgraph
+	/// exposes <c>face_override</c> as a CEnumAnimParameter; SkinnedModelRenderer.Set
+	/// has NO string overload, so enum params must be set by their int index.
+	/// Indices (from citizen.vanmgrph): 0 NO_OVERRIDE, 1 smile, 2 frown,
+	/// 3 surprise, 4 sad, 5 angry, 6 eyes_closed.</summary>
+	public void ShowFaceEmotion( string emotion, float strength = 1f, float durationSec = 3f )
 	{
 		if ( Model == null ) return;
-		// Clear previous one immediately if different
-		if ( _activeFaceParam != null && _activeFaceParam != param ) Model.Set( _activeFaceParam, 0f );
-		Model.Set( param, strength );
-		_activeFaceParam = param;
+		var idx = FaceEmotionIndex( emotion );
+		if ( idx < 0 ) return;
+		Model.Set( "face_override", idx );
+		_activeFaceParam = emotion;
 		_faceExpireAt = Time.Now + durationSec;
+	}
+
+	static int FaceEmotionIndex( string name ) => name switch
+	{
+		"NO_OVERRIDE" => 0,
+		"smile"       => 1,
+		"frown"       => 2,
+		"surprise"    => 3,
+		"sad"         => 4,
+		"angry"       => 5,
+		"eyes_closed" => 6,
+		_             => -1,
+	};
+
+	// ─── New interactions (task #22) ────────────────────────────────
+	// Lightweight "verbs" the agent can perform. Each starts a state machine
+	// and clears it after a duration. Designed to compose with the animgraph
+	// primitives we have today (face_override, holdtype, b_attack, sit).
+	// Where applicable, these will look better once kimodo retargeting
+	// (task #20) is correct — currently they use animgraph-only fallbacks.
+
+	// Nap: in-place eyes-closed; ~6s by default.
+	public void Nap( float durationSec = 6f )
+	{
+		if ( Model == null ) return;
+		Log.Info( $"[Character {CharacterId}] nap ({durationSec:F1}s)" );
+		ShowFaceEmotion( "eyes_closed", 1f, durationSec );
+	}
+
+	// Stretch: short arms-up holdtype cycle.
+	public void Stretch( float durationSec = 2.5f )
+	{
+		if ( Model == null ) return;
+		Log.Info( $"[Character {CharacterId}] stretch ({durationSec:F1}s)" );
+		// Pose 5 = punch — closest "arms up" pose without kimodo.
+		Model.Set( "holdtype", 5 );
+		_stretchClearAt = Time.Now + durationSec;
+	}
+	float _stretchClearAt;
+
+	// Dance: smile + occasional b_jump pulses.
+	public void Dance( float durationSec = 5f )
+	{
+		Log.Info( $"[Character {CharacterId}] dance ({durationSec:F1}s)" );
+		ShowFaceEmotion( "smile", 1f, durationSec );
+		_danceEndAt = Time.Now + durationSec;
+		_danceNextHopAt = Time.Now + 0.4f;
+	}
+	float _danceEndAt;
+	float _danceNextHopAt;
+
+	// Greet: walk near another character, face them, brief smile.
+	public void Greet( Character target )
+	{
+		if ( target == null || !target.IsValid() ) return;
+		Log.Info( $"[Character {CharacterId}] greet → {target.CharacterId}" );
+		var toward = (target.WorldPosition - WorldPosition).Normal;
+		WalkTo( target.WorldPosition - toward * 80f );
+		LookAt( target.GameObject );
+		ShowFaceEmotion( "smile", 1f, 4f );
+		// b_attack pulse on arrival mimics a wave gesture (kimodo wave fixes this later).
+		_greetPulseAt = Time.Now + 1.5f;
+	}
+	float _greetPulseAt;
+
+	// Hug: walk close, face each other, big smile.
+	public void Hug( Character target )
+	{
+		if ( target == null || !target.IsValid() ) return;
+		Log.Info( $"[Character {CharacterId}] hug → {target.CharacterId}" );
+		var toward = (target.WorldPosition - WorldPosition).Normal;
+		WalkTo( target.WorldPosition - toward * 45f );
+		LookAt( target.GameObject );
+		ShowFaceEmotion( "smile", 1f, 5f );
+	}
+
+	// Talk: face target + one speech bubble.
+	public void Talk( Character target, string line )
+	{
+		if ( target == null || !target.IsValid() ) return;
+		LookAt( target.GameObject );
+		ShowSpeechBubble( line, target.CharacterId, 3500 );
+	}
+
+	// Override OnUpdate-style ticks for stretch + dance happen via these:
+	internal void TickInteractions()
+	{
+		if ( _stretchClearAt > 0 && Time.Now > _stretchClearAt && Model.IsValid() )
+		{
+			Model.Set( "holdtype", 0 );
+			_stretchClearAt = 0;
+		}
+		if ( _danceEndAt > 0 )
+		{
+			if ( Time.Now > _danceEndAt )
+			{
+				_danceEndAt = 0;
+				_danceNextHopAt = 0;
+			}
+			else if ( Time.Now > _danceNextHopAt && Model.IsValid() )
+			{
+				Model.Set( "b_jump", true );
+				_danceNextHopAt = Time.Now + 0.7f;
+			}
+		}
+		if ( _greetPulseAt > 0 && Time.Now > _greetPulseAt && Model.IsValid() )
+		{
+			Model.Set( "b_attack", true );
+			_b_attack_clear_at = Time.Now + 0.05f;
+			_greetPulseAt = 0;
+		}
 	}
 }

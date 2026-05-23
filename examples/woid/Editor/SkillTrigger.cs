@@ -178,6 +178,107 @@ public static class SkillTrigger
 		}
 	}
 
+	/// <summary>
+	/// "shot WxH" trigger: invoke the game-side `woid_shot` ConCmd (which
+	/// renders via Camera.RenderToTexture using Game.ActiveScene — works even
+	/// when editor's Application.GetActiveScene returns null), then copy the
+	/// resulting PNG from sbox's per-project data dir into the project's
+	/// captures/ folder where everyone expects screenshots to land.
+	/// </summary>
+	private static async System.Threading.Tasks.Task ShotAndCopyAsync( string triggerFile, int w, int h )
+	{
+		// Need to be in play mode for the game-context ConCmd to do anything useful.
+		if ( !Game.IsPlaying ) { EditorScene.Play(); await System.Threading.Tasks.Task.Delay( 1500 ); }
+
+		// Find sbox's data dir for this project so we know where woid_shot writes to.
+		// The Cookie / Filesystem.Data path resolves to:
+		//   ~/.local/share/Steam/steamapps/common/sbox/data/local/<ident>#<org>/captures/
+		// We grab the dir BEFORE issuing the command so we can diff for new files.
+		var projectRoot = GetActiveProjectRoot();
+		var ident = Project.Current?.Config?.Ident ?? "unknown";
+		var org = Project.Current?.Config?.Org ?? "local";
+		var sboxData = Path.Combine(
+			Environment.GetEnvironmentVariable( "HOME" ) ?? "/home/paul",
+			".local/share/Steam/steamapps/common/sbox/data",
+			"local",
+			$"{ident}#{org}",
+			"captures" );
+
+		// Snapshot existing files so we can detect what's new.
+		var before = Directory.Exists( sboxData )
+			? new HashSet<string>( Directory.GetFiles( sboxData, "shot-*.png" ) )
+			: new HashSet<string>();
+
+		Sandbox.ConsoleSystem.Run( $"woid_shot {w} {h}" );
+
+		// Poll for new file (up to ~3s).
+		string newFile = null;
+		for ( int i = 0; i < 30; i++ )
+		{
+			await System.Threading.Tasks.Task.Delay( 100 );
+			if ( !Directory.Exists( sboxData ) ) continue;
+			var current = Directory.GetFiles( sboxData, "shot-*.png" );
+			foreach ( var f in current )
+			{
+				if ( !before.Contains( f ) ) { newFile = f; break; }
+			}
+			if ( newFile != null ) break;
+		}
+
+		if ( newFile == null )
+		{
+			WriteResult( triggerFile, false, "no shot file appeared in " + sboxData, null );
+			return;
+		}
+
+		// Copy into the project's captures/ dir alongside the other tool's outputs.
+		var destDir = Path.Combine( projectRoot ?? ".", "captures" );
+		Directory.CreateDirectory( destDir );
+		var destName = $"woid-{DateTime.Now:yyyyMMdd-HHmmss}.png";
+		var destPath = Path.Combine( destDir, destName );
+		File.Copy( newFile, destPath, true );
+		Log.Info( $"[SkillTrigger] shot → {destPath}" );
+		WriteResult( triggerFile, true, null, new { path = destPath } );
+	}
+
+	/// <summary>
+	/// `screenshot_highres` captures the active scene camera output. Hud
+	/// panels (ScreenPanel UI) only render in play mode and only get
+	/// composited into that capture once the editor is actually playing.
+	/// In edit mode you get the scene with no UI overlay. Make sure we
+	/// enter play mode first.
+	/// </summary>
+	private static async System.Threading.Tasks.Task ScreenshotWithPlayAsync( int w, int h )
+	{
+		var startedPlay = false;
+		if ( !Game.IsPlaying )
+		{
+			Log.Info( "[SkillTrigger] screenshot: entering play mode for UI capture" );
+			EditorScene.Play();
+			startedPlay = true;
+
+			// Wait up to 5s for play to come alive + panels to mount.
+			var waited = 0;
+			while ( !Game.IsPlaying && waited < 50 )
+			{
+				await System.Threading.Tasks.Task.Delay( 100 );
+				waited++;
+			}
+			// Extra grace for ScreenPanel + PanelComponents to render their first frame.
+			await System.Threading.Tasks.Task.Delay( 800 );
+		}
+
+		Sandbox.ConsoleSystem.Run( $"screenshot_highres {w} {h}" );
+
+		// Give the capture a moment to flush before we exit play mode.
+		if ( startedPlay )
+		{
+			await System.Threading.Tasks.Task.Delay( 600 );
+			// Leave the editor playing — user may want to iterate. The next
+			// screenshot will re-detect IsPlaying and skip the play step.
+		}
+	}
+
 	private static void StartVideoClip( float seconds )
 	{
 		if ( _videoPhase != VideoClipPhase.None )
@@ -244,7 +345,20 @@ public static class SkillTrigger
 					var dims = wh.Split( 'x' );
 					var w = dims.Length > 0 && int.TryParse( dims[0], out var pw ) ? pw : 1280;
 					var h = dims.Length > 1 && int.TryParse( dims[1], out var ph ) ? ph : 720;
-					Sandbox.ConsoleSystem.Run( $"screenshot_highres {w} {h}" );
+					_ = ScreenshotWithPlayAsync( w, h );
+					break;
+				}
+			case "shot":
+				{
+					// "shot WxH" — runs `woid_shot` ConCmd (game-context render-to-texture,
+					// works even when editor's GetActiveScene returns null), then copies
+					// the resulting PNG from sbox's per-project data dir into the project's
+					// captures/ folder where everyone else's screenshots live.
+					var wh = parts.Length > 1 ? parts[1] : "800x800";
+					var dims = wh.Split( 'x' );
+					var w = dims.Length > 0 && int.TryParse( dims[0], out var pw ) ? pw : 800;
+					var h = dims.Length > 1 && int.TryParse( dims[1], out var ph ) ? ph : 800;
+					_ = ShotAndCopyAsync( file, w, h );
 					break;
 				}
 			case "video":

@@ -6,20 +6,20 @@
 
 BrainInspector {
 	position: absolute;
-	top: 36px;
-	width: 640px;
-	background-color: rgba(8, 12, 20, 0.88);
-	border: 2px solid rgba(120, 170, 230, 0.40);
-	border-radius: 16px;
-	padding: 22px 26px;
+	top: 20px;
+	width: 380px;
+	background-color: rgba(10, 14, 22, 0.92);
+	border: 1px solid rgba(132, 212, 255, 0.30);
+	border-radius: 12px;
+	padding: 16px 18px;
 	flex-direction: column;
-	gap: 12px;
+	gap: 8px;
 	pointer-events: all;
 	font-family: "Segoe UI", "Roboto", sans-serif;
 	color: white;
 
-	&.pos-right { right: 36px; }
-	&.pos-left  { left: 36px; }
+	&.pos-right { right: 20px; }
+	&.pos-left  { left: 20px; }
 
 	.header {
 		flex-direction: row;
@@ -29,32 +29,33 @@ BrainInspector {
 	}
 
 	.badge {
-		font-size: 16px;
+		font-size: 10px;
 		letter-spacing: 2px;
 		font-weight: 700;
 		color: #84d4ff;
-		background-color: rgba(132, 212, 255, 0.12);
-		padding: 5px 12px;
-		border-radius: 6px;
+		background-color: rgba(132, 212, 255, 0.15);
+		padding: 3px 9px;
+		border-radius: 999px;
 	}
 
 	.meta {
-		font-size: 17px;
-		color: #a8b3c4;
+		font-size: 11px;
+		color: #8a96a8;
 		font-family: "Consolas", monospace;
 	}
 
 	.empty {
 		color: #7b8694;
 		font-style: italic;
-		font-size: 20px;
-		padding: 20px 0;
+		font-size: 13px;
+		padding: 12px 0;
 	}
 
 	.persona {
 		flex-direction: column;
-		padding: 10px 0;
-		border-bottom: 1px solid rgba(255,255,255,0.12);
+		gap: 2px;
+		padding-bottom: 8px;
+		border-bottom: 1px solid rgba(255,255,255,0.08);
 	}
 
 	.name-row {
@@ -64,7 +65,7 @@ BrainInspector {
 	}
 
 	.name {
-		font-size: 38px;
+		font-size: 22px;
 		font-weight: 700;
 		color: #fff;
 	}
@@ -95,35 +96,35 @@ BrainInspector {
 	}
 
 	.vibe {
-		font-size: 15px;
+		font-size: 11px;
 		color: #d1a8ff;
-		letter-spacing: 2px;
+		letter-spacing: 1.5px;
 		text-transform: uppercase;
-		margin-top: 4px;
 	}
 
 	.section-label {
-		font-size: 14px;
+		font-size: 10px;
 		letter-spacing: 2px;
 		color: #7aa2cf;
 		font-weight: 700;
-		margin-top: 8px;
+		margin-top: 4px;
 	}
 
 	.reasoning {
-		font-size: 20px;
-		color: #e3e8ef;
-		font-style: italic;
-		padding: 6px 0;
+		font-size: 12px;
+		color: #d4dde8;
+		line-height: 16px;
+		padding: 4px 0;
+		min-height: 32px;
 	}
 
 	.action {
 		font-family: "Consolas", monospace;
-		font-size: 18px;
+		font-size: 12px;
 		color: #ffd279;
 		background-color: rgba(255, 210, 121, 0.10);
-		padding: 10px 14px;
-		border-radius: 6px;
+		padding: 6px 10px;
+		border-radius: 5px;
 	}
 
 	.moodlets {
@@ -135,43 +136,42 @@ BrainInspector {
 
 	.moodlet {
 		font-family: "Consolas", monospace;
-		font-size: 14px;
+		font-size: 11px;
 		color: #cbd6e0;
 		background-color: rgba(255, 255, 255, 0.06);
-		border: 1px solid rgba(255, 255, 255, 0.12);
-		border-radius: 6px;
-		padding: 4px 10px;
+		border: 1px solid rgba(255, 255, 255, 0.10);
+		border-radius: 999px;
+		padding: 2px 8px;
 	}
 
 	.footer {
 		flex-direction: row;
-		gap: 18px;
-		margin-top: 8px;
-		padding-top: 12px;
-		border-top: 1px solid rgba(255,255,255,0.12);
+		gap: 10px;
+		padding-top: 8px;
+		border-top: 1px solid rgba(255,255,255,0.08);
 		justify-content: space-between;
 	}
 
 	.stat {
-		font-size: 16px;
-		color: #a8b3c4;
+		font-size: 11px;
+		color: #8a96a8;
 		font-family: "Consolas", monospace;
 	}
 
 	.buttons {
 		flex-direction: row;
-		gap: 12px;
-		margin-top: 10px;
+		gap: 8px;
+		margin-top: 4px;
 	}
 
 	.btn, .btn-secondary {
 		flex-grow: 1;
 		flex-shrink: 0;
-		font-size: 18px;
-		font-weight: 700;
-		letter-spacing: 1px;
-		padding: 12px 18px;
-		border-radius: 8px;
+		font-size: 12px;
+		font-weight: 600;
+		letter-spacing: 0.5px;
+		padding: 7px 12px;
+		border-radius: 6px;
 		text-align: center;
 		cursor: pointer;
 		pointer-events: all;

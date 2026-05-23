@@ -1,0 +1,231 @@
+@namespace Woid
+@using System
+@using System.Collections.Generic
+@using System.Linq
+@using Sandbox
+@using Sandbox.UI
+@inherits PanelComponent
+
+<root>
+	<div class="row">
+		<div class="label">Agent</div>
+		<div class="btn pill" onclick=@CycleAgent><i>swap_horiz</i><span>@AgentLabel</span></div>
+	</div>
+
+	<div class="row">
+		<div class="label">Face</div>
+		<div class="btn face" onclick=@(() => Face("smile"))><i>sentiment_satisfied</i><span>smile</span></div>
+		<div class="btn face" onclick=@(() => Face("frown"))><i>sentiment_dissatisfied</i><span>frown</span></div>
+		<div class="btn face" onclick=@(() => Face("sad"))><i>sentiment_very_dissatisfied</i><span>sad</span></div>
+		<div class="btn face" onclick=@(() => Face("surprise"))><i>sentiment_very_satisfied</i><span>surprise</span></div>
+		<div class="btn face" onclick=@(() => Face("angry"))><i>mood_bad</i><span>angry</span></div>
+		<div class="btn face" onclick=@(() => Face("eyes_closed"))><i>bedtime</i><span>eyes shut</span></div>
+		<div class="btn ghost" onclick=@ClearFace><i>close</i><span>clear</span></div>
+	</div>
+
+	<div class="row">
+		<div class="label">Hold</div>
+		<div class="btn" onclick=@(() => Holdtype(0))>none</div>
+		<div class="btn" onclick=@(() => Holdtype(1))>pistol</div>
+		<div class="btn" onclick=@(() => Holdtype(2))>rifle</div>
+		<div class="btn" onclick=@(() => Holdtype(3))>shotgun</div>
+		<div class="btn" onclick=@(() => Holdtype(4))>item</div>
+		<div class="btn" onclick=@(() => Holdtype(5))>punch</div>
+		<div class="btn" onclick=@(() => Holdtype(6))>swing</div>
+		<div class="btn" onclick=@(() => Holdtype(7))>rpg</div>
+	</div>
+
+	<div class="row">
+		<div class="label">Pose</div>
+		<div class="btn" onclick=@SitOnChair><i>chair</i><span>sit</span></div>
+		<div class="btn" onclick=@SleepOnBed><i>king_bed</i><span>sleep</span></div>
+		<div class="btn" onclick=@StandUp><i>directions_walk</i><span>stand</span></div>
+		<div class="btn" onclick=@HoldMug><i>local_drink</i><span>hold mug</span></div>
+		<div class="btn" onclick=@HoldHotdog><i>lunch_dining</i><span>eat</span></div>
+		<div class="btn" onclick=@HoldNewspaper><i>menu_book</i><span>read</span></div>
+		<div class="btn" onclick=@DropHeld><i>arrow_downward</i><span>drop</span></div>
+	</div>
+
+	<div class="row">
+		<div class="label">Solo</div>
+		<div class="btn" onclick=@DoNap><i>bedtime</i><span>nap</span></div>
+		<div class="btn" onclick=@DoStretch><i>fitness_center</i><span>stretch</span></div>
+		<div class="btn" onclick=@DoDance><i>music_note</i><span>dance</span></div>
+		<div class="btn" onclick=@AttackPulse><i>bolt</i><span>b_attack</span></div>
+		<div class="btn" onclick=@PlayWave><i>waving_hand</i><span>wave (kimodo)</span></div>
+		<div class="btn ghost" onclick=@StopMocap><i>stop</i><span>stop mocap</span></div>
+	</div>
+
+	<div class="row">
+		<div class="label">Social</div>
+		<div class="btn" onclick=@DoGreet><i>front_hand</i><span>greet other</span></div>
+		<div class="btn" onclick=@DoHug><i>volunteer_activism</i><span>hug other</span></div>
+		<div class="btn" onclick=@DoTalk><i>chat</i><span>talk other</span></div>
+	</div>
+
+	@if (HasWardrobe)
+	{
+		<div class="row">
+			<div class="label">Outfit</div>
+			<div class="btn" onclick=@(() => Preset(0))>default</div>
+			<div class="btn" onclick=@(() => Preset(1))>casual</div>
+			<div class="btn" onclick=@(() => Preset(2))>formal</div>
+			<div class="btn" onclick=@(() => Preset(3))>athletic</div>
+			<div class="btn" onclick=@(() => Preset(4))>random</div>
+			<div class="btn ghost" onclick=@ClearOutfit>nude</div>
+			<div class="hint">@OutfitName</div>
+		</div>
+		<div class="row">
+			<div class="label">Wear</div>
+			@foreach (var slot in WardrobeSlots)
+			{
+				var s = slot;
+				<div class="slot-pill">
+					<div class="slot-tag">@s</div>
+					<div class="slot-name">@CurrentClothing(s)</div>
+					<div class="btn step" onclick=@(() => Cycle(s, -1))>&lt;</div>
+					<div class="btn step" onclick=@(() => Cycle(s, 1))>&gt;</div>
+				</div>
+			}
+		</div>
+	}
+</root>
+
+@code
+{
+	public string AgentLabel => _agent.IsValid()
+		? (string.IsNullOrEmpty(_agent.PersonaName) ? _agent.CharacterId : _agent.PersonaName)
+		: "(none)";
+
+	Character _agent;
+	int _agentIdx;
+
+	protected override void OnUpdate()
+	{
+		if ( !_agent.IsValid() )
+		{
+			var all = Scene.GetAllComponents<Character>().ToList();
+			if ( all.Count > 0 ) _agent = all[_agentIdx % all.Count];
+		}
+	}
+
+	void CycleAgent()
+	{
+		var all = Scene.GetAllComponents<Character>().ToList();
+		if ( all.Count == 0 ) { _agent = null; return; }
+		_agentIdx = (_agentIdx + 1) % all.Count;
+		_agent = all[_agentIdx];
+	}
+
+	void Face( string emotion )
+	{
+		if ( !_agent.IsValid() ) return;
+		_agent.ShowFaceEmotion( emotion, 1f, 6f );
+	}
+
+	void ClearFace()
+	{
+		if ( !_agent.IsValid() || _agent.Model == null ) return;
+		_agent.Model.Set( "face_override", 0 );
+	}
+
+	void Holdtype( int t )
+	{
+		if ( !_agent.IsValid() || _agent.Model == null ) return;
+		_agent.Model.Set( "holdtype", t );
+		Log.Info( $"[AnimPreview] {AgentLabel} holdtype={t}" );
+	}
+
+	void SitOnChair()
+	{
+		if ( !_agent.IsValid() ) return;
+		var chair = Scene.GetAllComponents<Chair>().FirstOrDefault();
+		if ( chair != null ) _agent.WalkToAndSit( chair );
+	}
+
+	void SleepOnBed()
+	{
+		if ( !_agent.IsValid() ) return;
+		var bed = Scene.GetAllComponents<Bed>().FirstOrDefault();
+		if ( bed != null ) _agent.WalkToAndSleep( bed );
+	}
+
+	void StandUp()
+	{
+		if ( !_agent.IsValid() ) return;
+		_agent.WalkTo( _agent.WorldPosition + _agent.WorldRotation.Forward * 60f );
+	}
+
+	void HoldMug()
+	{
+		if ( !_agent.IsValid() ) return;
+		var mug = Scene.GetAllComponents<WoidObject>().FirstOrDefault( w => w.Type == "mug" )?.Components.Get<HoldableProp>();
+		if ( mug != null ) _agent.WalkToAndHold( mug );
+	}
+
+	public void HoldHotdog()
+	{
+		if ( !_agent.IsValid() ) return;
+		var food = Scene.GetAllComponents<WoidObject>().FirstOrDefault( w => w.Type == "food" )?.Components.Get<HoldableProp>();
+		if ( food != null ) _agent.WalkToAndHold( food );
+	}
+
+	public void HoldNewspaper()
+	{
+		if ( !_agent.IsValid() ) return;
+		var paper = Scene.GetAllComponents<WoidObject>().FirstOrDefault( w => w.Type == "reading_material" )?.Components.Get<HoldableProp>();
+		if ( paper != null ) _agent.WalkToAndHold( paper );
+	}
+
+	public void DoNap()     { _agent?.Nap(); }
+	public void DoStretch() { _agent?.Stretch(); }
+	public void DoDance()   { _agent?.Dance(); }
+
+	Character OtherAgent()
+	{
+		var all = Scene.GetAllComponents<Character>().ToList();
+		return all.FirstOrDefault( c => c != _agent );
+	}
+	public void DoGreet() { if (_agent.IsValid()) _agent.Greet( OtherAgent() ); }
+	public void DoHug()   { if (_agent.IsValid()) _agent.Hug( OtherAgent() ); }
+	public void DoTalk()  { if (_agent.IsValid()) _agent.Talk( OtherAgent(), "Hey there, nice weather today!" ); }
+
+	void DropHeld()
+	{
+		if ( !_agent.IsValid() ) return;
+		var mug = Scene.GetAllComponents<HoldableProp>().FirstOrDefault( h => h.Holder == _agent.CharacterId );
+		mug?.Drop( _agent );
+	}
+
+	void AttackPulse()
+	{
+		if ( !_agent.IsValid() || _agent.Model == null ) return;
+		_agent.Model.Set( "b_attack", true );
+	}
+
+	void PlayWave()
+	{
+		if ( !_agent.IsValid() ) return;
+		var mocap = _agent.Components.Get<MocapPlayer>();
+		mocap?.Play();
+	}
+
+	void StopMocap()
+	{
+		if ( !_agent.IsValid() ) return;
+		var mocap = _agent.Components.Get<MocapPlayer>();
+		mocap?.Stop();
+	}
+
+	Wardrobe AgentWardrobe => _agent.IsValid() ? _agent.Components.Get<Wardrobe>() : null;
+	public bool HasWardrobe => AgentWardrobe != null;
+	public IEnumerable<string> WardrobeSlots => Wardrobe.SlotOrder;
+	public string OutfitName => AgentWardrobe?.CurrentOutfitName ?? "";
+	public string CurrentClothing( string slot ) => AgentWardrobe?.CurrentName( slot ) ?? "—";
+
+	void Preset( int idx ) => AgentWardrobe?.ApplyPreset( idx );
+	void ClearOutfit() => AgentWardrobe?.ClearAll();
+	void Cycle( string slot, int dir ) => AgentWardrobe?.CycleSlot( slot, dir );
+
+	protected override int BuildHash() => HashCode.Combine( AgentLabel, OutfitName, HasWardrobe );
+}
