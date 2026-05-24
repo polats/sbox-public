@@ -92,6 +92,39 @@ modelRenderer.MaterialOverride = mat;
 For multiple materials per model, use `MaterialGroup` (a name string
 the editor resolves to a Material) or build a `MaterialOverrideList`.
 
+## CameraComponent.EnablePostProcessing defaults to FALSE — nothing renders until it's true
+
+The single most time-wasting render gotcha: **no post-process effect runs**
+(bloom, tonemap, and the `Highlight` outline below) **unless the
+`CameraComponent` has `EnablePostProcessing = true`.** It defaults to `false`,
+and the failure is *silent* — the effect component is present and enabled, its
+shader loads, the targets register, and you still see nothing. Always check the
+camera first when a post-process "doesn't show":
+
+```csharp
+Scene.Camera.EnablePostProcessing = true;   // or set it in the .scene CameraComponent
+```
+
+## Hover/selection outline: HighlightOutline + Highlight (the clean built-in way)
+
+No custom shader needed. Two pieces:
+- A `Sandbox.Highlight` post-process **on the camera** (renders the outlines).
+- A `Sandbox.HighlightOutline` **on each object** you want outlined (or one with
+  `OverrideTargets = true` + `Targets` set to the renderers, the pattern
+  sandbox's ContextMenuHost uses). It outlines the object's `Renderer`s.
+
+```csharp
+var o = go.Components.GetOrCreate<HighlightOutline>();
+o.Color = new Color( 2f, 1.6f, 0.3f );   // HDR-ish reads best through tonemapping
+o.Width = 0.6f;
+o.ObscuredColor = new Color( 1f, 0.8f, 0.2f ); // shows through occluders
+```
+
+For hover: raycast the cursor (`Scene.Camera.ScreenPixelToRay(Mouse.Position)`),
+walk up to the interactable, and add/remove the `HighlightOutline` only on the
+hovered object. **And — see above — `EnablePostProcessing` must be true or none
+of this draws.**
+
 ## HDR Tint + bloom for "glowing" without a custom shader
 
 To get a sphere glowing without writing a shader, set the

@@ -103,6 +103,26 @@ Scene-file shape (`Sandbox.NavMeshAgent` JSON):
 (Crib from `sandbox/Assets/entities/sents/npc/combat_npc.prefab` for
 the canonical field list.)
 
+### `UpdateRotation = true` aims at a path look-ahead, not the actual velocity
+
+The agent's built-in rotation faces a point *ahead on the path* (`GetLookAhead`),
+which has two bad tells: it **spins the character toward an unreachable target**
+when the path is blocked (the agent stalls but keeps re-aiming), and it **snaps
+the facing ~180° at arrival** when it slightly overshoots the last corner (the
+residual look-ahead points back). If either bites, set `UpdateRotation = false`
+and face the real travel direction yourself, only while actually moving:
+
+```csharp
+agent.UpdateRotation = false;
+// each frame:
+var v = agent.Velocity.WithZ( 0f );
+if ( v.Length > 10f )
+    WorldRotation = Rotation.Slerp( WorldRotation, Rotation.LookAt( v.Normal ), Time.Delta * 8f );
+```
+
+Keeping it velocity-based also means the character holds its last facing when it
+stops, instead of pivoting.
+
 ## Moving an agent
 
 ```csharp

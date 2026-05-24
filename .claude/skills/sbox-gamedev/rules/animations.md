@@ -128,6 +128,47 @@ else if ( _resetJumpNextFrame )
 
 Don't leave it true permanently or the animgraph loops the jump.
 
+## Sitting: the param set (and why it "squats")
+
+To seat the citizen, match the engine's `BaseChair.UpdatePlayerAnimator` set —
+not just `sit`:
+
+```csharp
+smr.Set( "sit", (int)pose );          // 1 Chair, 2 ChairForward, 6 Ground, ...
+smr.Set( "sit_offset_height", h*12f ); // h in -1..1
+smr.Set( "b_grounded", true );         // REQUIRED — without it the pose blends
+smr.Set( "b_climbing", false );        // with an airborne stance and the
+smr.Set( "b_swim", false );            // character "squats" above the seat
+smr.Set( "duck", false );
+```
+
+- **There is no `b_sit` parameter** — setting it is a silent no-op.
+- The engine pattern parents the character's *origin* to a seat node; the sit
+  pose then places the body. To make it land on **any** seat with no per-chair
+  tuning, read the posed `pelvis` bone (`SceneModel.GetBoneWorldTransform`) and
+  rigid-shift the root so the pelvis meets the seat surface — self-correcting.
+- **Don't foot-IK the seated legs by tracing the IK-solved foot each frame** —
+  reading the solved foot and re-targeting it feeds back into a leg spasm.
+
+## Root motion from a sequence (ExtractMotion)
+
+`SkinnedModelRenderer.RootMotion` (a per-frame local-space `Transform` delta) is
+**zero unless the animation has an `ExtractMotion` node** (in the AnimFile, or
+the citizen `*_ani_process_*` prefabs). It works with `UseAnimGraph = false` +
+`CurrentSequence` too. Consume it to move a character:
+
+```csharp
+var worldDelta = renderer.WorldRotation * renderer.RootMotion.Position;
+controller.MoveTo( WorldPosition + worldDelta, false ); // or WorldPosition += ...
+```
+
+**Never rescale/clamp the delta** — it's calibrated to the foot animation, so
+shrinking it makes the body lag the leg sweep and the planted foot skates
+backward (a moonwalk). Drop garbage frames (e.g. the first frame after a
+sequence switch reports a huge bogus delta), don't scale real ones. And if the
+same GameObject has a `NavMeshAgent` / other transform-driver, **suspend them**
+while root motion owns the transform, or they fight and reverse the motion.
+
 ## CharacterController patterns
 
 `CharacterController` is the engine's "move with sliding against walls,
