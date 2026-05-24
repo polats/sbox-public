@@ -378,6 +378,43 @@ This primes `.sbox/project.json` so `sbox-launch <project-dir>` opens directly
 into that scene tab. **The editor must be closed when this runs** — it
 clobbers the file on graceful shutdown.
 
+## Never `EditorScene.OpenScene` via eval after launch — it resets the user's layout
+
+The editor restores the **last-open scene AND the dock/viewport layout**
+natively on launch, from `.sbox/project.json` (keys like
+`Window.SboxSceneEditor.Dock`, `scenes/<name>.scene.Viewport0`, and the
+`SceneDock:scenes/<name>.scene` entry). So after `sbox-launch` the scene is
+**already open** — confirm with:
+
+```bash
+tools/sbox-eval 'SceneEditorSession.Active?.Scene?.Source?.ResourceName'   # → "main"
+```
+
+Do **not** then call `EditorScene.OpenScene(asset.LoadResource<SceneFile>())`
+in an eval to "make sure" it's open. That spins up a *fresh* editor session
+and throws away the restored viewport + dock arrangement — the user sees their
+panel layout and camera reset on every launch. If the scene reliably isn't
+restored, fix it with `sbox-set-startup-scene` (above), not with a runtime
+open.
+
+**To change scene contents without disrupting layout, edit live instead of
+file-edit + relaunch.** Toggling a component, moving an object, etc. on the
+*edit* scene via eval is reflected immediately and survives into the next play,
+with zero layout cost:
+
+```csharp
+var scene = SceneEditorSession.Active.Scene;
+var go = scene.GetAllObjects( true ).First( o => o.Name == "Bob" );
+foreach ( var c in go.Components.GetAll() )
+    if ( c.GetType().Name == "Character" ) c.Enabled = true;   // live toggle
+```
+
+(If you want the change to persist across a *relaunch*, also patch the `.scene`
+file — but the live toggle is what the user tests now.) And remember
+`sbox-launch` **hard-kills** the editor, so any layout changes the user made
+since the last graceful exit are lost — prefer `sbox-recompile` (code) and live
+eval edits (scene) over relaunching whenever possible.
+
 ## Wine file-watcher caveat
 
 If the editor is already running, changes to scene files on disk are usually
