@@ -14,6 +14,15 @@
 		<div class="meta">@Model · @Provider</div>
 	</div>
 
+	<div class="agent-tabs">
+		@foreach ( var id in AgentIds )
+		{
+			<div class=@($"agent-tab {(id == CharacterId ? "active" : "")}") onclick=@(() => SwitchAgent( id ))>
+				@id
+			</div>
+		}
+	</div>
+
 	@if (string.IsNullOrEmpty(PersonaName))
 	{
 		<div class="empty">waiting for brain-server…</div>
@@ -72,7 +81,27 @@
 	[Property] public float PollSec { get; set; } = 1.0f;
 	[Property] public string Anchor { get; set; } = "right";
 
+	/// <summary>Comma-separated list of agent IDs to tab between (e.g. "alice,bob").</summary>
+	[Property] public string AgentIdsCsv { get; set; } = "alice,bob";
+
 	public string PanelClass => Anchor == "left" ? "pos-left" : "pos-right";
+
+	public string[] AgentIds =>
+		(AgentIdsCsv ?? "").Split( ',' ).Select( s => s.Trim() ).Where( s => s.Length > 0 ).ToArray();
+
+	void SwitchAgent( string id )
+	{
+		if ( id == CharacterId ) return;
+		CharacterId = id;
+		// Reset cached data so the UI shows "loading" until next poll lands.
+		PersonaName = "";
+		Reasoning = "(no trace yet)";
+		LastAction = "—";
+		MoodBand = "";
+		MoodletCount = 0;
+		MoodletTopTags.Clear();
+		_nextPoll = 0f;
+	}
 
 	public string PersonaName { get; private set; } = "";
 	public string Vibe { get; private set; } = "";

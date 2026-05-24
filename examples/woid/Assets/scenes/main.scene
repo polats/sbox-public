@@ -738,22 +738,6 @@
           "PollSec": 1.5
         },
         {
-          "__type": "Woid.BrainInspector",
-          "__guid": "20000000-0000-0000-0000-000000000503",
-          "__enabled": true,
-          "Flags": 0,
-          "Anchor": "right",
-          "BaseUrl": "http://127.0.0.1:8080",
-          "CharacterId": "bob",
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "PollSec": 1.5
-        },
-        {
           "__type": "Woid.DebugBar",
           "__guid": "20000000-0000-0000-0000-000000000505",
           "__enabled": true,
@@ -1595,6 +1579,140 @@
           },
           "RigidbodyFlags": 0,
           "StartAsleep": false
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "10000000-0000-0000-0000-0000c11e2010",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "KimodoCitizen",
+      "Position": "200,0,0",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "kimodo",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.SkinnedModelRenderer",
+          "__guid": "20000000-0000-0000-0000-0000c11e2011",
+          "__enabled": true,
+          "Flags": 0,
+          "AnimationGraph": null,
+          "BodyGroups": 18446744073709551615,
+          "BoneMergeTarget": null,
+          "CreateAttachments": false,
+          "CreateBoneObjects": true,
+          "LodOverride": null,
+          "MaterialGroup": null,
+          "MaterialOverride": null,
+          "Materials": null,
+          "Model": "models/kimodo/kimodo_anims.vmdl",
+          "Morphs": {},
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "Parameters": {
+            "bools": {},
+            "ints": {},
+            "floats": {},
+            "vectors": {},
+            "rotations": {}
+          },
+          "PlaybackRate": 1,
+          "RenderOptions": {
+            "GameLayer": true,
+            "OverlayLayer": false,
+            "BloomLayer": false,
+            "AfterUILayer": false
+          },
+          "RenderType": "On",
+          "Sequence": {
+            "Name": null,
+            "Looping": true,
+            "Blending": false
+          },
+          "Tint": "1,1,1,1",
+          "UseAnimGraph": false
+        },
+        {
+          "__type": "Woid.KimodoSequencePlayer",
+          "__guid": "20000000-0000-0000-0000-0000c11e2012",
+          "__enabled": true,
+          "Flags": 0,
+          "Target": {
+            "_type": "component",
+            "component_id": "20000000-0000-0000-0000-0000c11e2011",
+            "go": "10000000-0000-0000-0000-0000c11e2010",
+            "component_type": "SkinnedModelRenderer"
+          },
+          "PropagateRootMotion": true,
+          "HorizontalOnly": true,
+          "CurrentSequence": "",
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "10000000-0000-0000-0000-0000c11e2020",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "KimodoUI",
+      "Position": "0,0,0",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.ScreenPanel",
+          "__guid": "20000000-0000-0000-0000-0000c11e2021",
+          "__enabled": true,
+          "Flags": 0,
+          "AutoScreenScale": true,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "Opacity": 1,
+          "Scale": 1,
+          "ScaleStrategy": "ConsistentHeight",
+          "TargetCamera": null,
+          "ZIndex": 100
+        },
+        {
+          "__type": "Woid.KimodoClipBrowser",
+          "__guid": "20000000-0000-0000-0000-0000c11e2022",
+          "__enabled": true,
+          "Flags": 0,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null
         }
       ],
       "Children": []

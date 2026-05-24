@@ -12,8 +12,8 @@
 		<AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
 		<DefineConstants>SANDBOX</DefineConstants>
 		<AllowUnsafeBlocks>False</AllowUnsafeBlocks>
-		<OutputPath>../../../../../.local/share/Steam/steamapps/common/sbox/.vs/output/</OutputPath>
-		<DocumentationFile>../../../../../.local/share/Steam/steamapps/common/sbox/.vs/output/woid.xml</DocumentationFile>
+		<OutputPath>S:/common/sbox/.vs/output/</OutputPath>
+		<DocumentationFile>S:/common/sbox/.vs/output/woid.xml</DocumentationFile>
 		<RootNamespace>Sandbox</RootNamespace>
 		<Nullable>disable</Nullable>
 		<DefaultItemExcludes>$(DefaultItemExcludes);**/editor/**;**/unittest/**</DefaultItemExcludes>
@@ -26,18 +26,18 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<Analyzer Include="../../../../../.local/share/Steam/steamapps/common/sbox/bin/managed/Sandbox.CodeUpgrader.dll"/> 
-		<Analyzer Include="../../../../../.local/share/Steam/steamapps/common/sbox/bin/managed/Sandbox.Generator.dll"/> 
-		<Reference Include="../../../../../.local/share/Steam/steamapps/common/sbox/bin/managed/Sandbox.System.dll"/> 
-		<Reference Include="../../../../../.local/share/Steam/steamapps/common/sbox/bin/managed/Sandbox.Engine.dll"/> 
-		<Reference Include="../../../../../.local/share/Steam/steamapps/common/sbox/bin/managed/Sandbox.Filesystem.dll"/> 
-		<Reference Include="../../../../../.local/share/Steam/steamapps/common/sbox/bin/managed/Sandbox.Reflection.dll"/> 
-		<Reference Include="../../../../../.local/share/Steam/steamapps/common/sbox/bin/managed/Sandbox.Mounting.dll"/> 
-		<Reference Include="../../../../../.local/share/Steam/steamapps/common/sbox/bin/managed/Microsoft.AspNetCore.Components.dll"/> 
+		<Analyzer Include="S:/common/sbox/bin/managed/Sandbox.CodeUpgrader.dll"/> 
+		<Analyzer Include="S:/common/sbox/bin/managed/Sandbox.Generator.dll"/> 
+		<Reference Include="S:/common/sbox/bin/managed/Sandbox.System.dll"/> 
+		<Reference Include="S:/common/sbox/bin/managed/Sandbox.Engine.dll"/> 
+		<Reference Include="S:/common/sbox/bin/managed/Sandbox.Filesystem.dll"/> 
+		<Reference Include="S:/common/sbox/bin/managed/Sandbox.Reflection.dll"/> 
+		<Reference Include="S:/common/sbox/bin/managed/Sandbox.Mounting.dll"/> 
+		<Reference Include="S:/common/sbox/bin/managed/Microsoft.AspNetCore.Components.dll"/> 
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="../../../../../.local/share/Steam/steamapps/common/sbox/addons/base/Code/Base Library.csproj" />
+		<ProjectReference Include="S:/common/sbox/addons/base/Code/Base Library.csproj" />
 	</ItemGroup>
 
 </Project>

@@ -1,0 +1,120 @@
+@namespace Woid
+@using System.Collections.Generic
+@using System.Linq
+@using Sandbox
+@using Sandbox.UI
+@inherits PanelComponent
+@attribute [StyleSheet]
+
+<root>
+	<div class="header">
+		<div class="title">animation clips</div>
+		<div class="status">@(_currentLabel)</div>
+	</div>
+
+	<div class="tabs">
+		<button class=@($"tab {(_tab == "kimodo" ? "active" : "")}") onclick=@(() => SetTab( "kimodo" ))>
+			kimodo (@_kimodoClips.Count)
+		</button>
+		<button class=@($"tab {(_tab == "other" ? "active" : "")}") onclick=@(() => SetTab( "other" ))>
+			citizen (@_otherClips.Count)
+		</button>
+	</div>
+
+	<div class="toggles">
+		<label>
+			<input type="checkbox" checked=@(_player?.PropagateRootMotion ?? true)
+			       onchange=@TogglePropagate />
+			propagate root motion
+		</label>
+		<label>
+			<input type="checkbox" checked=@(_player?.HorizontalOnly ?? true)
+			       onchange=@ToggleHorizontalOnly />
+			horizontal only
+		</label>
+	</div>
+
+	<div class="clips">
+		@foreach ( var name in CurrentList )
+		{
+			var isActive = name == _player?.CurrentSequence;
+			<button class=@($"clip {(isActive ? "active" : "")}") onclick=@(() => Play( name ))>
+				@DisplayName( name )
+			</button>
+		}
+		@if ( CurrentList.Count == 0 )
+		{
+			<div class="empty">(no clips in this tab)</div>
+		}
+	</div>
+
+	<div class="footer">
+		<button class="stop" onclick=@Stop>stop</button>
+	</div>
+</root>
+
+@code {
+	KimodoSequencePlayer _player;
+	List<string> _kimodoClips = new();
+	List<string> _otherClips = new();
+	string _tab = "kimodo";
+	string _currentLabel = "(idle)";
+
+	List<string> CurrentList => _tab == "kimodo" ? _kimodoClips : _otherClips;
+
+	protected override void OnEnabled()
+	{
+		_player = Scene.GetAllComponents<KimodoSequencePlayer>().FirstOrDefault();
+		RefreshClips();
+	}
+
+	void RefreshClips()
+	{
+		_kimodoClips.Clear();
+		_otherClips.Clear();
+		if ( _player == null ) return;
+		foreach ( var s in _player.ListKimodoSequences() ) _kimodoClips.Add( s );
+		foreach ( var s in _player.ListOtherSequences() ) _otherClips.Add( s );
+		_kimodoClips.Sort();
+		_otherClips.Sort();
+	}
+
+	string DisplayName( string raw ) =>
+		raw.StartsWith( KimodoSequencePlayer.KIMODO_PREFIX )
+			? raw.Substring( KimodoSequencePlayer.KIMODO_PREFIX.Length )
+			: raw;
+
+	void SetTab( string tab )
+	{
+		_tab = tab;
+	}
+
+	void Play( string name )
+	{
+		_player?.Play( name );
+		_currentLabel = $"playing: {DisplayName( name )}";
+	}
+
+	void Stop()
+	{
+		_player?.Stop();
+		_currentLabel = "(idle)";
+	}
+
+	void TogglePropagate()
+	{
+		if ( _player == null ) return;
+		_player.PropagateRootMotion = !_player.PropagateRootMotion;
+	}
+
+	void ToggleHorizontalOnly()
+	{
+		if ( _player == null ) return;
+		_player.HorizontalOnly = !_player.HorizontalOnly;
+	}
+
+	protected override int BuildHash() =>
+		System.HashCode.Combine( _player?.CurrentSequence, _tab,
+			_kimodoClips.Count, _otherClips.Count,
+			_player?.PropagateRootMotion, _player?.HorizontalOnly );
+}

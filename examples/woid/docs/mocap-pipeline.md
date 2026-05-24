@@ -217,6 +217,29 @@ kimodo JSON  →  Python writes a per-clip action plan
 
 ---
 
+## 5b. Status — pipeline implemented and working
+
+The recommended approach above is built and producing usable animations on
+citizen. Repository: `kimodo/baker/`. See its
+[README](../../../../kimodo/baker/README.md) for:
+
+- Pipeline architecture and quick-start
+- Final bake math (`matrix_basis = comp · (T_virt⁻¹ · local_q · T_virt)`)
+- **Ten numbered gotchas** we hit along the way — read these before touching
+  the baker again; each one took real time to find. Topics covered: vmdl
+  scale modifier inheritance, FBX axis conventions (Z-up Source 2 needs Z
+  up out of Blender), `bake_space_transform` adding unwanted armature
+  rotation, `primary_bone_axis` mismatch corrupting bind round-trip,
+  pose_bone.rotation_quaternion being a delta not absolute,
+  local_quats_wxyz vs global_quats_xyzw, SMPL-X canonical's elevated
+  clavicles, capturing comp as `matrix_basis` not `pose_bone.matrix`,
+  conjugation reference must match the bone's starting frame, Blender 5
+  bake_anim quirks.
+
+The current state produces visually-correct T-pose at rest and clean motion
+on the citizen_human_male model with the curated 13-clip set
+(walk/wave/bow/celebrate/clap/dance/jumping-jacks/punch/run/shrug/jump/point/kick).
+
 ## 6. Non-citizen models in s&box
 
 Citizen is one model among many. Anything you bring through ModelDoc is on equal footing — citizen just happens to ship with the editor and have a finely-tuned animgraph + constraint set built around it. Here's what s&box gives you for arbitrary skeletons.
