@@ -17,9 +17,28 @@ public sealed class ClickInteract : Component
 
 	protected override void OnUpdate()
 	{
-		if ( !Input.Pressed( "Attack1" ) ) return; // left mouse
 		if ( IsMouseOverUi() ) return; // UI takes precedence
-		HandleClick();
+		if ( Input.Pressed( "Attack1" ) ) HandleClick();          // left: move / interact
+		else if ( Input.Pressed( "Attack2" ) ) HandleThrow();     // right: throw held prop
+	}
+
+	/// <summary>Right-click: the holding character throws its prop toward the
+	/// point under the cursor (ground or object). Right-mouse is free for this
+	/// because the fly camera moved to middle-mouse.</summary>
+	void HandleThrow()
+	{
+		var holder = Characters.All().FirstOrDefault( c => c.IsHolding );
+		if ( holder == null ) return;
+
+		var cam = Scene.Camera ?? Scene.GetAllComponents<CameraComponent>().FirstOrDefault();
+		if ( cam == null ) return;
+		var tr = Scene.Trace.Ray( cam.ScreenPixelToRay( Mouse.Position ), 5000f )
+			.IgnoreGameObject( cam.GameObject )
+			.WithoutTags( "held" )
+			.Run();
+		if ( !tr.Hit ) return;
+
+		holder.ThrowHeld( tr.HitPosition );
 	}
 
 	bool IsMouseOverUi()
@@ -40,6 +59,7 @@ public sealed class ClickInteract : Component
 		var ray = cam.ScreenPixelToRay( Mouse.Position );
 		var tr = Scene.Trace.Ray( ray, 5000f )
 			.IgnoreGameObject( cam.GameObject )
+			.WithoutTags( "held" )
 			.Run();
 
 		if ( !tr.Hit ) return;

@@ -56,6 +56,7 @@ public sealed class HoverHighlight : Component
 
 		var tr = Scene.Trace.Ray( cam.ScreenPixelToRay( Mouse.Position ), 5000f )
 			.IgnoreGameObject( cam.GameObject )
+			.WithoutTags( "held" )
 			.Run();
 		if ( !tr.Hit ) return null;
 

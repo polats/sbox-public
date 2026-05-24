@@ -192,12 +192,15 @@ public sealed class Character : Component
 			_b_attack_next_pulse_at = Time.Now + 3.5f;
 		}
 
-		// Pending-pickup: walk-to-prop, hold on arrival
-		if ( _pendingHoldProp.IsValid() && _holding == null )
+		// Pending-pickup: walk up to the prop, then grab on arrival. Picking up
+		// while already holding swaps — drop the current one first (replace).
+		if ( _pendingHoldProp.IsValid() )
 		{
-			var dist = WorldPosition.Distance( _pendingHoldProp.WorldPosition );
-			if ( dist < 40f || Time.Now > _pendingSitTimeoutAt )
+			var dist = WorldPosition.Distance( _pendingHoldProp.WorldPosition.WithZ( WorldPosition.z ) );
+			var arrived = dist < 26f || (_agent.IsValid() && _agent.Velocity.Length < 8f && dist < 70f);
+			if ( arrived || Time.Now > _pendingSitTimeoutAt )
 			{
+				if ( _holding.IsValid() && _holding != _pendingHoldProp ) _holding.Drop( this );
 				_pendingHoldProp.Hold( this );
 				_pendingHoldProp = null;
 			}
@@ -266,16 +269,27 @@ public sealed class Character : Component
 		_pendingSitTimeoutAt = Time.Now + 8f;
 	}
 
-	/// <summary>Walk to a holdable, pick it up. Returns true if pickup will happen on arrival.</summary>
+	/// <summary>Walk up to a holdable and pick it up on arrival. Picking up while
+	/// already holding another swaps (the old one is dropped). Returns false only
+	/// if the prop is invalid or already held by us.</summary>
 	public bool WalkToAndHold( HoldableProp prop )
 	{
-		if ( prop == null ) return false;
-		WalkTo( prop.WorldPosition );
+		if ( prop == null || prop == _holding ) return false;
+		WalkTo( prop.WorldPosition );          // WalkTo snaps to the navmesh near the prop
 		_pendingHoldProp = prop;
 		_pendingSitTimeoutAt = Time.Now + 8f;
 		return true;
 	}
 	HoldableProp _pendingHoldProp;
+
+	/// <summary>True if currently carrying a prop.</summary>
+	public bool IsHolding => _holding.IsValid();
+
+	/// <summary>Throw the held prop in a ballistic arc toward a world point.</summary>
+	public void ThrowHeld( Vector3 target )
+	{
+		if ( _holding.IsValid() ) _holding.Throw( this, target );
+	}
 
 	public void PlayAnimation( string name, bool loop )
 	{

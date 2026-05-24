@@ -3,9 +3,10 @@ using Sandbox;
 namespace Woid;
 
 /// <summary>
-/// Hold-to-fly camera: while the RIGHT mouse button is held, the cursor hides
-/// and the camera does mouse-look + WASD movement (Space/Ctrl for up/down,
-/// Shift to go faster). Release to return to normal cursor + click-to-direct.
+/// Hold-to-fly camera: while the MIDDLE mouse button is held (the "CameraFly"
+/// input action, mouse3), the cursor hides and the camera does mouse-look +
+/// WASD movement (Space/Ctrl for up/down, Shift to go faster). Release to return
+/// to normal cursor. (Right-mouse is left free for throwing held props.)
 ///
 /// There's no separate "fly mode" toggle — this component stays enabled and
 /// only takes over the camera while RMB is down. Cursor visibility is only
@@ -25,7 +26,7 @@ public sealed class FlyCamera : Component
 
 	protected override void OnUpdate()
 	{
-		var held = Input.Down( "Attack2" ); // right mouse
+		var held = Input.Down( "CameraFly" ); // middle mouse (mouse3)
 
 		if ( held && !_active )
 		{
