@@ -225,7 +225,7 @@ citizen. Repository: `kimodo/baker/`. See its
 
 - Pipeline architecture and quick-start
 - Final bake math (`matrix_basis = comp · (T_virt⁻¹ · local_q · T_virt)`)
-- **Ten numbered gotchas** we hit along the way — read these before touching
+- **Eleven numbered gotchas** we hit along the way — read these before touching
   the baker again; each one took real time to find. Topics covered: vmdl
   scale modifier inheritance, FBX axis conventions (Z-up Source 2 needs Z
   up out of Blender), `bake_space_transform` adding unwanted armature
@@ -239,6 +239,29 @@ citizen. Repository: `kimodo/baker/`. See its
 The current state produces visually-correct T-pose at rest and clean motion
 on the citizen_human_male model with the curated 13-clip set
 (walk/wave/bow/celebrate/clap/dance/jumping-jacks/punch/run/shrug/jump/point/kick).
+
+### Root motion & collision (translation + stopping on geometry)
+
+Playing the animation is half the job; making the character physically move and
+collide is the other half. This is now wired end-to-end. Full detail is in the
+baker [README → "Root motion & collision"](../../../../kimodo/baker/README.md);
+the short version:
+
+- **Baker:** `gen_vmdl.py` adds an `ExtractMotion` node to each `AnimFile`.
+  Without it `SkinnedModelRenderer.RootMotion` is always zero and nothing
+  translates. This is the keystone.
+- **Runtime:** `Code/KimodoSequencePlayer.cs` reads `Target.RootMotion` each
+  tick and drives `CharacterController.MoveTo(…, useStep:false)` — the engine
+  way, replacing the earlier manual pelvis-bone reading. It collides and stops
+  against world geometry.
+- **Scene:** the character GameObject carries `SkinnedModelRenderer`
+  (`UseAnimGraph=false`) + `CharacterController` + `KimodoSequencePlayer`
+  (with `Target`/`Controller` wired); obstacles need a collider.
+- **Works for citizen base_model clips too** — `Run_N` etc. translate cleanly
+  (better than our bakes), non-locomotion clips stay in place.
+- **Caveat:** our kimodo locomotion bakes accelerate without bound and drift
+  laterally, so a `MaxSpeed` clamp is needed and a narrow obstacle gets slid
+  around. Clean fix is bake-side (trim to steady-velocity loop, zero drift).
 
 ## 6. Non-citizen models in s&box
 

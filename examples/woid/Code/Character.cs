@@ -42,6 +42,7 @@ public sealed class Character : Component
 
 	NavMeshAgent _agent;
 	CitizenAnimationHelper _anim;
+	KimodoSequencePlayer _kimodo;
 	bool _sitting;
 	Chair _currentChair;
 	Bed _currentBed;
@@ -65,7 +66,14 @@ public sealed class Character : Component
 
 		_agent = Components.Get<NavMeshAgent>();
 		_anim  = Components.Get<CitizenAnimationHelper>();
+		_kimodo = Components.Get<KimodoSequencePlayer>();
 		if ( Model == null ) Model = Components.GetInDescendantsOrSelf<SkinnedModelRenderer>();
+
+		// We face the direction of travel ourselves (see OnUpdate). The agent's
+		// own UpdateRotation aims at a look-ahead point on the path, which spins
+		// the character toward unreachable targets when blocked and snaps it
+		// around at arrival when it slightly overshoots the last corner.
+		if ( _agent.IsValid() ) _agent.UpdateRotation = false;
 
 		if ( _anim.IsValid() && _anim.Target == null && Model.IsValid() ) _anim.Target = Model;
 
@@ -76,11 +84,32 @@ public sealed class Character : Component
 
 	protected override void OnUpdate()
 	{
+		// While a kimodo clip is taking over, the clip owns the whole body and
+		// transform (it disables the agent). We must not feed the animgraph or
+		// re-face the character, or we fight the clip's root motion.
+		if ( _kimodo.IsValid() && _kimodo.IsPlaying )
+		{
+			TickInteractions();
+			return;
+		}
+
 		// Drive the animgraph from NavMeshAgent velocity each frame.
 		if ( _anim.IsValid() && _agent.IsValid() )
 		{
 			_anim.WithVelocity( _agent.Velocity );
 			_anim.WithWishVelocity( _agent.Velocity );
+		}
+
+		// Face the direction of actual travel, but only while genuinely moving —
+		// this avoids the agent's look-ahead spin at arrival / when blocked.
+		if ( _agent.IsValid() && !_sitting )
+		{
+			var v = _agent.Velocity.WithZ( 0f );
+			if ( v.Length > 10f )
+			{
+				var aim = Rotation.LookAt( v.Normal, Vector3.Up );
+				WorldRotation = Rotation.Slerp( WorldRotation, aim, Time.Delta * 8f );
+			}
 		}
 
 		// Per-interaction state machines (stretch/dance/greet pulses).
@@ -160,6 +189,11 @@ public sealed class Character : Component
 	/// <summary>Walk to worldPos via NavMeshAgent. Auto-stands if currently sat.</summary>
 	public void WalkTo( Vector3 worldPos )
 	{
+		// Commanding a move interrupts any kimodo clip taking over the body —
+		// Stop() restores UseAnimGraph (so locomotion animates) and re-enables
+		// the agent (which Play() had disabled for the takeover).
+		if ( _kimodo.IsValid() && _kimodo.IsPlaying ) _kimodo.Stop();
+
 		// Auto-stand from chair OR wake from bed.
 		if ( _sitting )
 		{
