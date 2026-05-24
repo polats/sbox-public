@@ -56,20 +56,22 @@ public sealed class ClickInteract : Component
 
 		if ( obj == null )
 		{
-			// Clicked the floor (or something un-tagged). Send nearest character there.
-			var c = NearestIdleCharacter( tr.HitPosition );
+			// Clicked the floor: send the nearest character there — INCLUDING a
+			// seated one. WalkTo() auto-stands first, so clicking the floor while
+			// Bob is sitting makes him get up and walk to the new spot.
+			var c = NearestCharacter( tr.HitPosition, idleOnly: false );
 			if ( c != null ) c.WalkTo( tr.HitPosition );
 			return;
 		}
 
-		var character = NearestIdleCharacter( obj.GameObject.WorldPosition );
+		var character = NearestCharacter( obj.GameObject.WorldPosition, idleOnly: true );
 		if ( character == null ) { Log.Info( "[ClickInteract] no idle character available" ); return; }
 
 		// Dispatch by type
-		if ( go.Components.Get<Chair>() is { } chair )
+		if ( go.Components.Get<Sittable>() is { } seat )
 		{
 			Log.Info( $"[ClickInteract] {character.CharacterId} → sit on {obj.ObjectId}" );
-			character.WalkToAndSit( chair );
+			character.WalkToAndSit( seat );
 		}
 		else if ( go.Components.Get<Bed>() is { } bed )
 		{
@@ -88,13 +90,13 @@ public sealed class ClickInteract : Component
 		}
 	}
 
-	Character NearestIdleCharacter( Vector3 to )
+	Character NearestCharacter( Vector3 to, bool idleOnly )
 	{
 		Character best = null;
 		var bestDist = float.MaxValue;
 		foreach ( var c in Characters.All() )
 		{
-			if ( c.IsSitting ) continue; // skip busy ones
+			if ( idleOnly && c.IsSitting ) continue; // don't yank a seated one into an interaction
 			var d = c.WorldPosition.Distance( to );
 			if ( d < bestDist ) { bestDist = d; best = c; }
 		}

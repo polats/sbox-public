@@ -58,42 +58,56 @@ public sealed class KimodoSequencePlayer : Component
 	// RootMotion read straddles the sequence switch and reports garbage.
 	bool _warmup;
 
-	// The facing captured when the clip started. We re-assert it every frame so
-	// nothing else (Character's velocity-facing, the agent) can rotate the
-	// character mid-clip — otherwise the facing chases the clip's own (slightly
-	// drifting) motion and curves the run off course, which reads as moving
-	// backward after a click-move left the character facing a new direction.
-	Rotation _clipRotation;
-
 	// A kimodo clip is a full-body takeover — exactly like the standalone player
-	// and ModelDoc, where the sequence drives every bone and (when propagating)
-	// the extracted root translation drives the transform. In the live scene two
-	// other things touch the transform: the NavMeshAgent (owns position) and
-	// Character's velocity-facing (owns rotation). Either one fighting the clip
-	// flips / moonwalks the motion — which is why ModelDoc (having neither) plays
-	// it correctly but the live character doesn't. So for the clip's duration we
-	// fully disable the agent and Character pauses its own facing (via IsPlaying).
+	// and ModelDoc, where the sequence drives every bone and the extracted root
+	// translation drives the transform. In the live scene two components fight
+	// that: the NavMeshAgent (owns position) and Character (owns facing + feeds
+	// the animgraph). Either one reverses/moonwalks the clip's motion — which is
+	// why ModelDoc (having neither) plays it right but the live character didn't.
+	// Rather than gate each one per-frame (fragile — ordering races), we SUSPEND
+	// both for the clip's duration. Disabled components don't run, so nothing but
+	// us can touch the transform: one mechanism, no per-frame gates, no rotation
+	// locks. We remember each one's prior enabled state so we only restore what
+	// we actually turned off.
 	NavMeshAgent _agent;
+	Character _character;
+	bool _agentWasEnabled, _characterWasEnabled;
 
 	/// <summary>True while a kimodo clip is taking over the character.</summary>
 	public bool IsPlaying => !string.IsNullOrEmpty( CurrentSequence );
 
-	void DisableAgentForClip()
+	void SetTakeover( bool active )
 	{
-		_agent ??= Components.Get<NavMeshAgent>();
-		if ( _agent.IsValid() && _agent.Enabled )
-		{
-			_agent.Stop();
-			_agent.Enabled = false;
-		}
-	}
+		_agent     ??= Components.Get<NavMeshAgent>();
+		_character ??= Components.Get<Character>();
 
-	void RestoreAgent()
-	{
-		if ( _agent.IsValid() && !_agent.Enabled )
+		if ( active )
 		{
-			_agent.Enabled = true;
-			_agent.SetAgentPosition( GameObject.WorldPosition );
+			if ( _agent.IsValid() && _agent.Enabled )
+			{
+				_agentWasEnabled = true;
+				_agent.Stop();
+				_agent.Enabled = false;
+			}
+			if ( _character.IsValid() && _character.Enabled )
+			{
+				_characterWasEnabled = true;
+				_character.Enabled = false;
+			}
+		}
+		else
+		{
+			if ( _agent.IsValid() && _agentWasEnabled )
+			{
+				_agent.Enabled = true;
+				_agent.SetAgentPosition( GameObject.WorldPosition );  // pick up where the clip left us
+				_agentWasEnabled = false;
+			}
+			if ( _character.IsValid() && _characterWasEnabled )
+			{
+				_character.Enabled = true;
+				_characterWasEnabled = false;
+			}
 		}
 	}
 
@@ -128,8 +142,7 @@ public sealed class KimodoSequencePlayer : Component
 		Target.Sequence.PlaybackRate = 1f;
 		CurrentSequence = sequenceName;
 		_warmup = true;
-		_clipRotation = GameObject.WorldRotation;   // clip owns facing from here
-		DisableAgentForClip();
+		SetTakeover( true );
 	}
 
 	public void Stop()
@@ -137,18 +150,12 @@ public sealed class KimodoSequencePlayer : Component
 		if ( Target.IsValid() )
 			Target.UseAnimGraph = true;
 		CurrentSequence = "";
-		RestoreAgent();
+		SetTakeover( false );
 	}
 
 	protected override void OnUpdate()
 	{
-		if ( string.IsNullOrEmpty( CurrentSequence ) || !Target.IsValid() )
-			return;
-
-		// Clip owns the facing — freeze it against velocity-facing / the agent.
-		GameObject.WorldRotation = _clipRotation;
-
-		if ( !PropagateRootMotion )
+		if ( string.IsNullOrEmpty( CurrentSequence ) || !PropagateRootMotion || !Target.IsValid() )
 			return;
 
 		// Engine-extracted root motion: per-frame translation delta in the

@@ -3,11 +3,16 @@ using Sandbox;
 namespace Woid;
 
 /// <summary>
-/// WASD + mouse-look fly camera for the play-mode camera. Disabled by
-/// default — toggled on/off by the DebugBar button. When enabled, locks
-/// the mouse cursor so look works. Hold Shift to fly faster.
+/// Hold-to-fly camera: while the RIGHT mouse button is held, the cursor hides
+/// and the camera does mouse-look + WASD movement (Space/Ctrl for up/down,
+/// Shift to go faster). Release to return to normal cursor + click-to-direct.
 ///
-/// Add this component to the Camera GameObject (or its parent).
+/// There's no separate "fly mode" toggle — this component stays enabled and
+/// only takes over the camera while RMB is down. Cursor visibility is only
+/// changed on the press/release transitions (never every frame), so it doesn't
+/// capture ESC and block the editor from leaving play mode.
+///
+/// Add this to the Camera GameObject (alongside CameraComponent / CameraZoom).
 /// </summary>
 public sealed class FlyCamera : Component
 {
@@ -16,49 +21,57 @@ public sealed class FlyCamera : Component
 	[Property] public float MouseSensitivity { get; set; } = 0.15f;
 
 	Angles _angles;
+	bool _active;
 
-	protected override void OnEnabled()
+	protected override void OnUpdate()
 	{
-		base.OnEnabled();
-		_angles = WorldRotation.Angles();
-		Mouse.Visible = false;
-		Mouse.Visibility = MouseVisibility.Hidden;
+		var held = Input.Down( "Attack2" ); // right mouse
+
+		if ( held && !_active )
+		{
+			// Begin: capture current orientation so look continues smoothly,
+			// and hide the cursor so Mouse.Delta drives the look.
+			_angles = WorldRotation.Angles();
+			SetCursor( visible: false );
+			_active = true;
+		}
+		else if ( !held && _active )
+		{
+			SetCursor( visible: true );
+			_active = false;
+		}
+
+		if ( !_active ) return;
+
+		// Look
+		_angles.pitch = (_angles.pitch + Mouse.Delta.y * MouseSensitivity).Clamp( -89f, 89f );
+		_angles.yaw  -= Mouse.Delta.x * MouseSensitivity;
+		WorldRotation = _angles.ToRotation();
+
+		// Move (WASD + Space/Ctrl up-down, Shift sprint)
+		var speed = MoveSpeed * Time.Delta;
+		if ( Input.Down( "Run" ) ) speed *= SprintMultiplier;
+
+		var rot = WorldRotation;
+		var delta = Vector3.Zero;
+		if ( Input.Down( "Forward"  ) ) delta += rot.Forward * speed;
+		if ( Input.Down( "Backward" ) ) delta -= rot.Forward * speed;
+		if ( Input.Down( "Left"     ) ) delta -= rot.Right   * speed;
+		if ( Input.Down( "Right"    ) ) delta += rot.Right   * speed;
+		if ( Input.Down( "Jump"     ) ) delta += Vector3.Up  * speed;
+		if ( Input.Down( "Duck"     ) ) delta -= Vector3.Up  * speed;
+		WorldPosition += delta;
 	}
 
 	protected override void OnDisabled()
 	{
 		base.OnDisabled();
-		Mouse.Visible = true;
-		Mouse.Visibility = MouseVisibility.Visible;
+		if ( _active ) { SetCursor( visible: true ); _active = false; }
 	}
 
-	protected override void OnUpdate()
+	static void SetCursor( bool visible )
 	{
-		// Tab toggle is now handled in DebugBar.OnUpdate so the same key
-		// can both enable and disable from a single place. FlyCam itself
-		// no longer self-disables.
-
-		// Look
-		_angles.pitch += Mouse.Delta.y * MouseSensitivity;
-		_angles.yaw   -= Mouse.Delta.x * MouseSensitivity;
-		_angles.pitch = _angles.pitch.Clamp( -89f, 89f );
-		WorldRotation = _angles.ToRotation();
-
-		// Move
-		var speed = MoveSpeed * Time.Delta;
-		if ( Input.Down( "Run" ) ) speed *= SprintMultiplier;
-
-		var forward = WorldRotation.Forward;
-		var right   = WorldRotation.Right;
-		var up      = Vector3.Up;
-
-		var delta = Vector3.Zero;
-		if ( Input.Down( "Forward"  ) ) delta += forward * speed;
-		if ( Input.Down( "Backward" ) ) delta -= forward * speed;
-		if ( Input.Down( "Left"     ) ) delta -= right   * speed;
-		if ( Input.Down( "Right"    ) ) delta += right   * speed;
-		if ( Input.Down( "Jump"     ) ) delta += up      * speed;
-		if ( Input.Down( "Duck"     ) ) delta -= up      * speed;
-		WorldPosition += delta;
+		Mouse.Visible = visible;
+		Mouse.Visibility = visible ? MouseVisibility.Visible : MouseVisibility.Hidden;
 	}
 }

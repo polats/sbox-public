@@ -100,9 +100,9 @@ public sealed class EffectInterpreter : Component
 		if ( c == null ) { Log.Warning( $"[sit_on_chair] unknown actor: {e.Actor}" ); return; }
 		var obj = Objects?.Get( e.ObjectId );
 		if ( obj == null ) { Log.Warning( $"[sit_on_chair] unknown object: {e.ObjectId}" ); return; }
-		var chair = obj.Components.Get<Chair>();
-		if ( chair == null ) { Log.Warning( $"[sit_on_chair] object {e.ObjectId} has no Chair component" ); return; }
-		c.WalkToAndSit( chair );
+		var seat = obj.Components.Get<Sittable>();
+		if ( seat == null ) { Log.Warning( $"[sit_on_chair] object {e.ObjectId} has no Sittable component" ); return; }
+		c.WalkToAndSit( seat );
 	}
 
 	void Apply( StandUp e )
@@ -110,9 +110,9 @@ public sealed class EffectInterpreter : Component
 		var c = Characters?.Get( e.Actor );
 		if ( c == null ) { Log.Warning( $"[stand_up] unknown actor: {e.Actor}" ); return; }
 		var obj = Objects?.Get( e.ObjectId );
-		var chair = obj?.Components.Get<Chair>();
-		if ( chair != null ) chair.Stand( c );
-		else Log.Warning( $"[stand_up] no chair for object {e.ObjectId}" );
+		var seat = obj?.Components.Get<Sittable>();
+		if ( seat != null ) seat.Stand( c );
+		else Log.Warning( $"[stand_up] no Sittable for object {e.ObjectId}" );
 	}
 
 	void Apply( SleepInBed e )

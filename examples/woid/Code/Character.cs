@@ -44,14 +44,17 @@ public sealed class Character : Component
 	CitizenAnimationHelper _anim;
 	KimodoSequencePlayer _kimodo;
 	bool _sitting;
-	Chair _currentChair;
+	Sittable _currentSeat;
 	Bed _currentBed;
 	HoldableProp _holding;
 	GameObject _lookTarget;
 	float _lookExpiresAt;
-	Chair _pendingSitChair;
+	Sittable _pendingSit;
 	Bed _pendingSleepBed;
 	float _pendingSitTimeoutAt;
+
+	// Seated procedural-alignment state (see BeginSeated / AlignToSeat).
+	int _pelvisBone = -1;
 	float _b_attack_clear_at;
 	float _faceExpireAt;
 	string _activeFaceParam;
@@ -84,11 +87,15 @@ public sealed class Character : Component
 
 	protected override void OnUpdate()
 	{
-		// While a kimodo clip is taking over, the clip owns the whole body and
-		// transform (it disables the agent). We must not feed the animgraph or
-		// re-face the character, or we fight the clip's root motion.
-		if ( _kimodo.IsValid() && _kimodo.IsPlaying )
+		// Note: while a kimodo clip plays, KimodoSequencePlayer disables this
+		// component entirely (full takeover), so this method doesn't run then —
+		// no per-frame "is a clip playing?" gate is needed here.
+
+		// While seated, the seat owns the body: align the posed pelvis to the
+		// seat surface + foot-IK to the floor, and skip locomotion entirely.
+		if ( _sitting && _currentSeat.IsValid() )
 		{
+			AlignToSeat();
 			TickInteractions();
 			return;
 		}
@@ -115,17 +122,17 @@ public sealed class Character : Component
 		// Per-interaction state machines (stretch/dance/greet pulses).
 		TickInteractions();
 
-		// Pending-sit: walk-to-chair, snap-sit on arrival or after timeout.
-		if ( _pendingSitChair.IsValid() && !_sitting )
+		// Pending-sit: walk to the seat's front approach point, then Sit()
+		// parents + begins the procedural seated alignment.
+		if ( _pendingSit.IsValid() && !_sitting )
 		{
-			var seat = _pendingSitChair.SeatPosition?.WorldPosition ?? _pendingSitChair.WorldPosition;
-			var dist = WorldPosition.Distance( seat );
-			var arrived = dist < 28f;
+			var dist = WorldPosition.Distance( _pendingSit.ApproachPoint() );
+			var arrived = dist < 30f;
 			var timedOut = Time.Now > _pendingSitTimeoutAt;
 			if ( arrived || timedOut )
 			{
-				_pendingSitChair.Sit( this );
-				_pendingSitChair = null;
+				_pendingSit.Sit( this );
+				_pendingSit = null;
 			}
 		}
 		// Pending-sleep: walk-to-bed, snap-sleep
@@ -194,23 +201,21 @@ public sealed class Character : Component
 		// the agent (which Play() had disabled for the takeover).
 		if ( _kimodo.IsValid() && _kimodo.IsPlaying ) _kimodo.Stop();
 
-		// Auto-stand from chair OR wake from bed.
+		// Auto-stand from a seat OR wake from bed.
 		if ( _sitting )
 		{
 			if ( _currentBed.IsValid() ) { _currentBed.Wake( this ); }
 			else
 			{
-				var chair = _currentChair.IsValid()
-					? _currentChair
-					: GameObject.Parent?.Components?.Get<Chair>( includeDisabled: true );
-				if ( chair.IsValid() ) chair.Stand( this );
+				var seat = _currentSeat.IsValid()
+					? _currentSeat
+					: GameObject.Parent?.Components?.Get<Sittable>( includeDisabled: true );
+				if ( seat.IsValid() ) seat.Stand( this );
 				else
 				{
 					GameObject.SetParent( null, true );
-					_sitting = false;
-					_currentChair = null;
-					if ( Model.IsValid() ) { Model.Set( "sit", 0 ); Model.Set( "b_sit", false ); }
-					if ( _agent.IsValid() ) { _agent.UpdatePosition = true; _agent.UpdateRotation = true; }
+					EndSeated();
+					if ( _agent.IsValid() ) { _agent.UpdatePosition = true; }
 				}
 			}
 		}
@@ -228,17 +233,15 @@ public sealed class Character : Component
 	}
 
 	/// <summary>
-	/// Walk toward the chair's SeatPosition, then sit when within range.
-	/// Auto-sits after 8s even if NavMesh couldn't reach (so the character
-	/// doesn't get stuck "trying to sit").
+	/// Walk to the seat's front approach point, then Sit() on arrival parents +
+	/// begins the procedural seated alignment. Short fallback timeout.
 	/// </summary>
-	public void WalkToAndSit( Chair chair )
+	public void WalkToAndSit( Sittable seat )
 	{
-		if ( chair == null || _sitting ) return;
-		var seat = chair.SeatPosition?.WorldPosition ?? chair.WorldPosition;
-		WalkTo( seat );
-		_pendingSitChair = chair;
-		_pendingSitTimeoutAt = Time.Now + 8f;
+		if ( seat == null || _sitting ) return;
+		WalkTo( seat.ApproachPoint() );
+		_pendingSit = seat;
+		_pendingSitTimeoutAt = Time.Now + 6f;
 	}
 
 	public void WalkToAndSleep( Bed bed )
@@ -320,13 +323,78 @@ public sealed class Character : Component
 		}
 	}
 
-	/// <summary>Set by Chair.Sit/Stand so other systems (animation, walk) honor sit state.</summary>
-	public void SetSitting( bool sitting, Chair chair = null )
+	/// <summary>Set by Bed.Sleep/Wake (chair == null) for the lie-down pose, which
+	/// manages its own placement. Sittable uses BeginSeated/EndSeated instead.</summary>
+	public void SetSitting( bool sitting, Sittable seat = null )
 	{
 		_sitting = sitting;
-		_currentChair = sitting ? chair : null;
+		_currentSeat = sitting ? seat : null;
 	}
 	public bool IsSitting => _sitting;
+
+	// ─── Seated: procedural alignment to any Sittable surface ───────────
+	// Sittable.Sit/Stand call these. The pose is mapped onto the seat by reading
+	// the POSED pelvis and shifting the root so the butt meets the surface, then
+	// foot-IK plants the feet on the floor — no per-seat numeric tuning.
+
+	/// <summary>Begin sitting on a Sittable: apply the canonical sit params and
+	/// start the per-frame alignment (Character.OnUpdate → AlignToSeat).</summary>
+	public void BeginSeated( Sittable seat, int sitPose )
+	{
+		_sitting = true;
+		_currentSeat = seat;
+
+		_pelvisBone = FindBone( "pelvis" );
+
+		if ( Model.IsValid() )
+		{
+			Model.LocalRotation = Rotation.Identity;
+			// Canonical citizen sit params (see engine BaseChair). b_grounded MUST
+			// be true or the pose blends with an airborne stance (the "squat").
+			Model.Set( "sit", sitPose );
+			Model.Set( "b_grounded", true );
+			Model.Set( "b_climbing", false );
+			Model.Set( "b_swim", false );
+			Model.Set( "duck", false );
+		}
+	}
+
+	/// <summary>Stop sitting: clear foot-IK and the sit pose.</summary>
+	public void EndSeated()
+	{
+		if ( Model.IsValid() )
+			Model.Set( "sit", 0 );
+		_sitting = false;
+		_currentSeat = null;
+	}
+
+	/// <summary>Each frame while seated: face the seat and rigid-shift the root so
+	/// the POSED pelvis lands on the seat surface. Self-correcting, so any
+	/// model/height sits cleanly with no per-seat tuning. (The sit pose places
+	/// the legs/feet; we deliberately don't foot-IK them — tracing the IK-solved
+	/// feet each frame fed back into a leg spasm.)</summary>
+	void AlignToSeat()
+	{
+		if ( !Model.IsValid() ) return;
+		var sm = Model.SceneModel;
+		if ( sm == null || _pelvisBone < 0 ) return;
+
+		var t = _currentSeat.GetSeatTarget();
+		WorldRotation = t.Facing;
+
+		var pelvis = sm.GetBoneWorldTransform( _pelvisBone ).Position;
+		var targetPelvis = t.Surface + Vector3.Up * t.PelvisOffset;
+		WorldPosition += targetPelvis - pelvis;
+	}
+
+	int FindBone( string name )
+	{
+		var m = Model?.Model;
+		if ( m == null ) return -1;
+		for ( int i = 0; i < m.BoneCount; i++ )
+			if ( m.GetBoneName( i ) == name ) return i;
+		return -1;
+	}
 
 	/// <summary>Set by Bed.Sleep/Wake.</summary>
 	public void SetOccupiedBed( Bed bed )

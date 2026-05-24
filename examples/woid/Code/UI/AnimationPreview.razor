@@ -139,7 +139,7 @@
 	void SitOnChair()
 	{
 		if ( !_agent.IsValid() ) return;
-		var chair = Scene.GetAllComponents<Chair>().FirstOrDefault();
+		var chair = Scene.GetAllComponents<Sittable>().FirstOrDefault();
 		if ( chair != null ) _agent.WalkToAndSit( chair );
 	}
 

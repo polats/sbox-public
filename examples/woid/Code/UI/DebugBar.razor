@@ -9,16 +9,12 @@
 	<div class="btn @(IsPaused ? "active" : "")" onclick=@TogglePause>
 		<i>@(IsPaused ? "play_arrow" : "pause")</i><span>@(IsPaused ? "resume" : "pause")</span>
 	</div>
-	<div class="btn @(FlyEnabled ? "active" : "")" onclick=@ToggleFly>
-		<i>videocam</i><span>@(FlyEnabled ? "locked view" : "fly cam · tab")</span>
-	</div>
-	<div class="hint">click chair · bed · mug to direct</div>
+	<div class="hint">hold right-mouse to move camera · click chair · bed · mug to direct</div>
 </root>
 
 @code
 {
 	public bool IsPaused { get; private set; }
-	public bool FlyEnabled { get; private set; }
 
 	void TogglePause()
 	{
@@ -31,40 +27,11 @@
 		}
 	}
 
-	void ToggleFly()
-	{
-		Log.Info( "[DebugBar] ToggleFly clicked" );
-		FlyCamera fly = null;
-		foreach ( var go in Scene.GetAllObjects( true ) )
-		{
-			fly = go.Components.Get<FlyCamera>( includeDisabled: true );
-			if ( fly != null ) break;
-		}
-		if ( fly.IsValid() )
-		{
-			fly.Enabled = !fly.Enabled;
-			FlyEnabled = fly.Enabled;
-			Log.Info( $"[DebugBar] FlyCamera.Enabled = {fly.Enabled}" );
-		}
-		else
-		{
-			Log.Warning( "[DebugBar] no FlyCamera component found in scene" );
-		}
-	}
-
 	protected override void OnUpdate()
 	{
-		// Tab toggles FlyCam (enables AND disables from one key).
-		if ( Input.Pressed( "Score" ) ) ToggleFly();
-
 		var client = Scene.GetAllComponents<WoidClient>().FirstOrDefault();
 		if ( client.IsValid() ) IsPaused = client.Paused;
-		foreach ( var go in Scene.GetAllObjects( true ) )
-		{
-			var fly = go.Components.Get<FlyCamera>( includeDisabled: true );
-			if ( fly != null ) { FlyEnabled = fly.Enabled; break; }
-		}
 	}
 
-	protected override int BuildHash() => HashCode.Combine( IsPaused, FlyEnabled );
+	protected override int BuildHash() => HashCode.Combine( IsPaused );
 }
