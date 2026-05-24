@@ -114,13 +114,16 @@ public sealed class KimodoSequencePlayer : Component
 
 		if ( _hasLastPelvis )
 		{
-			var delta = animatedLocal - _lastPelvisAnimLocal;
+			var localDelta = animatedLocal - _lastPelvisAnimLocal;
 			// Loop wrap: large negative jumps when the clip loops — skip them
 			// so we don't fling the root backward.
-			if ( delta.Length < 50f )
+			if ( localDelta.Length < 50f )
 			{
-				if ( HorizontalOnly ) delta.z = 0f;
-				var worldDelta = Target.WorldRotation * delta;
+				// Transform local → world THEN zero vertical, so the axis
+				// convention is world (Z up in Source 2), not citizen
+				// armature-local (where Z is one of the horizontal axes).
+				var worldDelta = Target.WorldRotation * localDelta;
+				if ( HorizontalOnly ) worldDelta.z = 0f;
 				GameObject.WorldPosition += worldDelta;
 			}
 		}
