@@ -55,6 +55,18 @@ public sealed class Character : Component
 
 	// Seated procedural-alignment state (see BeginSeated / AlignToSeat).
 	int _pelvisBone = -1;
+	int _seatSitPose;
+	bool _seatTurning;            // true = arrived, turning in place before sitting
+	const float SeatTurnRate = 9f;    // slerp speed turning to the seat facing
+	const float SeatSettleRate = 7f;  // ease speed lowering onto / rising off the seat
+
+	// Stand-up state: rise in place (eased) BEFORE walking, so we don't teleport.
+	bool _standingUp;
+	float _standUpUntil;
+	Vector3 _standUpTarget;       // floor spot in front of the seat to rise to
+	Vector3 _pendingWalkTarget;
+	bool _hasPendingWalk;
+	const float RiseDuration = 0.55f;
 	float _b_attack_clear_at;
 	float _faceExpireAt;
 	string _activeFaceParam;
@@ -100,6 +112,14 @@ public sealed class Character : Component
 			return;
 		}
 
+		// Rising off a seat: ease to a standing spot in front before walking.
+		if ( _standingUp )
+		{
+			TickStandUp();
+			TickInteractions();
+			return;
+		}
+
 		// Drive the animgraph from NavMeshAgent velocity each frame.
 		if ( _anim.IsValid() && _agent.IsValid() )
 		{
@@ -127,7 +147,9 @@ public sealed class Character : Component
 		if ( _pendingSit.IsValid() && !_sitting )
 		{
 			var dist = WorldPosition.Distance( _pendingSit.ApproachPoint() );
-			var arrived = dist < 30f;
+			// Only sit once actually up at the approach point (or stopped right by
+			// it) — not while still walking in from a distance.
+			var arrived = dist < 14f || (_agent.IsValid() && _agent.Velocity.Length < 8f && dist < 60f);
 			var timedOut = Time.Now > _pendingSitTimeoutAt;
 			if ( arrived || timedOut )
 			{
@@ -201,24 +223,15 @@ public sealed class Character : Component
 		// the agent (which Play() had disabled for the takeover).
 		if ( _kimodo.IsValid() && _kimodo.IsPlaying ) _kimodo.Stop();
 
-		// Auto-stand from a seat OR wake from bed.
+		// Seated: stand up FIRST (eased rise), THEN walk — no teleport. StandUp
+		// defers the walk via _pendingWalkTarget until the rise finishes.
 		if ( _sitting )
 		{
 			if ( _currentBed.IsValid() ) { _currentBed.Wake( this ); }
-			else
-			{
-				var seat = _currentSeat.IsValid()
-					? _currentSeat
-					: GameObject.Parent?.Components?.Get<Sittable>( includeDisabled: true );
-				if ( seat.IsValid() ) seat.Stand( this );
-				else
-				{
-					GameObject.SetParent( null, true );
-					EndSeated();
-					if ( _agent.IsValid() ) { _agent.UpdatePosition = true; }
-				}
-			}
+			else { StandUp( worldPos ); return; }
 		}
+		// Already rising: just update where we'll head once we're up.
+		if ( _standingUp ) { _pendingWalkTarget = worldPos; _hasPendingWalk = true; return; }
 
 		if ( !_agent.IsValid() )
 		{
@@ -343,20 +356,23 @@ public sealed class Character : Component
 	{
 		_sitting = true;
 		_currentSeat = seat;
-
+		_seatSitPose = sitPose;
 		_pelvisBone = FindBone( "pelvis" );
+		_seatTurning = true; // turn in place first; the sit pose starts once we're facing the seat
+		if ( Model.IsValid() ) Model.LocalRotation = Rotation.Identity;
+	}
 
-		if ( Model.IsValid() )
-		{
-			Model.LocalRotation = Rotation.Identity;
-			// Canonical citizen sit params (see engine BaseChair). b_grounded MUST
-			// be true or the pose blends with an airborne stance (the "squat").
-			Model.Set( "sit", sitPose );
-			Model.Set( "b_grounded", true );
-			Model.Set( "b_climbing", false );
-			Model.Set( "b_swim", false );
-			Model.Set( "duck", false );
-		}
+	// Canonical citizen sit params (see engine BaseChair). b_grounded MUST be true
+	// or the pose blends with an airborne stance (the "squat"). Applied once the
+	// turn finishes so the character doesn't pop into the sit pose mid-walk.
+	void ApplySitParams()
+	{
+		if ( !Model.IsValid() ) return;
+		Model.Set( "sit", _seatSitPose );
+		Model.Set( "b_grounded", true );
+		Model.Set( "b_climbing", false );
+		Model.Set( "b_swim", false );
+		Model.Set( "duck", false );
 	}
 
 	/// <summary>Stop sitting: clear foot-IK and the sit pose.</summary>
@@ -365,7 +381,51 @@ public sealed class Character : Component
 		if ( Model.IsValid() )
 			Model.Set( "sit", 0 );
 		_sitting = false;
+		_seatTurning = false;
 		_currentSeat = null;
+	}
+
+	/// <summary>Rise off the current seat: blend back to standing and ease to a
+	/// spot in front of the seat (no teleport). If walkTo is given, walk there
+	/// once the rise finishes. Safe to call when already standing.</summary>
+	public void StandUp( Vector3? walkTo = null )
+	{
+		if ( !_sitting )
+		{
+			if ( walkTo.HasValue ) WalkTo( walkTo.Value );
+			return;
+		}
+
+		var seat = _currentSeat;
+		GameObject.SetParent( null, true );
+		if ( Model.IsValid() ) Model.Set( "sit", 0 ); // animgraph blends sit -> stand
+		_sitting = false;
+		_seatTurning = false;
+		_currentSeat = null;
+		seat?.Vacate( this );
+
+		_standUpTarget = seat.IsValid() ? seat.ApproachPoint() : WorldPosition;
+		_pendingWalkTarget = walkTo ?? Vector3.Zero;
+		_hasPendingWalk = walkTo.HasValue;
+		_standingUp = true;
+		_standUpUntil = Time.Now + RiseDuration;
+
+		// Hold the agent until the rise finishes; we ease the position ourselves.
+		if ( _agent.IsValid() ) { _agent.UpdatePosition = false; _agent.Stop(); }
+	}
+
+	void TickStandUp()
+	{
+		// Ease to the standing spot in front of the seat while the pose rises.
+		WorldPosition = Vector3.Lerp( WorldPosition, _standUpTarget, MathF.Min( 1f, Time.Delta * SeatSettleRate ) );
+		if ( _anim.IsValid() ) { _anim.WithVelocity( Vector3.Zero ); _anim.WithWishVelocity( Vector3.Zero ); }
+
+		if ( Time.Now < _standUpUntil ) return;
+
+		// Risen — hand control back to the agent and walk if a move was queued.
+		_standingUp = false;
+		if ( _agent.IsValid() ) { _agent.UpdatePosition = true; _agent.SetAgentPosition( WorldPosition ); }
+		if ( _hasPendingWalk ) { _hasPendingWalk = false; WalkTo( _pendingWalkTarget ); }
 	}
 
 	/// <summary>Each frame while seated: face the seat and rigid-shift the root so
@@ -380,11 +440,30 @@ public sealed class Character : Component
 		if ( sm == null || _pelvisBone < 0 ) return;
 
 		var t = _currentSeat.GetSeatTarget();
-		WorldRotation = t.Facing;
 
+		// Always turn (smoothly) toward the seated facing.
+		WorldRotation = Rotation.Slerp( WorldRotation, t.Facing, MathF.Min( 1f, Time.Delta * SeatTurnRate ) );
+
+		// Phase 1 — turn in place (still standing, idle) until we face the seat.
+		// Only then do we start the sit pose + lower in, so the character rotates
+		// and sits down instead of snapping into the seat while walking up.
+		if ( _seatTurning )
+		{
+			if ( _anim.IsValid() ) { _anim.WithVelocity( Vector3.Zero ); _anim.WithWishVelocity( Vector3.Zero ); }
+			if ( Vector3.Dot( WorldRotation.Forward, t.Facing.Forward ) > 0.97f )
+			{
+				ApplySitParams();
+				_seatTurning = false;
+			}
+			return;
+		}
+
+		// Phase 2 — lower onto the seat: EASE the root so the posed pelvis meets
+		// the seat surface (no teleport). Converges and then holds steady.
 		var pelvis = sm.GetBoneWorldTransform( _pelvisBone ).Position;
 		var targetPelvis = t.Surface + Vector3.Up * t.PelvisOffset;
-		WorldPosition += targetPelvis - pelvis;
+		var aligned = WorldPosition + (targetPelvis - pelvis);
+		WorldPosition = Vector3.Lerp( WorldPosition, aligned, MathF.Min( 1f, Time.Delta * SeatSettleRate ) );
 	}
 
 	int FindBone( string name )

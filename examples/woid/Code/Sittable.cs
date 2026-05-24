@@ -30,9 +30,10 @@ public sealed class Sittable : Component
 	/// seat surface; forward = the direction the seated character faces.</summary>
 	[Property] public GameObject SeatMarker { get; set; }
 
-	/// <summary>How far in front of the seat the character stands before sitting
-	/// (and is warped to on standing). In inches.</summary>
-	[Property] public float ApproachDistance { get; set; } = 45f;
+	/// <summary>How far in front of the seat the character stops before sitting,
+	/// in inches. Kept small so they walk right up to the object; the navmesh
+	/// snaps it just outside the collider, so it can't be unreachable.</summary>
+	[Property] public float ApproachDistance { get; set; } = 30f;
 
 	/// <summary>Height of the pelvis bone above the seat surface when seated —
 	/// a human constant (~butt-to-hip), NOT per-object. Tune once if needed.</summary>
@@ -104,19 +105,12 @@ public sealed class Sittable : Component
 	{
 		if ( c == null ) return;
 		if ( IsOccupied && Occupant != c.CharacterId ) return;
+		c.StandUp(); // eased rise in place; Character clears the seat + restores the agent
+	}
 
-		c.GameObject.SetParent( null, true );
-		c.EndSeated();
-		c.WorldPosition = ApproachPoint();
-
-		var agent = c.Components.Get<NavMeshAgent>();
-		if ( agent.IsValid() )
-		{
-			agent.UpdatePosition = true;
-			agent.UpdateRotation = false; // Character drives facing from velocity
-			agent.SetAgentPosition( c.WorldPosition );
-		}
-
-		Occupant = null;
+	/// <summary>Clear the occupant (called by Character.StandUp).</summary>
+	public void Vacate( Character c )
+	{
+		if ( c != null && Occupant == c.CharacterId ) Occupant = null;
 	}
 }
