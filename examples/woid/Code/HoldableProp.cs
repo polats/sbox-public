@@ -24,6 +24,33 @@ public sealed class HoldableProp : Component
 	/// <summary>Grip tightness param. ~0.005 is sandbox default.</summary>
 	[Property] public float HoldtypePoseHand { get; set; } = 0.005f;
 
+	/// <summary>How a "use" clip plays.</summary>
+	public enum UseModeKind
+	{
+		/// <summary>Play once, then auto-return to the hold pose (e.g. a sip). One E press.</summary>
+		Once,
+		/// <summary>Hold the last frame until E is pressed again (e.g. reading).</summary>
+		Hold,
+	}
+
+	/// <summary>Baked kimodo sequence name (e.g. "kim_read_newspaper", "kim_drink")
+	/// the holder plays as a masked UPPER-BODY overlay when "using" this item (E
+	/// key). Empty = not usable. The overlay composes with walking/sitting: the
+	/// animgraph keeps driving legs/pelvis while the arms/torso play the clip.
+	/// See Character.StartUsingHeld → ReadingLayer.</summary>
+	[Property] public string UseClip { get; set; } = "";
+
+	/// <summary>Whether the use clip is a one-shot (Once) or a sustained toggle (Hold).</summary>
+	[Property] public UseModeKind UseMode { get; set; } = UseModeKind.Once;
+
+	/// <summary>Drive both arms from the clip (e.g. reading), or only the holding
+	/// arm (<see cref="Handedness"/>) for a one-handed action (e.g. drinking),
+	/// leaving the other arm on the animgraph.</summary>
+	[Property] public bool UseBothArms { get; set; } = true;
+
+	/// <summary>True if this item can be "used" (has a UseClip overlay).</summary>
+	public bool IsUsable => !string.IsNullOrEmpty( UseClip );
+
 	public string Holder { get; private set; }
 
 	public bool Hold( Character c )

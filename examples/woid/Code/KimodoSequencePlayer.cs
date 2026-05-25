@@ -128,7 +128,12 @@ public sealed class KimodoSequencePlayer : Component
 		}
 	}
 
-	public void Play( string sequenceName )
+	public void Play( string sequenceName ) => Play( sequenceName, loop: true );
+
+	/// <summary>Play a sequence with explicit loop control. loop=false runs the
+	/// clip once and the renderer holds the final frame — used for one-shot arcs
+	/// like "open the newspaper and settle into reading".</summary>
+	public void Play( string sequenceName, bool loop )
 	{
 		if ( !Target.IsValid() )
 		{
@@ -138,7 +143,7 @@ public sealed class KimodoSequencePlayer : Component
 		Target.UseAnimGraph = false;
 		Target.Sequence.Name = sequenceName;
 		Target.Sequence.Time = 0f;
-		Target.Sequence.Looping = true;
+		Target.Sequence.Looping = loop;
 		Target.Sequence.PlaybackRate = 1f;
 		CurrentSequence = sequenceName;
 		_warmup = true;

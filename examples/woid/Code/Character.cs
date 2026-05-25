@@ -43,6 +43,7 @@ public sealed class Character : Component
 	NavMeshAgent _agent;
 	CitizenAnimationHelper _anim;
 	KimodoSequencePlayer _kimodo;
+	ReadingLayer _reading;
 	bool _sitting;
 	Sittable _currentSeat;
 	Bed _currentBed;
@@ -70,7 +71,6 @@ public sealed class Character : Component
 	float _b_attack_clear_at;
 	float _faceExpireAt;
 	string _activeFaceParam;
-	float _b_attack_next_pulse_at;
 
 	protected override void OnStart()
 	{
@@ -82,6 +82,7 @@ public sealed class Character : Component
 		_agent = Components.Get<NavMeshAgent>();
 		_anim  = Components.Get<CitizenAnimationHelper>();
 		_kimodo = Components.Get<KimodoSequencePlayer>();
+		_reading = Components.Get<ReadingLayer>();
 		if ( Model == null ) Model = Components.GetInDescendantsOrSelf<SkinnedModelRenderer>();
 
 		// We face the direction of travel ourselves (see OnUpdate). The agent's
@@ -99,6 +100,10 @@ public sealed class Character : Component
 
 	protected override void OnUpdate()
 	{
+		// A one-shot use (drink) ends itself inside ReadingLayer; reflect that here
+		// so IsReading clears and E can trigger the next sip.
+		if ( IsReading && _reading.IsValid() && !_reading.IsActive ) IsReading = false;
+
 		// Note: while a kimodo clip plays, KimodoSequencePlayer disables this
 		// component entirely (full takeover), so this method doesn't run then —
 		// no per-frame "is a clip playing?" gate is needed here.
@@ -182,14 +187,6 @@ public sealed class Character : Component
 			Model.Set( "face_override", 0 );
 			_activeFaceParam = null;
 			_faceExpireAt = 0;
-		}
-
-		// While holding, periodically pulse b_attack so we "use" the item (sip mug, etc).
-		if ( _holding.IsValid() && _b_attack_next_pulse_at > 0 && Time.Now > _b_attack_next_pulse_at && Model.IsValid() )
-		{
-			Model.Set( "b_attack", true );
-			_b_attack_clear_at = Time.Now + 0.05f;
-			_b_attack_next_pulse_at = Time.Now + 3.5f;
 		}
 
 		// Pending-pickup: walk up to the prop, then grab on arrival. Picking up
@@ -289,6 +286,39 @@ public sealed class Character : Component
 	public void ThrowHeld( Vector3 target )
 	{
 		if ( _holding.IsValid() ) _holding.Throw( this, target );
+	}
+
+	/// <summary>True while playing a held item's "use" clip (e.g. reading the newspaper).</summary>
+	public bool IsReading { get; private set; }
+
+	/// <summary>True if the active use is a sustained "hold" (toggle off with E),
+	/// false for a one-shot (drink) that ends itself. Read by ClickInteract.</summary>
+	public bool CurrentUseHolds { get; private set; }
+
+	/// <summary>"Use" the held prop (E key): if it has a UseClip, play that kimodo
+	/// clip as a masked UPPER-BODY overlay (ReadingLayer). The animgraph keeps
+	/// driving the legs/pelvis, so the character can walk and sit while reading;
+	/// this component and the agent stay enabled (no takeover). No-op if nothing
+	/// usable is held.</summary>
+	public void StartUsingHeld()
+	{
+		if ( !_holding.IsValid() || !_holding.IsUsable || !_reading.IsValid() ) return;
+		if ( IsReading ) return;
+		IsReading = true;
+		CurrentUseHolds = _holding.UseMode == HoldableProp.UseModeKind.Hold;
+		_reading.Begin( _holding.UseClip,
+			hold: CurrentUseHolds,
+			bothArms: _holding.UseBothArms,
+			handedness: _holding.Handedness );
+	}
+
+	/// <summary>Stop "using" the held prop: ramp the overlay out. The animgraph
+	/// (incl. the persisted holdtype hold pose) takes the upper body back.</summary>
+	public void StopUsingHeld()
+	{
+		if ( !IsReading ) return;
+		IsReading = false;
+		if ( _reading.IsValid() ) _reading.End();
 	}
 
 	public void PlayAnimation( string name, bool loop )
@@ -499,8 +529,9 @@ public sealed class Character : Component
 	/// <summary>Set by HoldableProp.Hold/Drop.</summary>
 	public void SetHolding( HoldableProp prop )
 	{
+		// Can't keep reading a paper that just left our hands (dropped/thrown).
+		if ( prop == null && IsReading ) StopUsingHeld();
 		_holding = prop;
-		_b_attack_next_pulse_at = prop != null ? Time.Now + 2.5f : 0;
 	}
 
 	/// <summary>Briefly show a citizen face emotion. The citizen animgraph

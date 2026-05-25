@@ -83,8 +83,11 @@ walk.
   navmesh-reachable — only the approach point does. Keep the approach *outside*
   the collider.
 - **Suspend transform-drivers during an interaction** or they fight it: sitting
-  freezes the NavMeshAgent; a kimodo clip disables the agent + Character
-  (`SetTakeover`). The same will apply to any new interaction that moves the body.
+  freezes the NavMeshAgent; a full-body kimodo clip disables the agent + Character
+  (`SetTakeover`). The same applies to any new interaction that moves the body.
+  **Exception:** the `ReadingLayer` overlay (read/drink) deliberately does *not*
+  suspend anything — it only overrides upper-body bones, so it composes with
+  locomotion/sitting instead of taking over.
 - Citizen sit params: **`b_grounded = true` is required** (or it "squats"), and
   there is **no `b_sit`** parameter. See `rules/animations.md` in the skill.
 - Hover outline: `EnablePostProcessing` + camera `Highlight` (see above).
@@ -97,10 +100,70 @@ sets the citizen `holdtype` params (`holdtype=4 HoldItem`, `holdtype_handedness`
 `Handedness` (1 R / 2 L / 0 both), `HoldtypePose` (0..5 grip width),
 `HoldtypePoseHand` (grip tightness). The mug / hotdog / newspaper carry it.
 
-**It has the rough edges sitting had before this pass:** `WalkToAndHold` walks
-*into* the prop (`dist < 40`) and then snaps the grab — there's no approach-near,
-no reach-down, and the prop teleports to the hand. The props also rest on the
-**table at z≈30**, so the pickup should reach to that height, not the floor.
+## Using a held item (E): the masked upper-body overlay (read & drink)
+
+Pressing **E** while holding a prop that has a `UseClip` plays a kimodo clip on
+the character's **upper body only**, layered over whatever the legs are doing —
+so the character reads/drinks **while standing, walking, or sitting**. This is the
+opposite of `KimodoSequencePlayer`, which is a *full-body takeover* (disables the
+agent + Character, owns every bone + the root). Rule of thumb: **overlay** for
+"do something with your arms while still moving"; **takeover** for whole-body
+clips (dance, locomotion).
+
+**`ReadingLayer`** (on the character, `Target` = its `SkinnedModelRenderer`) is
+the overlay. How it works:
+
+- It plays the baked sequence on a **hidden proxy** `SkinnedModelRenderer`
+  (`UseAnimGraph = false`; `SceneObject.RenderingEnabled = false` so it ticks +
+  poses but never draws) and copies the proxy's **local** bone rotations onto the
+  live character. Sourcing the *baked* sequence — not re-retargeting the raw
+  kimodo JSON at runtime — is what keeps limbs correct; the runtime re-retarget
+  twisted elbows inside-out.
+- It overrides bones via the `ProceduralBone` GameObject flag (the same pipeline
+  the animgraph reads), so **unflagged bones keep animating**. Mask = `spine_2`
+  + `neck_0` + `head`, plus **both arms** or **just the holding arm**.
+- It ramps a 0→1 weight in/out. At weight 0 the written local equals the
+  animgraph's own (read via `TryGetBoneTransformAnimation`), so start/stop can't
+  pop — the blend the full-body takeover couldn't do.
+
+Two modes (`HoldableProp.UseMode`):
+
+- **`Hold`** (newspaper) — sustained: holds the last frame until **E toggles it
+  off**. Both arms.
+- **`Once`** (mug) — one-shot: plays through (raise → sip → lower), then
+  **auto-returns** to the hold pose (watches `Sequence.IsFinished`); E mid-action
+  is ignored. One-handed.
+
+### Settings
+
+| Setting | Where | What |
+|---|---|---|
+| `UseClip` | HoldableProp | baked sequence name (`kim_read_newspaper`, `kim_drink`); empty = not usable |
+| `UseMode` | HoldableProp | `Once` (one-shot, auto-return) or `Hold` (sustained toggle) |
+| `UseBothArms` | HoldableProp | drive both arms, else only the `Handedness` arm (other arm stays on the animgraph) |
+| `BlendInTime` / `BlendOutTime` | ReadingLayer | overlay ramp in / out (0.25 / 0.3s) |
+
+### Making a new usable held item
+
+1. Generate the motion on the kimodo server, bake it (`baker/batch_bake.py`
+   curated set → `gen_vmdl.py`) into a `kim_<name>` sequence in
+   `kimodo_anims.vmdl`. Frame it so a one-shot **ends back near the hold pose**
+   (so the blend-out lands cleanly) and so a one-handed action keeps the idle arm
+   neutral (the overlay can leave it to the animgraph via `UseBothArms = false`).
+2. On the prop's `HoldableProp`: set `UseClip = "kim_<name>"`, pick `UseMode`
+   (`Once` for a gesture, `Hold` for a sustained pose), set `UseBothArms`.
+3. Wire nothing else — `Character.StartUsingHeld` + `ClickInteract` (the E key,
+   the `"Use"` input action) handle it generically, and the character keeps
+   walking/sitting while it plays.
+
+> The old periodic `b_attack` pulse while holding (an auto "sip the mug" gesture)
+> was removed — holding is now a static pose; "use" is driven explicitly by E.
+
+**Pickup still has the rough edges sitting had before its pass:** `WalkToAndHold`
+walks *into* the prop and then snaps the grab — there's no approach-near, no
+reach-down, and the prop teleports to the hand. (The table was removed, so the
+mug/hotdog/newspaper now rest on the floor; reposition them onto the chair/ledge
+or new surfaces as the scene grows.)
 
 **Next session — apply the interaction pattern to pickup:**
 1. Approach a point *beside* the prop (not into it), face it.

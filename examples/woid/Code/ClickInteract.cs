@@ -15,11 +15,47 @@ public sealed class ClickInteract : Component
 {
 	[Property] public CharacterRegistry Characters { get; set; }
 
+	// The character we last told to "use" (read) a held item. Kept because the
+	// takeover disables the Character component, so a Characters.All() lookup may
+	// not find it again to toggle reading back off — we hold the reference here.
+	Character _reader;
+
 	protected override void OnUpdate()
 	{
-		if ( IsMouseOverUi() ) return; // UI takes precedence
+		// E toggles "use held item" (read the newspaper). Allowed even over UI and
+		// regardless of cursor, but not while the fly camera is using E-neighbours;
+		// ignore while the fly camera is held so its movement keys don't double up.
+		if ( Input.Pressed( "Use" ) && !Input.Down( "CameraFly" ) ) HandleUse();
+
+		if ( IsMouseOverUi() ) return; // UI takes precedence for mouse
 		if ( Input.Pressed( "Attack1" ) ) HandleClick();          // left: move / interact
 		else if ( Input.Pressed( "Attack2" ) ) HandleThrow();     // right: throw held prop
+	}
+
+	/// <summary>E key: toggle "using" the held item. If a character is currently
+	/// reading, stop it; otherwise the holder starts reading (if its item is
+	/// usable). Stop is driven through the kept reference because the reading
+	/// character is disabled mid-takeover.</summary>
+	void HandleUse()
+	{
+		// Currently reading? Toggle off. Prefer the kept reference (survives the
+		// component being disabled); fall back to a scan.
+		var reader = (_reader.IsValid() && _reader.IsReading)
+			? _reader
+			: Characters.All().FirstOrDefault( c => c.IsReading );
+		if ( reader != null )
+		{
+			// Sustained uses (reading) toggle off; one-shots (drinking) run to
+			// completion on their own, so E is ignored mid-action.
+			if ( reader.CurrentUseHolds ) { reader.StopUsingHeld(); _reader = null; }
+			return;
+		}
+
+		// Not reading: the holder starts using its item (no-op if not usable).
+		var holder = Characters.All().FirstOrDefault( c => c.IsHolding );
+		if ( holder == null ) return;
+		holder.StartUsingHeld();
+		if ( holder.IsReading ) _reader = holder;
 	}
 
 	/// <summary>Right-click: the holding character throws its prop toward the
